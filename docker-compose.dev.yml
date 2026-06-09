@@ -1,6 +1,8 @@
 services:
   publisher:
-    image: rgf2004/pushpage:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: publisher/Dockerfile
     environment:
       SERVER_HOST: ${SERVER_HOST:-http://localhost}
       PORT: ${PORT:-8080}
