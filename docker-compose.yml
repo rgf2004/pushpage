@@ -2,8 +2,7 @@ services:
   publisher:
     image: rgf2004/pushpage:${IMAGE_TAG:-latest}
     environment:
-      SERVER_HOST: ${SERVER_HOST:-http://localhost}
-      PORT: ${PORT:-8080}
+      APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
     volumes:
       - pages:/var/www/pages
       - data:/data
@@ -12,7 +11,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "${PORT:-8080}:80"
+      - "${NGINX_PORT:-8080}:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/index.html:/usr/share/nginx/html/index.html:ro
