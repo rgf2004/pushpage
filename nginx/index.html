@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>pushpage</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 24px 40px;
+            border-bottom: 1px solid #21262d;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #58a6ff;
+            letter-spacing: -.01em;
+        }
+
+        .logo span { color: #e6edf3; }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 24px;
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: .78rem;
+            color: #8b949e;
+            margin-bottom: 28px;
+        }
+
+        .badge::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #3fb950;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 6vw, 4rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -.03em;
+            margin-bottom: 20px;
+        }
+
+        h1 em {
+            font-style: normal;
+            color: #58a6ff;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #8b949e;
+            max-width: 480px;
+            line-height: 1.6;
+            margin-bottom: 44px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 72px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 6px;
+            font-size: .95rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: opacity .15s;
+        }
+
+        .btn:hover { opacity: .82; }
+
+        .btn-primary {
+            background: #238636;
+            color: #fff;
+            border: 1px solid #2ea043;
+        }
+
+        .btn-secondary {
+            background: #21262d;
+            color: #e6edf3;
+            border: 1px solid #30363d;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            width: 100%;
+            max-width: 780px;
+        }
+
+        .card {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 10px;
+            padding: 24px;
+            text-align: left;
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        .card h3 {
+            font-size: .95rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #e6edf3;
+        }
+
+        .card p {
+            font-size: .85rem;
+            color: #8b949e;
+            line-height: 1.5;
+        }
+
+        .snippet {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-family: "SF Mono", "Fira Code", monospace;
+            font-size: .82rem;
+            color: #79c0ff;
+            text-align: left;
+            max-width: 600px;
+            width: 100%;
+            margin-bottom: 48px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .snippet .dim { color: #484f58; }
+        .snippet .str { color: #a5d6ff; }
+
+        footer {
+            padding: 20px 40px;
+            border-top: 1px solid #21262d;
+            text-align: center;
+            font-size: .8rem;
+            color: #484f58;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">push<span>page</span></div>
+</header>
+
+<main>
+    <div class="badge">homelab · self-hosted</div>
+
+    <h1>Post HTML.<br>Get a <em>URL</em>.</h1>
+
+    <p class="subtitle">
+        A lightweight publishing service for your homelab. Send HTML from any AI agent
+        or script and get a shareable link back — no browser needed.
+    </p>
+
+    <div class="snippet">
+        <span class="dim">POST</span> /api/publish
+        <span class="dim">&nbsp;·&nbsp;</span>
+        <span class="dim">{ "title":</span> <span class="str">"My Report"</span><span class="dim">, "html": "..." }</span>
+    </div>
+
+    <div class="actions">
+        <a href="/api/pages" class="btn btn-primary">View published pages</a>
+        <a href="/api/swagger-ui/index.html" class="btn btn-secondary">API docs</a>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <div class="card-icon">📨</div>
+            <h3>POST to publish</h3>
+            <p>Send any HTML string via JSON. Bare snippets are auto-wrapped in a clean shell.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon">⚡️</div>
+            <h3>Instant URL</h3>
+            <p>Files are served directly by nginx. No build step, no delay.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon">🗄️</div>
+            <h3>Persistent</h3>
+            <p>Pages survive restarts. Metadata lives in SQLite, files in a named volume.</p>
+        </div>
+        <div class="card">
+            <div class="card-icon">🤖</div>
+            <h3>Agent-ready</h3>
+            <p>Designed to be called by AI agents. Get the URL back, send it anywhere.</p>
+        </div>
+    </div>
+</main>
+
+<footer>pushpage · homelab internal</footer>
+
+</body>
+</html>
