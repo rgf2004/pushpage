@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class PageRepository {
@@ -45,6 +46,18 @@ public class PageRepository {
                         baseUrl + "/" + rs.getString("id") + ".html"
                 )
         );
+    }
+
+    public Optional<Page> findById(String id, String baseUrl) {
+        List<Page> pages = jdbc.query(
+                "SELECT id, title, created_at FROM pages WHERE id = ?",
+                (rs, i) -> new Page(
+                        rs.getString("id"),
+                        rs.getString("title"),
+                        rs.getString("created_at"),
+                        baseUrl + "/" + rs.getString("id") + ".html"),
+                id);
+        return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
     }
 
     public boolean existsById(String id) {
