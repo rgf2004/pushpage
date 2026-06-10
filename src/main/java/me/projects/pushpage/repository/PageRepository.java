@@ -26,7 +26,7 @@ public class PageRepository {
 
     public List<Page> findAll(String baseUrl) {
         return jdbc.query(
-                "SELECT id, title, created_at FROM pages ORDER BY created_at DESC",
+                "SELECT id, title, created_at FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
@@ -38,7 +38,7 @@ public class PageRepository {
 
     public Optional<Page> findById(String id) {
         List<Page> pages = jdbc.query(
-                "SELECT id, title, created_at FROM pages WHERE id = ?",
+                "SELECT id, title, created_at FROM pages WHERE id = ? AND deleted_at IS NULL",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
@@ -50,7 +50,7 @@ public class PageRepository {
 
     public boolean existsById(String id) {
         Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM pages WHERE id = ?",
+                "SELECT COUNT(*) FROM pages WHERE id = ? AND deleted_at IS NULL",
                 Integer.class, id
         );
         return count != null && count > 0;
@@ -58,5 +58,21 @@ public class PageRepository {
 
     public void deleteById(String id) {
         jdbc.update("DELETE FROM pages WHERE id = ?", id);
+    }
+
+    public List<Page> findOlderThan(Instant cutoff) {
+        return jdbc.query(
+                "SELECT id, title, created_at FROM pages WHERE deleted_at IS NULL AND created_at < ?",
+                (rs, i) -> new Page(
+                        rs.getString("id"),
+                        rs.getString("title"),
+                        rs.getString("created_at"),
+                        null),
+                cutoff.toString()
+        );
+    }
+
+    public void softDeleteById(String id) {
+        jdbc.update("UPDATE pages SET deleted_at = ? WHERE id = ?", Instant.now().toString(), id);
     }
 }
