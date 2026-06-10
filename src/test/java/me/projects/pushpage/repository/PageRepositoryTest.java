@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PageRepositoryTest {
 
+    private JdbcTemplate jdbc;
     private PageRepository repository;
 
     @BeforeEach
@@ -22,8 +25,11 @@ class PageRepositoryTest {
         // since each new connection gets an isolated, empty database.
         var dataSource = new SingleConnectionDataSource("jdbc:sqlite::memory:", true);
         Flyway.configure().dataSource(dataSource).load().migrate();
-        repository = new PageRepository(new JdbcTemplate(dataSource));
+        jdbc = new JdbcTemplate(dataSource);
+        repository = new PageRepository(jdbc);
     }
+
+    // --- save / existsById ---
 
     @Test
     void save_shouldInsertRow() {
@@ -31,6 +37,8 @@ class PageRepositoryTest {
 
         assertThat(repository.existsById("abc12345")).isTrue();
     }
+
+    // --- findById ---
 
     @Test
     void findById_shouldReturnCorrectPage() {
@@ -51,6 +59,26 @@ class PageRepositoryTest {
     }
 
     @Test
+    void findById_whenSoftDeleted_shouldReturnEmpty() {
+        repository.save("abc12345", "My Page");
+        repository.softDeleteById("abc12345");
+
+        assertThat(repository.findById("abc12345")).isEmpty();
+    }
+
+    // --- existsById ---
+
+    @Test
+    void existsById_whenSoftDeleted_shouldReturnFalse() {
+        repository.save("abc12345", "My Page");
+        repository.softDeleteById("abc12345");
+
+        assertThat(repository.existsById("abc12345")).isFalse();
+    }
+
+    // --- deleteById ---
+
+    @Test
     void deleteById_shouldRemoveRow() {
         repository.save("abc12345", "My Page");
 
@@ -58,6 +86,8 @@ class PageRepositoryTest {
 
         assertThat(repository.existsById("abc12345")).isFalse();
     }
+
+    // --- findAll ---
 
     @Test
     void findAll_shouldReturnAllRows() {
@@ -68,5 +98,69 @@ class PageRepositoryTest {
 
         assertThat(pages).hasSize(2);
         assertThat(pages).extracting(Page::id).containsExactlyInAnyOrder("id1", "id2");
+    }
+
+    @Test
+    void findAll_shouldExcludeSoftDeletedPages() {
+        repository.save("id1", "Active");
+        repository.save("id2", "Deleted");
+        repository.softDeleteById("id2");
+
+        List<Page> pages = repository.findAll("http://localhost");
+
+        assertThat(pages).hasSize(1);
+        assertThat(pages.get(0).id()).isEqualTo("id1");
+    }
+
+    // --- softDeleteById ---
+
+    @Test
+    void softDeleteById_shouldStampDeletedAt() {
+        repository.save("abc12345", "My Page");
+
+        repository.softDeleteById("abc12345");
+
+        String deletedAt = jdbc.queryForObject(
+                "SELECT deleted_at FROM pages WHERE id = ?", String.class, "abc12345");
+        assertThat(deletedAt).isNotNull();
+    }
+
+    // --- findOlderThan ---
+
+    @Test
+    void findOlderThan_shouldReturnPagesBeyondCutoff() {
+        Instant cutoff = Instant.now().minus(30, ChronoUnit.DAYS);
+        insertPage("oldpage1", "Old 1", cutoff.minus(1, ChronoUnit.DAYS));
+        insertPage("oldpage2", "Old 2", cutoff.minus(10, ChronoUnit.DAYS));
+        insertPage("newpage1", "New 1", cutoff.plus(1, ChronoUnit.DAYS));
+
+        List<Page> result = repository.findOlderThan(cutoff);
+
+        assertThat(result).extracting(Page::id).containsExactlyInAnyOrder("oldpage1", "oldpage2");
+    }
+
+    @Test
+    void findOlderThan_shouldExcludeSoftDeletedPages() {
+        Instant cutoff = Instant.now().minus(30, ChronoUnit.DAYS);
+        insertPage("oldpage1", "Old Active", cutoff.minus(5, ChronoUnit.DAYS));
+        insertPage("oldpage2", "Old Deleted", cutoff.minus(5, ChronoUnit.DAYS));
+        repository.softDeleteById("oldpage2");
+
+        List<Page> result = repository.findOlderThan(cutoff);
+
+        assertThat(result).extracting(Page::id).containsExactly("oldpage1");
+    }
+
+    @Test
+    void findOlderThan_whenNoCandidates_shouldReturnEmptyList() {
+        Instant cutoff = Instant.now().minus(30, ChronoUnit.DAYS);
+        insertPage("newpage1", "New", cutoff.plus(1, ChronoUnit.DAYS));
+
+        assertThat(repository.findOlderThan(cutoff)).isEmpty();
+    }
+
+    private void insertPage(String id, String title, Instant createdAt) {
+        jdbc.update("INSERT INTO pages (id, title, created_at) VALUES (?, ?, ?)",
+                id, title, createdAt.toString());
     }
 }
