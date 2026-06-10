@@ -75,7 +75,7 @@ class HealthServiceTest {
 
         HealthResponse response = healthService.getHealth();
 
-        assertThat(response.totalPages()).isEqualTo(7);
+        assertThat(response.livePages()).isEqualTo(7);
         assertThat(response.deletedPages()).isEqualTo(3);
     }
 
@@ -153,7 +153,7 @@ class HealthServiceTest {
         healthService.invalidateCache();
         HealthResponse second = healthService.getHealth();
 
-        assertThat(second.totalPages()).isEqualTo(5);
+        assertThat(second.livePages()).isEqualTo(5);
         verify(pageRepository, times(2)).getStats();
     }
 

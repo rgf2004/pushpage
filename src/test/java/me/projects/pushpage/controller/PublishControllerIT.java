@@ -129,7 +129,7 @@ class PublishControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").exists())
                 .andExpect(jsonPath("$.uptimeSeconds").isNumber())
-                .andExpect(jsonPath("$.totalPages").isNumber())
+                .andExpect(jsonPath("$.livePages").isNumber())
                 .andExpect(jsonPath("$.deletedPages").isNumber())
                 .andExpect(jsonPath("$.storage.usedBytes").isNumber())
                 .andExpect(jsonPath("$.storage.usedHuman").exists())
