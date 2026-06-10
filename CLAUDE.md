@@ -6,6 +6,7 @@ A self-hosted HTML page publishing service for a homelab. AI agents POST HTML co
 
 - **Spring Boot 3.4** — publisher service (Java 25)
 - **SQLite** — metadata store (page id, title, created_at)
+- **Flyway** — database migrations (all schema changes must go through a versioned migration in `src/main/resources/db/migration/`)
 - **nginx** — static file serving + reverse proxy
 - **Docker Compose** — orchestration
 
@@ -43,6 +44,8 @@ push-page/
 |----------|-------------|---------|
 | `APP_SERVER_URL` | Full public URL of the service | `http://pushpage.homelab.local` |
 | `NGINX_PORT` | Host port nginx binds to | `8080` |
+| `CLEANUP_RETENTION_DAYS` | Days to retain pages before auto-cleanup | `30` |
+| `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
 
 ## API
 
