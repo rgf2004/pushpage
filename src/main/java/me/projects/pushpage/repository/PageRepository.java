@@ -48,14 +48,14 @@ public class PageRepository {
         );
     }
 
-    public Optional<Page> findById(String id, String baseUrl) {
+    public Optional<Page> findById(String id) {
         List<Page> pages = jdbc.query(
                 "SELECT id, title, created_at FROM pages WHERE id = ?",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
                         rs.getString("created_at"),
-                        baseUrl + "/" + rs.getString("id") + ".html"),
+                        null),
                 id);
         return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
     }

@@ -35,17 +35,16 @@ class PageRepositoryTest {
     void findById_shouldReturnCorrectPage() {
         repository.save("abc12345", "My Page");
 
-        Optional<Page> result = repository.findById("abc12345", "http://localhost");
+        Optional<Page> result = repository.findById("abc12345");
 
         assertThat(result).isPresent();
         assertThat(result.get().id()).isEqualTo("abc12345");
         assertThat(result.get().title()).isEqualTo("My Page");
-        assertThat(result.get().url()).isEqualTo("http://localhost/abc12345.html");
     }
 
     @Test
     void findById_whenIdUnknown_shouldReturnEmpty() {
-        Optional<Page> result = repository.findById("nonexistent", "http://localhost");
+        Optional<Page> result = repository.findById("nonexistent");
 
         assertThat(result).isEmpty();
     }
