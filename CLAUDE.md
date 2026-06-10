@@ -14,12 +14,13 @@ A self-hosted HTML page publishing service for a homelab. AI agents POST HTML co
 
 ```
 push-page/
-├── docker-compose.yml          # prod — pulls image from Docker Hub (rgf2004/pushpage)
+├── docker-compose.yml          # prod — pulls images from Docker Hub (rgf2004/pushpage-publisher, rgf2004/pushpage-nginx)
 ├── docker-compose.dev.yml      # dev  — builds image from source
 ├── .env                        # environment variables (see below)
 ├── publisher/
 │   └── Dockerfile              # multi-stage Maven build → JRE runtime
 ├── nginx/
+│   ├── Dockerfile              # custom nginx image (bakes in config + landing page)
 │   ├── default.conf            # nginx routing config
 │   └── index.html              # landing page
 └── src/main/java/me/projects/pushpage/
@@ -72,11 +73,20 @@ docker compose -f docker-compose.dev.yml up -d --build
 docker compose up -d
 ```
 
-## Building & Pushing Multi-Arch Image
+## Building & Pushing Multi-Arch Images
 
+**Publisher image (`rgf2004/pushpage-publisher`):**
 ```bash
-podman build --no-cache --platform linux/amd64 -t rgf2004/pushpage:amd64 -f publisher/Dockerfile .
-podman build --no-cache --platform linux/arm64 -t rgf2004/pushpage:arm64 -f publisher/Dockerfile .
-podman manifest create rgf2004/pushpage:latest rgf2004/pushpage:amd64 rgf2004/pushpage:arm64
-podman manifest push --all rgf2004/pushpage:latest docker://docker.io/rgf2004/pushpage:latest
+podman build --no-cache --platform linux/amd64 -t rgf2004/pushpage-publisher:amd64 -f publisher/Dockerfile .
+podman build --no-cache --platform linux/arm64 -t rgf2004/pushpage-publisher:arm64 -f publisher/Dockerfile .
+podman manifest create rgf2004/pushpage-publisher:latest rgf2004/pushpage-publisher:amd64 rgf2004/pushpage-publisher:arm64
+podman manifest push --all rgf2004/pushpage-publisher:latest docker://docker.io/rgf2004/pushpage-publisher:latest
+```
+
+**Nginx image (`rgf2004/pushpage-nginx`):**
+```bash
+podman build --no-cache --platform linux/amd64 -t rgf2004/pushpage-nginx:amd64 -f nginx/Dockerfile nginx/
+podman build --no-cache --platform linux/arm64 -t rgf2004/pushpage-nginx:arm64 -f nginx/Dockerfile nginx/
+podman manifest create rgf2004/pushpage-nginx:latest rgf2004/pushpage-nginx:amd64 rgf2004/pushpage-nginx:arm64
+podman manifest push --all rgf2004/pushpage-nginx:latest docker://docker.io/rgf2004/pushpage-nginx:latest
 ```

@@ -1,6 +1,6 @@
 services:
   publisher:
-    image: rgf2004/pushpage:${IMAGE_TAG:-latest}
+    image: rgf2004/pushpage-publisher:${IMAGE_TAG:-latest}
     environment:
       APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1MB}
@@ -11,12 +11,10 @@ services:
     restart: unless-stopped
 
   nginx:
-    image: nginx:alpine
+    image: rgf2004/pushpage-nginx:${IMAGE_TAG:-latest}
     ports:
       - "${NGINX_PORT:-8080}:80"
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./nginx/index.html:/usr/share/nginx/html/index.html:ro
       - pages:/var/www/pages:ro
     depends_on:
       - publisher

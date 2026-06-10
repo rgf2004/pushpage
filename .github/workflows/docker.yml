@@ -37,17 +37,17 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata
+      - name: Extract metadata (publisher)
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: rgf2004/pushpage
+          images: rgf2004/pushpage-publisher
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
 
-      - name: Build and push
+      - name: Build and push publisher
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -56,6 +56,28 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata (nginx)
+        id: meta-nginx
+        uses: docker/metadata-action@v6
+        with:
+          images: rgf2004/pushpage-nginx
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push nginx
+        uses: docker/build-push-action@v7
+        with:
+          context: ./nginx
+          file: nginx/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-nginx.outputs.tags }}
+          labels: ${{ steps.meta-nginx.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
