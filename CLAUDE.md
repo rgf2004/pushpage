@@ -46,6 +46,8 @@ push-page/
 | `NGINX_PORT` | Host port nginx binds to | `8080` |
 | `CLEANUP_RETENTION_DAYS` | Days to retain pages before auto-cleanup | `30` |
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
+| `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
+| `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
 
 ## API
 

@@ -4,6 +4,7 @@ services:
     environment:
       APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1MB}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-10MB}
     volumes:
       - pages:/var/www/pages
       - data:/data
