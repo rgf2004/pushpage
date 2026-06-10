@@ -37,6 +37,9 @@ public class PublishService {
     }
 
     public PublishResponse publish(PublishRequest request) {
+        if (request.html() == null || request.html().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML content is required");
+        }
         String id = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         String title = (request.title() != null && !request.title().isBlank())
                 ? request.title() : "Untitled";
