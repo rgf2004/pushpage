@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Tag(name = "Pages", description = "Publish and manage HTML pages")
@@ -65,13 +64,6 @@ public class PublishController {
             @PathVariable String id) {
         publishService.deletePage(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @Operation(summary = "Health check")
-    @ApiResponse(responseCode = "200", description = "Service is up")
-    @GetMapping("/health")
-    public Map<String, String> health() {
-        return Map.of("status", "ok");
     }
 
 }

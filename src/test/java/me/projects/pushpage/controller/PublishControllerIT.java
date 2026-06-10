@@ -117,9 +117,46 @@ class PublishControllerIT {
     }
 
     @Test
-    void health_returns200WithStatusOk() throws Exception {
+    void health_returns200WithStatusUp() throws Exception {
         mockMvc.perform(get("/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ok"));
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void health_returnsRequiredFields() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").exists())
+                .andExpect(jsonPath("$.uptimeSeconds").isNumber())
+                .andExpect(jsonPath("$.livePages").isNumber())
+                .andExpect(jsonPath("$.deletedPages").isNumber())
+                .andExpect(jsonPath("$.storage.usedBytes").isNumber())
+                .andExpect(jsonPath("$.storage.usedHuman").exists())
+                .andExpect(jsonPath("$.storage.freeBytes").isNumber())
+                .andExpect(jsonPath("$.storage.freeHuman").exists());
+    }
+
+    @Test
+    void health_withPages_returnsOldestAndNewestTimestamps() throws Exception {
+        mockMvc.perform(post("/publish")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Health test</h1>", "title": "Health Test"}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.oldestPage").exists())
+                .andExpect(jsonPath("$.newestPage").exists());
+    }
+
+    @Test
+    void health_withNoPages_omitsPageTimestamps() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.oldestPage").doesNotExist())
+                .andExpect(jsonPath("$.newestPage").doesNotExist());
     }
 }
