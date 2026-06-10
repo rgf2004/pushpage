@@ -10,7 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.unit.DataSize;
+
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -19,11 +24,16 @@ import java.util.UUID;
 @Service
 public class PublishService {
 
+    private static final Logger log = LoggerFactory.getLogger(PublishService.class);
+
     @Value("${app.base-url}")
     private String baseUrl;
 
     @Value("${app.pages-dir}")
     private String pagesDir;
+
+    @Value("${app.max-file-size}")
+    private DataSize maxFileSize;
 
     private final PageRepository pageRepository;
 
@@ -34,11 +44,21 @@ public class PublishService {
     @PostConstruct
     public void init() throws IOException {
         Files.createDirectories(Path.of(pagesDir));
+        log.info("Max file size: {} bytes", maxFileSize.toBytes());
+    }
+
+    public long getMaxFileSizeBytes() {
+        return maxFileSize.toBytes();
     }
 
     public PublishResponse publish(PublishRequest request) {
         if (request.html() == null || request.html().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML content is required");
+        }
+        long sizeBytes = request.html().getBytes(StandardCharsets.UTF_8).length;
+        if (sizeBytes > maxFileSize.toBytes()) {
+            throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE,
+                    "Payload size %d bytes exceeds maximum allowed size of %d bytes".formatted(sizeBytes, maxFileSize.toBytes()));
         }
         String id = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         String title = (request.title() != null && !request.title().isBlank())

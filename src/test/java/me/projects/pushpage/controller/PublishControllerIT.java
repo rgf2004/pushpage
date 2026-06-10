@@ -68,6 +68,26 @@ class PublishControllerIT {
     }
 
     @Test
+    void publishPage_withOversizedHtml_returns413() throws Exception {
+        String oversized = "a".repeat(2 * 1024 * 1024); // 2 MB
+        mockMvc.perform(post("/publish")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"html\": \"" + oversized + "\", \"title\": \"Test\"}"))
+                .andExpect(status().isPayloadTooLarge());
+    }
+
+    @Test
+    void publishPage_withValidHtml_returnsXMaxFileSizeHeader() throws Exception {
+        mockMvc.perform(post("/publish")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Hello</h1>", "title": "Test"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("X-Max-File-Size"));
+    }
+
+    @Test
     void listPages_returns200WithJsonArray() throws Exception {
         mockMvc.perform(get("/pages"))
                 .andExpect(status().isOk())

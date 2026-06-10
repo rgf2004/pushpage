@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import me.projects.pushpage.constants.AppHeaders;
 import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
@@ -33,11 +34,14 @@ public class PublishController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page published successfully",
                     content = @Content(schema = @Schema(implementation = PublishResponse.class))),
+            @ApiResponse(responseCode = "413", description = "Payload exceeds the configured size limit", content = @Content),
             @ApiResponse(responseCode = "500", description = "Failed to write file", content = @Content)
     })
     @PostMapping("/publish")
-    public PublishResponse publish(@RequestBody PublishRequest request) {
-        return publishService.publish(request);
+    public ResponseEntity<PublishResponse> publish(@RequestBody PublishRequest request) {
+        return ResponseEntity.ok()
+                .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(publishService.getMaxFileSizeBytes()))
+                .body(publishService.publish(request));
     }
 
     @Operation(summary = "List all published pages",
