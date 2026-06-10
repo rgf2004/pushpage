@@ -8,6 +8,7 @@ public record HealthResponse(
         String version,
         long uptimeSeconds,
         long totalPages,
+        long deletedPages,
         String oldestPage,
         String newestPage,
         StorageInfo storage

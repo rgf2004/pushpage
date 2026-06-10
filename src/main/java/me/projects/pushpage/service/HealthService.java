@@ -63,6 +63,7 @@ public class HealthService {
                     buildProperties.getVersion(),
                     Instant.now().getEpochSecond() - startTime.getEpochSecond(),
                     pageStats.count(),
+                    pageStats.deletedCount(),
                     oldest,
                     newest,
                     storage
@@ -70,7 +71,7 @@ public class HealthService {
         } catch (Exception e) {
             return new HealthResponse("DOWN", buildProperties.getVersion(),
                     Instant.now().getEpochSecond() - startTime.getEpochSecond(),
-                    0, null, null, null);
+                    0, 0, null, null, null);
         }
     }
 

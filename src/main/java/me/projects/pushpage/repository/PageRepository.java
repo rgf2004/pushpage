@@ -76,12 +76,24 @@ public class PageRepository {
         jdbc.update("UPDATE pages SET deleted_at = ? WHERE id = ?", Instant.now().toString(), id);
     }
 
-    public record PageStats(long count, String oldestCreatedAt, String newestCreatedAt) {}
+    public record PageStats(long count, long deletedCount, String oldestCreatedAt, String newestCreatedAt) {}
 
     public PageStats getStats() {
         return jdbc.queryForObject(
-                "SELECT COUNT(*) as cnt, MIN(created_at) as oldest, MAX(created_at) as newest FROM pages WHERE deleted_at IS NULL",
-                (rs, i) -> new PageStats(rs.getLong("cnt"), rs.getString("oldest"), rs.getString("newest"))
+                """
+                SELECT
+                  COUNT(CASE WHEN deleted_at IS NULL THEN 1 END)     AS cnt,
+                  COUNT(CASE WHEN deleted_at IS NOT NULL THEN 1 END) AS deleted_cnt,
+                  MIN(CASE WHEN deleted_at IS NULL THEN created_at END) AS oldest,
+                  MAX(CASE WHEN deleted_at IS NULL THEN created_at END) AS newest
+                FROM pages
+                """,
+                (rs, i) -> new PageStats(
+                        rs.getLong("cnt"),
+                        rs.getLong("deleted_cnt"),
+                        rs.getString("oldest"),
+                        rs.getString("newest")
+                )
         );
     }
 }
