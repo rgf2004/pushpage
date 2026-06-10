@@ -80,7 +80,7 @@ class PublishServiceTest {
         assertThatThrownBy(() -> publishService.publish(new PublishRequest(oversized, "Title")))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE));
+                        .isEqualTo(HttpStatus.CONTENT_TOO_LARGE));
     }
 
     @Test

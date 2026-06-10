@@ -57,7 +57,7 @@ public class PublishService {
         }
         long sizeBytes = request.html().getBytes(StandardCharsets.UTF_8).length;
         if (sizeBytes > maxFileSize.toBytes()) {
-            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
+            throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE,
                     "Payload size %d bytes exceeds maximum allowed size of %d bytes".formatted(sizeBytes, maxFileSize.toBytes()));
         }
         String id = UUID.randomUUID().toString().replace("-", "").substring(0, 8);

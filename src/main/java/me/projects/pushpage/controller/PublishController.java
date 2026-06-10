@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import me.projects.pushpage.constants.AppHeaders;
 import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
@@ -38,10 +39,9 @@ public class PublishController {
     })
     @PostMapping("/publish")
     public ResponseEntity<PublishResponse> publish(@RequestBody PublishRequest request) {
-        PublishResponse response = publishService.publish(request);
         return ResponseEntity.ok()
-                .header("X-Max-File-Size", String.valueOf(publishService.getMaxFileSizeBytes()))
-                .body(response);
+                .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(publishService.getMaxFileSizeBytes()))
+                .body(publishService.publish(request));
     }
 
     @Operation(summary = "List all published pages",
