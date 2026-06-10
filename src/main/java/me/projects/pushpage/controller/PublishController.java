@@ -8,13 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import me.projects.pushpage.constants.AppHeaders;
-import me.projects.pushpage.model.HealthResponse;
 import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
-import me.projects.pushpage.service.HealthService;
 import me.projects.pushpage.service.PublishService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,11 +22,9 @@ import java.util.List;
 public class PublishController {
 
     private final PublishService publishService;
-    private final HealthService healthService;
 
-    public PublishController(PublishService publishService, HealthService healthService) {
+    public PublishController(PublishService publishService) {
         this.publishService = publishService;
-        this.healthService = healthService;
     }
 
     @Operation(summary = "Publish an HTML page",
@@ -69,20 +64,6 @@ public class PublishController {
             @PathVariable String id) {
         publishService.deletePage(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @Operation(summary = "Health check",
-            description = "Returns runtime statistics. HTTP 200 when healthy, 503 when a critical subsystem is unavailable.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Service is healthy",
-                    content = @Content(schema = @Schema(implementation = HealthResponse.class))),
-            @ApiResponse(responseCode = "503", description = "Service is degraded", content = @Content)
-    })
-    @GetMapping("/health")
-    public ResponseEntity<HealthResponse> health() {
-        HealthResponse response = healthService.getHealth();
-        HttpStatus status = "UP".equals(response.status()) ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
-        return ResponseEntity.status(status).body(response);
     }
 
 }
