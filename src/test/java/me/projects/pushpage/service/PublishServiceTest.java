@@ -30,6 +30,9 @@ class PublishServiceTest {
     @Mock
     private PageRepository pageRepository;
 
+    @Mock
+    private HealthService healthService;
+
     @InjectMocks
     private PublishService publishService;
 

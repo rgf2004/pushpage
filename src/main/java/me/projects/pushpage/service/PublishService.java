@@ -36,9 +36,11 @@ public class PublishService {
     private DataSize maxFileSize;
 
     private final PageRepository pageRepository;
+    private final HealthService healthService;
 
-    public PublishService(PageRepository pageRepository) {
+    public PublishService(PageRepository pageRepository, HealthService healthService) {
         this.pageRepository = pageRepository;
+        this.healthService = healthService;
     }
 
     @PostConstruct
@@ -72,6 +74,7 @@ public class PublishService {
         }
 
         pageRepository.save(id, title);
+        healthService.invalidateCache();
 
         String url = baseUrl + "/" + id + ".html";
         return new PublishResponse(url, id);
@@ -91,6 +94,7 @@ public class PublishService {
             throw new RuntimeException("Failed to delete page file", e);
         }
         pageRepository.deleteById(id);
+        healthService.invalidateCache();
     }
 
     private String wrapIfNeeded(String html, String title) {

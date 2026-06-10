@@ -75,4 +75,13 @@ public class PageRepository {
     public void softDeleteById(String id) {
         jdbc.update("UPDATE pages SET deleted_at = ? WHERE id = ?", Instant.now().toString(), id);
     }
+
+    public record PageStats(long count, String oldestCreatedAt, String newestCreatedAt) {}
+
+    public PageStats getStats() {
+        return jdbc.queryForObject(
+                "SELECT COUNT(*) as cnt, MIN(created_at) as oldest, MAX(created_at) as newest FROM pages WHERE deleted_at IS NULL",
+                (rs, i) -> new PageStats(rs.getLong("cnt"), rs.getString("oldest"), rs.getString("newest"))
+        );
+    }
 }
