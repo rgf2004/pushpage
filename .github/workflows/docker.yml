@@ -10,6 +10,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Extract version from tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          NEXT_MINOR=$((MINOR + 1))
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          echo "VERSION=$VERSION"                                     >> $GITHUB_ENV
+          echo "NEXT_SNAPSHOT=${MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"     >> $GITHUB_ENV
+
+      - name: Set release version in pom.xml
+        run: mvn -B versions:set -DnewVersion=${{ env.VERSION }} -DgenerateBackupPoms=false
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -44,3 +58,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Bump to next snapshot version
+        run: mvn -B versions:set -DnewVersion=${{ env.NEXT_SNAPSHOT }} -DgenerateBackupPoms=false
+
+      - name: Commit next snapshot version
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add pom.xml
+          git commit -m "chore: bump version to ${{ env.NEXT_SNAPSHOT }}"
+          git push origin HEAD:main
