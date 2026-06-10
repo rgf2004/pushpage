@@ -4,7 +4,6 @@ import me.projects.pushpage.model.Page;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import jakarta.annotation.PostConstruct;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -16,17 +15,6 @@ public class PageRepository {
 
     public PageRepository(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
-    }
-
-    @PostConstruct
-    public void init() {
-        jdbc.execute("""
-                CREATE TABLE IF NOT EXISTS pages (
-                    id TEXT PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                )
-                """);
     }
 
     public void save(String id, String title) {

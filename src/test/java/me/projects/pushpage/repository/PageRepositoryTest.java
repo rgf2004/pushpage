@@ -1,6 +1,7 @@
 package me.projects.pushpage.repository;
 
 import me.projects.pushpage.model.Page;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,8 +21,8 @@ class PageRepositoryTest {
         // SingleConnectionDataSource reuses one connection — required for SQLite in-memory DBs
         // since each new connection gets an isolated, empty database.
         var dataSource = new SingleConnectionDataSource("jdbc:sqlite::memory:", true);
+        Flyway.configure().dataSource(dataSource).load().migrate();
         repository = new PageRepository(new JdbcTemplate(dataSource));
-        repository.init();
     }
 
     @Test
