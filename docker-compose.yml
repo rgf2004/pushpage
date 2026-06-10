@@ -3,6 +3,7 @@ services:
     image: rgf2004/pushpage:${IMAGE_TAG:-latest}
     environment:
       APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1MB}
     volumes:
       - pages:/var/www/pages
       - data:/data

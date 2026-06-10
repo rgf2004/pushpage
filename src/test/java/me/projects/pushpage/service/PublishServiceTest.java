@@ -11,7 +11,9 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
@@ -38,6 +40,7 @@ class PublishServiceTest {
     void setUp() throws Exception {
         ReflectionTestUtils.setField(publishService, "baseUrl", "http://localhost");
         ReflectionTestUtils.setField(publishService, "pagesDir", tempDir.toString());
+        ReflectionTestUtils.setField(publishService, "maxFileSize", DataSize.ofMegabytes(1));
         publishService.init();
     }
 
@@ -67,6 +70,27 @@ class PublishServiceTest {
         assertThatThrownBy(() -> publishService.publish(new PublishRequest("   ", "Title")))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("HTML content is required");
+    }
+
+    @Test
+    void publishPage_whenHtmlExceedsMaxSize_shouldThrow413() {
+        ReflectionTestUtils.setField(publishService, "maxFileSize", DataSize.ofBytes(10));
+        String oversized = "a".repeat(11);
+
+        assertThatThrownBy(() -> publishService.publish(new PublishRequest(oversized, "Title")))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE));
+    }
+
+    @Test
+    void publishPage_whenHtmlExactlyAtLimit_shouldSucceed() {
+        ReflectionTestUtils.setField(publishService, "maxFileSize", DataSize.ofBytes(10));
+        String exactSize = "a".repeat(10);
+
+        PublishResponse response = publishService.publish(new PublishRequest(exactSize, "Title"));
+
+        assertThat(response.id()).isNotBlank();
     }
 
     @Test

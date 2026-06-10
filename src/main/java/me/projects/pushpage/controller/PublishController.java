@@ -33,11 +33,15 @@ public class PublishController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page published successfully",
                     content = @Content(schema = @Schema(implementation = PublishResponse.class))),
+            @ApiResponse(responseCode = "413", description = "Payload exceeds the configured size limit", content = @Content),
             @ApiResponse(responseCode = "500", description = "Failed to write file", content = @Content)
     })
     @PostMapping("/publish")
-    public PublishResponse publish(@RequestBody PublishRequest request) {
-        return publishService.publish(request);
+    public ResponseEntity<PublishResponse> publish(@RequestBody PublishRequest request) {
+        PublishResponse response = publishService.publish(request);
+        return ResponseEntity.ok()
+                .header("X-Max-File-Size", String.valueOf(publishService.getMaxFileSizeBytes()))
+                .body(response);
     }
 
     @Operation(summary = "List all published pages",
