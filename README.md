@@ -17,7 +17,7 @@ pushpage gives AI agents a publish endpoint so that the richer, more effective H
 
 ## API
 
-All endpoints are under `/api` (Spring Boot context path).
+All endpoints are under `/api` (Spring Boot context path). Examples below use `{APP_SERVER_URL}`, which defaults to `http://localhost:8080`.
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -31,7 +31,7 @@ Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 ### Publish a page
 
 ```bash
-curl -X POST http://localhost:8080/api/publish \
+curl -X POST {APP_SERVER_URL}/api/publish \
   -H "Content-Type: application/json" \
   -d '{"title": "My Report", "html": "<h1>Hello</h1><p>Some content here.</p>"}'
 ```
@@ -40,7 +40,7 @@ Response:
 
 ```json
 {
-  "url": "http://localhost:8080/pages/a1b2c3d4.html",
+  "url": "{APP_SERVER_URL}/pages/a1b2c3d4.html",
   "id": "a1b2c3d4"
 }
 ```
@@ -50,16 +50,13 @@ Response:
 ### Prerequisites
 
 - Docker and Docker Compose
-- A `.env` file in the project root with the following variables:
+- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `APP_SERVER_URL` | Full public URL of the service | `http://pushpage.homelab.local` |
-| `NGINX_PORT` | Host port nginx binds to | `8080` |
-| `CLEANUP_RETENTION_DAYS` | Days to retain pages before auto-cleanup | `30` |
-| `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
-| `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
-| `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
+```env
+APP_SERVER_URL=http://pushpage.homelab.local
+```
+
+All other variables have sensible defaults. See [`docs/configuration.md`](docs/configuration.md) for the full list.
 
 ### Running
 
@@ -72,10 +69,10 @@ docker compose up -d
 Verify the service is running:
 
 ```bash
-curl http://localhost:8080/api/health
+curl {APP_SERVER_URL}/api/health
 ```
 
-Or open the Swagger UI in a browser: `http://localhost:8080/api/swagger-ui/index.html`
+Or open the Swagger UI in a browser: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
 To stop the stack:
 
@@ -103,22 +100,4 @@ To build from source and run locally:
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d --build
-```
-
-### Building and Pushing Multi-Arch Images
-
-**Publisher image (`rgf2004/pushpage-publisher`):**
-```bash
-podman build --no-cache --platform linux/amd64 -t rgf2004/pushpage-publisher:amd64 -f publisher/Dockerfile .
-podman build --no-cache --platform linux/arm64 -t rgf2004/pushpage-publisher:arm64 -f publisher/Dockerfile .
-podman manifest create rgf2004/pushpage-publisher:latest rgf2004/pushpage-publisher:amd64 rgf2004/pushpage-publisher:arm64
-podman manifest push --all rgf2004/pushpage-publisher:latest docker://docker.io/rgf2004/pushpage-publisher:latest
-```
-
-**Nginx image (`rgf2004/pushpage-nginx`):**
-```bash
-podman build --no-cache --platform linux/amd64 -t rgf2004/pushpage-nginx:amd64 -f nginx/Dockerfile nginx/
-podman build --no-cache --platform linux/arm64 -t rgf2004/pushpage-nginx:arm64 -f nginx/Dockerfile nginx/
-podman manifest create rgf2004/pushpage-nginx:latest rgf2004/pushpage-nginx:amd64 rgf2004/pushpage-nginx:arm64
-podman manifest push --all rgf2004/pushpage-nginx:latest docker://docker.io/rgf2004/pushpage-nginx:latest
 ```
