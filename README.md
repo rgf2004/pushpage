@@ -1,6 +1,6 @@
 # pushpage
 
-A self-hosted HTML page publishing service for a homelab. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
+A self-hosted HTML page publishing service. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
 
 ## Why this project exists
 
