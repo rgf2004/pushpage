@@ -17,6 +17,7 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -128,8 +129,8 @@ class PublishServiceTest {
     @Test
     void listPages_shouldReturnAllPagesFromRepository() {
         List<Page> pages = List.of(
-                new Page("id1", "Page 1", "2024-01-02T00:00:00Z", "http://localhost/id1.html"),
-                new Page("id2", "Page 2", "2024-01-01T00:00:00Z", "http://localhost/id2.html")
+                new Page("id1", "Page 1", Instant.parse("2024-01-02T00:00:00Z"), "http://localhost/id1.html"),
+                new Page("id2", "Page 2", Instant.parse("2024-01-01T00:00:00Z"), "http://localhost/id2.html")
         );
         when(pageRepository.findAll(anyString())).thenReturn(pages);
 

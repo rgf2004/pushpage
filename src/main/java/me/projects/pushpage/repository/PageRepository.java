@@ -20,7 +20,7 @@ public class PageRepository {
     public void save(String id, String title) {
         jdbc.update(
                 "INSERT INTO pages (id, title, created_at) VALUES (?, ?, ?)",
-                id, title, Instant.now().toString()
+                id, title, Instant.now()
         );
     }
 
@@ -30,7 +30,7 @@ public class PageRepository {
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getString("created_at"),
+                        Instant.parse(rs.getString("created_at")),
                         baseUrl + "/" + rs.getString("id") + ".html"
                 )
         );
@@ -42,7 +42,7 @@ public class PageRepository {
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getString("created_at"),
+                        Instant.parse(rs.getString("created_at")),
                         null),
                 id);
         return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
@@ -66,14 +66,14 @@ public class PageRepository {
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getString("created_at"),
+                        Instant.parse(rs.getString("created_at")),
                         null),
-                cutoff.toString()
+                cutoff
         );
     }
 
     public void softDeleteById(String id) {
-        jdbc.update("UPDATE pages SET deleted_at = ? WHERE id = ?", Instant.now().toString(), id);
+        jdbc.update("UPDATE pages SET deleted_at = ? WHERE id = ?", Instant.now(), id);
     }
 
     public record PageStats(long count, long deletedCount, String oldestCreatedAt, String newestCreatedAt) {}

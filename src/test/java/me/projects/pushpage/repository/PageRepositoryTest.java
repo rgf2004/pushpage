@@ -125,6 +125,18 @@ class PageRepositoryTest {
         assertThat(deletedAt).isNotNull();
     }
 
+    @Test
+    void save_createdAt_shouldRoundTripAsInstant() {
+        Instant before = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
+        repository.save("abc12345", "My Page");
+        Instant after = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MILLIS).plusMillis(1);
+
+        Optional<Page> result = repository.findById("abc12345");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().createdAt()).isBetween(before, after);
+    }
+
     // --- findOlderThan ---
 
     @Test
@@ -161,6 +173,6 @@ class PageRepositoryTest {
 
     private void insertPage(String id, String title, Instant createdAt) {
         jdbc.update("INSERT INTO pages (id, title, created_at) VALUES (?, ?, ?)",
-                id, title, createdAt.toString());
+                id, title, createdAt);
     }
 }
