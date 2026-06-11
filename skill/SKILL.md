@@ -1,11 +1,14 @@
 ---
 name: pushpage
-description: Use this skill whenever you need to share output — a report, summary, dashboard, data table, analysis, or any content — as a clickable URL instead of dumping text into chat. This skill publishes HTML to a self-hosted pushpage service and returns a shareable link. Trigger whenever the user or another agent says things like "publish this", "share as a link", "create a page", "push to pushpage", "give me a URL for this", or when presenting results that would be better experienced in a browser. Also trigger when generating HTML reports, structured summaries, or rich output that a user might want to open, bookmark, or share. Don't wait to be asked explicitly — if you're about to dump a large table or report into chat, proactively offer to publish it instead.
+description: Use this skill any time the user asks to create, build, generate, or design an HTML page, webpage, or web content — even if they don't mention publishing or sharing. Also trigger when sharing output as a URL instead of dumping text into chat: reports, dashboards, data tables, summaries, or any rich content better viewed in a browser. Trigger on phrases like "create an HTML page", "build me a webpage", "make a dashboard", "publish this", "share as a link", "give me a URL for this", or when you are about to produce a large HTML artifact. Don't wait to be asked explicitly — if you are generating HTML or rich output a user might want to open or share, publish it to pushpage and return the URL instead of pasting raw HTML into chat.
 ---
 
 # Pushpage — Publish HTML and Get a Shareable URL
 
-Pushpage is a self-hosted service that accepts HTML and returns a public URL. Use it any time content would be better viewed in a browser than read in chat — formatted reports, data tables, dashboards, summaries with styling, etc.
+Pushpage is a self-hosted service that accepts HTML and returns a public URL. Use it in two situations:
+
+1. **The user asks to create an HTML page** — build the HTML yourself, then publish it. Return only the URL, not the raw HTML.
+2. **You have output better viewed in a browser** — reports, data tables, dashboards, styled summaries. Publish instead of dumping HTML into chat.
 
 ## Base URL
 
@@ -94,10 +97,14 @@ curl -s http://pushpage.homelab.local/api/health
 
 ## Typical Flow
 
-1. Generate or receive the content (report text, data table, analysis results, etc.)
-2. Wrap it in clean, styled HTML
-3. POST to `/api/publish` with a descriptive `title`
-4. Extract the `url` from the response
-5. Present the URL to the user as a clickable link
+**Creating HTML from a user request:**
+1. Build the full HTML for what the user asked for
+2. POST it to `/api/publish` with a descriptive `title`
+3. Return only the `url` to the user — do not paste the HTML into chat
+
+**Publishing existing content:**
+1. Wrap the content in clean, styled HTML
+2. POST to `/api/publish` with a descriptive `title`
+3. Extract the `url` from the response and present it as a clickable link
 
 If the curl fails (connection refused, host unreachable), mention that the pushpage service at `pushpage.homelab.local` may be down and suggest the user check their homelab.
