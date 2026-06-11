@@ -5,7 +5,7 @@ A self-hosted HTML page publishing service for a homelab. AI agents POST HTML co
 ## Stack
 
 - **Spring Boot 3.4** — publisher service (Java 25)
-- **SQLite** — metadata store (page id, title, created_at)
+- **SQLite** (default) or **PostgreSQL** (optional) — metadata store (page id, title, created_at)
 - **Flyway** — database migrations (all schema changes must go through a versioned migration in `src/main/resources/db/migration/`)
 - **nginx** — static file serving + reverse proxy
 - **Docker Compose** — orchestration
@@ -16,6 +16,7 @@ A self-hosted HTML page publishing service for a homelab. AI agents POST HTML co
 push-page/
 ├── docker-compose.yml          # prod — pulls images from Docker Hub (rgf2004/pushpage-publisher, rgf2004/pushpage-nginx)
 ├── docker-compose.dev.yml      # dev  — builds image from source
+├── docker-compose.postgres.yml # overlay — adds PostgreSQL service (merge with base or dev file)
 ├── .env                        # environment variables (see below)
 ├── publisher/
 │   └── Dockerfile              # multi-stage Maven build → JRE runtime
@@ -49,6 +50,26 @@ Whenever a change requires documentation (new endpoint, config variable, schema 
 
 Technical reference material (database schema, API contracts, architecture notes) lives in [`docs/`](docs/). Keep it up to date alongside code changes.
 
+## Database Backends
+
+The service supports **SQLite** (default) and **PostgreSQL** via Spring profiles. The active profile is controlled by the `SPRING_PROFILES_ACTIVE` environment variable.
+
+### SQLite (default)
+
+No extra configuration required. The database file is written to `DB_PATH` (default `/data/pages.db`).
+
+### PostgreSQL
+
+Set `SPRING_PROFILES_ACTIVE=postgres` and provide the connection variables below. Use the `docker-compose.postgres.yml` overlay to spin up a co-located Postgres container:
+
+```bash
+# Prod with PostgreSQL
+docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
+
+# Dev with PostgreSQL
+docker compose -f docker-compose.dev.yml -f docker-compose.postgres.yml up -d --build
+```
+
 ## Environment Variables (`.env`)
 
 | Variable | Description | Example |
@@ -59,6 +80,12 @@ Technical reference material (database schema, API contracts, architecture notes
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
 | `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
+| `DB_HOST` | PostgreSQL host (postgres profile only) | `localhost` |
+| `DB_PORT` | PostgreSQL port (postgres profile only) | `5432` |
+| `DB_NAME` | PostgreSQL database name (postgres profile only) | `pushpage` |
+| `DB_USER` | PostgreSQL username (postgres profile only) | `pushpage` |
+| `DB_PASSWORD` | PostgreSQL password (postgres profile only) | `changeme` |
+| `DB_POOL_SIZE` | HikariCP max pool size (postgres profile only) | `10` |
 
 ## API
 

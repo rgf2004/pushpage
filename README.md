@@ -94,6 +94,42 @@ Once the skill is loaded, the agent will automatically publish rich HTML output 
 
 See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage examples.
 
+## Database Backends
+
+pushpage defaults to **SQLite** (zero-config, single-file). For higher concurrency or multi-instance deployments, **PostgreSQL** is available as an alternative.
+
+### SQLite (default)
+
+No extra setup needed. The database file is stored in the `data` Docker volume at `/data/pages.db`.
+
+### PostgreSQL
+
+Set `SPRING_PROFILES_ACTIVE=postgres` in your `.env` and use the `docker-compose.postgres.yml` overlay, which adds a co-located Postgres container:
+
+```bash
+# Prod with PostgreSQL
+docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
+
+# Dev with PostgreSQL
+docker compose -f docker-compose.dev.yml -f docker-compose.postgres.yml up -d --build
+```
+
+Add the following variables to your `.env` file:
+
+```env
+DB_NAME=pushpage
+DB_USER=pushpage
+DB_PASSWORD=changeme
+# Optional — defaults shown
+# DB_HOST=postgres
+# DB_PORT=5432
+# DB_POOL_SIZE=10
+```
+
+To bring up only an external PostgreSQL instance (not the bundled container), omit the overlay and point `DB_HOST` at your existing server.
+
+See [`docs/configuration.md`](docs/configuration.md) for the full variable reference.
+
 ## Contributing / Local Development
 
 To build from source and run locally:

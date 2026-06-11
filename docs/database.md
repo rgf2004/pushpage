@@ -1,10 +1,16 @@
 # Database
 
-pushpage uses SQLite for metadata storage, managed by Flyway migrations.
+pushpage supports two metadata storage backends: **SQLite** (default) and **PostgreSQL**. Both are managed by Flyway migrations with a shared migration path — the schema uses only standard SQL compatible with both engines.
 
-## Location
+The active backend is selected via the `SPRING_PROFILES_ACTIVE` environment variable. See [`configuration.md`](configuration.md) for details.
 
-The database file is stored at `/data/pushpage.db` inside the `data` Docker volume.
+## SQLite (default)
+
+The database file is stored at `/data/pages.db` inside the `data` Docker volume.
+
+## PostgreSQL
+
+Activate with `SPRING_PROFILES_ACTIVE=postgres`. Flyway runs the same migration scripts on startup. Use the `docker-compose.postgres.yml` overlay to include a co-located Postgres container, or point `DB_HOST` at an external instance.
 
 ## Schema
 
