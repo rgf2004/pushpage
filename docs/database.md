@@ -10,11 +10,18 @@ The database file is stored at `/data/pushpage.db` inside the `data` Docker volu
 
 ### pages
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | TEXT (PK) | Randomly generated 8-char hex identifier |
-| `title` | TEXT | Human-readable page title |
-| `created_at` | TEXT | ISO-8601 timestamp of when the page was published |
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| `id` | TEXT (PK) | no | Randomly generated 8-char hex identifier |
+| `title` | TEXT | no | Human-readable page title |
+| `created_at` | TEXT | no | ISO-8601 timestamp of when the page was published |
+| `deleted_at` | TEXT | yes | ISO-8601 timestamp of soft-deletion; `NULL` for live pages |
+
+**Indexes:**
+
+| Name | Column | Purpose |
+|------|--------|---------|
+| `idx_pages_created_at` | `created_at` | Speeds up chronological ordering and range queries |
 
 ## Migrations
 
