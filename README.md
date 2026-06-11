@@ -50,10 +50,10 @@ Response:
 ### Prerequisites
 
 - Docker and Docker Compose
-- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible:
+- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible. Set it to `http://localhost:8080` to get started quickly, or to a custom hostname (e.g. `http://pushpage.homelab.local`) if you have DNS set up for it:
 
 ```env
-APP_SERVER_URL=http://pushpage.homelab.local
+APP_SERVER_URL=http://localhost:8080
 ```
 
 All other variables have sensible defaults. See [`docs/configuration.md`](docs/configuration.md) for the full list.
