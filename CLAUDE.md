@@ -39,6 +39,16 @@ push-page/
         └── PublishService.java     # business logic
 ```
 
+## Git Workflow
+
+Before starting any work, pull the latest `main` branch. Create a new feature branch from `main`, make changes, then open a PR. Never commit directly to `main`.
+
+## Documentation Sync
+
+Whenever a change requires documentation (new endpoint, config variable, schema change, behavior change), **both** `CLAUDE.md` and `README.md` must be updated in the same PR. Do not merge changes that leave either file stale.
+
+Technical reference material (database schema, API contracts, architecture notes) lives in [`docs/`](docs/). Keep it up to date alongside code changes.
+
 ## Environment Variables (`.env`)
 
 | Variable | Description | Example |
