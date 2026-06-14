@@ -21,8 +21,8 @@ public class UserRepository {
 
     public void save(User user) {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, ?, ?)",
-                user.id(), user.username(), user.apiKeyHash(),
+                "INSERT INTO users (id, username, email, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                user.id(), user.username(), user.email(), user.apiKeyHash(),
                 Timestamp.from(user.createdAt()),
                 user.active() ? 1 : 0,
                 user.admin() ? 1 : 0
@@ -31,10 +31,11 @@ public class UserRepository {
 
     public Optional<User> findByApiKeyHash(String apiKeyHash) {
         List<User> results = jdbc.query(
-                "SELECT id, username, api_key_hash, created_at, active, admin FROM users WHERE api_key_hash = ?",
+                "SELECT id, username, email, api_key_hash, created_at, active, admin FROM users WHERE api_key_hash = ?",
                 (rs, i) -> new User(
                         rs.getString("id"),
                         rs.getString("username"),
+                        rs.getString("email"),
                         rs.getString("api_key_hash"),
                         rs.getTimestamp("created_at").toInstant(),
                         rs.getBoolean("active"),
@@ -47,10 +48,11 @@ public class UserRepository {
 
     public List<UserSummary> findAll() {
         return jdbc.query(
-                "SELECT id, username, created_at, active, admin FROM users ORDER BY created_at ASC",
+                "SELECT id, username, email, created_at, active, admin FROM users ORDER BY created_at ASC",
                 (rs, i) -> new UserSummary(
                         rs.getString("id"),
                         rs.getString("username"),
+                        rs.getString("email"),
                         rs.getTimestamp("created_at").toInstant(),
                         rs.getBoolean("active"),
                         rs.getBoolean("admin")

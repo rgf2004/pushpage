@@ -8,6 +8,7 @@ import java.time.Instant;
 public record CreateUserResponse(
         String id,
         String username,
+        String email,
         @JsonProperty("api_key") String apiKey,
         @JsonProperty("created_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant createdAt,
         boolean admin

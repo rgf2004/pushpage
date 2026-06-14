@@ -8,6 +8,7 @@ import java.time.Instant;
 public record UserSummary(
         String id,
         String username,
+        String email,
         @JsonProperty("created_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant createdAt,
         boolean active,
         boolean admin

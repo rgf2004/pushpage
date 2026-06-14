@@ -36,7 +36,7 @@ public class UserService implements ApplicationRunner {
         }
         String rawKey = generateRawKey();
         String id = generateId();
-        userRepository.save(new User(id, "admin", ApiKeyHasher.hash(rawKey), Instant.now(), true, true));
+        userRepository.save(new User(id, "admin", null, ApiKeyHasher.hash(rawKey), Instant.now(), true, true));
         log.warn("==============================================================");
         log.warn("No admin user found — bootstrap admin created.");
         log.warn("API Key: {}", rawKey);
@@ -54,8 +54,8 @@ public class UserService implements ApplicationRunner {
         String id = generateId();
         String rawKey = generateRawKey();
         Instant now = Instant.now();
-        userRepository.save(new User(id, request.username(), ApiKeyHasher.hash(rawKey), now, true, request.admin()));
-        return new CreateUserResponse(id, request.username(), rawKey, now, request.admin());
+        userRepository.save(new User(id, request.username(), request.email(), ApiKeyHasher.hash(rawKey), now, true, request.admin()));
+        return new CreateUserResponse(id, request.username(), request.email(), rawKey, now, request.admin());
     }
 
     public List<UserSummary> listUsers() {
