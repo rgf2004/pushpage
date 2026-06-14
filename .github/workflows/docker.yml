@@ -88,6 +88,16 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="chore/bump-version-${{ env.NEXT_SNAPSHOT }}"
+          git checkout -b "$BRANCH"
           git add pom.xml
           git commit -m "chore: bump version to ${{ env.NEXT_SNAPSHOT }}"
-          git push origin HEAD:main
+          git push origin "$BRANCH"
+          PR_URL=$(gh pr create \
+            --title "chore: bump version to ${{ env.NEXT_SNAPSHOT }}" \
+            --body "Automated version bump after releasing \`${{ env.VERSION }}\`." \
+            --base main \
+            --head "$BRANCH")
+          gh pr merge "$PR_URL" --auto --squash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
