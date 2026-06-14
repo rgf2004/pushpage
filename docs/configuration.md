@@ -12,7 +12,6 @@ All variables are set in a `.env` file in the project root and passed to the con
 | `CLEANUP_SCHEDULE` | Cron expression controlling how often the cleanup job runs. | `0 0 * * * *` (hourly) |
 | `MAX_FILE_SIZE` | Max HTML payload the publisher accepts (app-level check). | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling. Should exceed `MAX_FILE_SIZE`. | `10MB` |
-| `ADMIN_BOOTSTRAP_API_KEY` | If set and no users exist on startup, creates an `admin` user with this key. Only runs once. | _(unset)_ |
 
 ## Database Backend
 

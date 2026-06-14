@@ -64,7 +64,6 @@ The service defaults to **SQLite** (no extra setup — the database file lives i
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
 | `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
-| `ADMIN_BOOTSTRAP_API_KEY` | If set and no users exist, creates an admin user with this key on startup | `changeme-admin` |
 | `DB_HOST` | PostgreSQL host (only with `SPRING_PROFILES_ACTIVE=postgres`) | `localhost` |
 | `DB_NAME` | PostgreSQL database name | `pushpage` |
 | `DB_USER` | PostgreSQL username | `pushpage` |
@@ -74,7 +73,7 @@ The service defaults to **SQLite** (no extra setup — the database file lives i
 
 API key authentication is required for all endpoints except `/api/health`. Pass the key via `X-Api-Key: <key>` header or `Authorization: Bearer <key>`.
 
-On first run, set `ADMIN_BOOTSTRAP_API_KEY` in the environment to auto-create an `admin` user with that key (only runs if no users exist).
+On first run, if no users exist the service auto-creates an `admin` user, logs the generated API key prominently, and prompts you to copy it before restarting. After restart the key is no longer logged. API keys are stored as SHA-256 hashes in the database.
 
 ## API
 

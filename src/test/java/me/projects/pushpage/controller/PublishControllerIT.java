@@ -16,6 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import me.projects.pushpage.util.ApiKeyHasher;
+
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -55,8 +57,8 @@ class PublishControllerIT extends PostgresTestSupport {
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
         jdbc.update(
-                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 1)",
-                TEST_USER_ID, "testadmin", TEST_API_KEY, Timestamp.from(Instant.now())
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 1)",
+                TEST_USER_ID, "testadmin", ApiKeyHasher.hash(TEST_API_KEY), Timestamp.from(Instant.now())
         );
     }
 
@@ -219,8 +221,8 @@ class PublishControllerIT extends PostgresTestSupport {
     @Test
     void listPages_scopedToCurrentUser() throws Exception {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
-                "otheruser1", "otheruser", "other-api-key", Timestamp.from(Instant.now())
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "otheruser1", "otheruser", ApiKeyHasher.hash("other-api-key"), Timestamp.from(Instant.now())
         );
 
         mockMvc.perform(post("/publish")
@@ -253,8 +255,8 @@ class PublishControllerIT extends PostgresTestSupport {
     @Test
     void deletePage_byNonOwner_returns403() throws Exception {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
-                "otheruser2", "otheruser2", "other-api-key-2", Timestamp.from(Instant.now())
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "otheruser2", "otheruser2", ApiKeyHasher.hash("other-api-key-2"), Timestamp.from(Instant.now())
         );
 
         String response = mockMvc.perform(post("/publish")
@@ -275,8 +277,8 @@ class PublishControllerIT extends PostgresTestSupport {
     @Test
     void adminEndpoints_withNonAdminKey_return403() throws Exception {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
-                "regularuser1", "regularuser", "regular-api-key", Timestamp.from(Instant.now())
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "regularuser1", "regularuser", ApiKeyHasher.hash("regular-api-key"), Timestamp.from(Instant.now())
         );
 
         mockMvc.perform(get("/admin/users")

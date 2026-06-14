@@ -21,26 +21,26 @@ public class UserRepository {
 
     public void save(User user) {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, ?, ?)",
-                user.id(), user.username(), user.apiKey(),
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, ?, ?)",
+                user.id(), user.username(), user.apiKeyHash(),
                 Timestamp.from(user.createdAt()),
                 user.active() ? 1 : 0,
                 user.admin() ? 1 : 0
         );
     }
 
-    public Optional<User> findByApiKey(String apiKey) {
+    public Optional<User> findByApiKeyHash(String apiKeyHash) {
         List<User> results = jdbc.query(
-                "SELECT id, username, api_key, created_at, active, admin FROM users WHERE api_key = ?",
+                "SELECT id, username, api_key_hash, created_at, active, admin FROM users WHERE api_key_hash = ?",
                 (rs, i) -> new User(
                         rs.getString("id"),
                         rs.getString("username"),
-                        rs.getString("api_key"),
+                        rs.getString("api_key_hash"),
                         rs.getTimestamp("created_at").toInstant(),
                         rs.getBoolean("active"),
                         rs.getBoolean("admin")
                 ),
-                apiKey
+                apiKeyHash
         );
         return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }

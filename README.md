@@ -35,11 +35,17 @@ Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
 ### Bootstrap
 
-Set the `ADMIN_BOOTSTRAP_API_KEY` environment variable before first run. If set and no users exist, an `admin` user is created automatically with that key on startup:
+On first run, if the database has no users, the service automatically creates an `admin` user with a generated API key and logs it prominently:
 
-```env
-ADMIN_BOOTSTRAP_API_KEY=your-secure-admin-key
 ```
+=================================================================
+No admin user found — bootstrap admin created.
+API Key: pp_abc123...
+Copy this key now. It will NOT appear again after restart.
+=================================================================
+```
+
+Copy the key, then restart the service. After restart (with a user now in the database), the key is never logged again.
 
 ### Create a user (admin only)
 

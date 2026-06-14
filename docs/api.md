@@ -17,7 +17,17 @@ Missing or invalid keys return `401 Unauthorized`. Calling an admin endpoint wit
 
 ### Bootstrap
 
-Set `ADMIN_BOOTSTRAP_API_KEY` before first run to auto-create an `admin` user on startup (only runs when no users exist). Use that key to call the admin endpoints and create users for agents.
+On first run (no users in the database), the service generates an `admin` API key, stores its hash, and logs the raw key once:
+
+```
+==============================================================
+No admin user found — bootstrap admin created.
+API Key: pp_abc123...
+Copy this key now. It will NOT appear again after restart.
+==============================================================
+```
+
+Restart after copying. The key is never logged again once a user exists.
 
 ---
 

@@ -6,9 +6,9 @@ import me.projects.pushpage.model.CreateUserResponse;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.model.UserSummary;
 import me.projects.pushpage.repository.UserRepository;
+import me.projects.pushpage.util.ApiKeyHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,9 +22,6 @@ public class UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
-    @Value("${app.admin.bootstrap-api-key:}")
-    private String bootstrapApiKey;
-
     private final UserRepository userRepository;
 
     public UserService(UserRepository userRepository) {
@@ -33,12 +30,17 @@ public class UserService {
 
     @PostConstruct
     public void bootstrap() {
-        if (!bootstrapApiKey.isBlank() && userRepository.count() == 0) {
-            String id = generateId();
-            User admin = new User(id, "admin", bootstrapApiKey, Instant.now(), true, true);
-            userRepository.save(admin);
-            log.info("Bootstrap admin user created (id={})", id);
+        if (userRepository.count() > 0) {
+            return;
         }
+        String rawKey = generateRawKey();
+        String id = generateId();
+        userRepository.save(new User(id, "admin", ApiKeyHasher.hash(rawKey), Instant.now(), true, true));
+        log.warn("==============================================================");
+        log.warn("No admin user found — bootstrap admin created.");
+        log.warn("API Key: {}", rawKey);
+        log.warn("Copy this key now. It will NOT appear again after restart.");
+        log.warn("==============================================================");
     }
 
     public CreateUserResponse createUser(CreateUserRequest request) {
@@ -49,10 +51,10 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists: " + request.username());
         }
         String id = generateId();
-        String apiKey = "pp_" + UUID.randomUUID().toString().replace("-", "");
+        String rawKey = generateRawKey();
         Instant now = Instant.now();
-        userRepository.save(new User(id, request.username(), apiKey, now, true, request.admin()));
-        return new CreateUserResponse(id, request.username(), apiKey, now, request.admin());
+        userRepository.save(new User(id, request.username(), ApiKeyHasher.hash(rawKey), now, true, request.admin()));
+        return new CreateUserResponse(id, request.username(), rawKey, now, request.admin());
     }
 
     public List<UserSummary> listUsers() {
@@ -67,5 +69,9 @@ public class UserService {
 
     private String generateId() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    private String generateRawKey() {
+        return "pp_" + UUID.randomUUID().toString().replace("-", "");
     }
 }

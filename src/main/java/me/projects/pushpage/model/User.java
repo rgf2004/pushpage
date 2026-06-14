@@ -5,7 +5,7 @@ import java.time.Instant;
 public record User(
         String id,
         String username,
-        String apiKey,
+        String apiKeyHash,
         Instant createdAt,
         boolean active,
         boolean admin

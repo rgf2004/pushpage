@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import me.projects.pushpage.config.AuthContext;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.UserRepository;
+import me.projects.pushpage.util.ApiKeyHasher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -51,7 +52,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        Optional<User> user = userRepository.findByApiKey(apiKey);
+        Optional<User> user = userRepository.findByApiKeyHash(ApiKeyHasher.hash(apiKey));
         if (user.isEmpty() || !user.get().active()) {
             sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid or inactive API key");
             return;
