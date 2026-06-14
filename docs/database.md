@@ -1,10 +1,6 @@
 # Database
 
-pushpage uses SQLite for metadata storage, managed by Flyway migrations.
-
-## Location
-
-The database file is stored at `/data/pushpage.db` inside the `data` Docker volume.
+pushpage uses a relational database for persistence. It supports **SQLite** (the default, no extra setup) and **PostgreSQL** (opt-in via `SPRING_PROFILES_ACTIVE=postgres`). Schema migrations are managed by Flyway and the migration scripts are compatible with both engines.
 
 ## Schema
 
@@ -14,8 +10,8 @@ The database file is stored at `/data/pushpage.db` inside the `data` Docker volu
 |--------|------|----------|-------------|
 | `id` | TEXT (PK) | no | Randomly generated 8-char hex identifier |
 | `title` | TEXT | no | Human-readable page title |
-| `created_at` | TEXT | no | ISO-8601 timestamp of when the page was published |
-| `deleted_at` | TEXT | yes | ISO-8601 timestamp of soft-deletion; `NULL` for live pages |
+| `created_at` | TIMESTAMP | no | Timestamp of when the page was published |
+| `deleted_at` | TIMESTAMP | yes | Timestamp of soft-deletion; `NULL` for live pages |
 
 **Indexes:**
 

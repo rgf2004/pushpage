@@ -94,10 +94,33 @@ Once the skill is loaded, the agent will automatically publish rich HTML output 
 
 See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage examples.
 
+## Database
+
+pushpage defaults to **SQLite** — no extra setup required. The database file lives in the `data` Docker volume.
+
+To use **PostgreSQL** instead, start the stack with `docker-compose.postgres.yml`:
+
+```bash
+docker compose -f docker-compose.postgres.yml up -d
+```
+
+This brings up a complete stack including a co-located `postgres:17-alpine` container. To point at an external PostgreSQL instance instead, override the connection variables in your `.env`:
+
+```env
+DB_HOST=your-postgres-host
+DB_NAME=pushpage
+DB_USER=pushpage
+DB_PASSWORD=changeme
+```
+
+See [`docs/configuration.md`](docs/configuration.md) for the full variable reference.
+
 ## Contributing / Local Development
 
-To build from source and run locally:
+To build from source and run locally (SQLite by default):
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d --build
 ```
+
+To develop against PostgreSQL, uncomment the `postgres` service and the `SPRING_PROFILES_ACTIVE` environment variable in `docker-compose.dev.yml`.

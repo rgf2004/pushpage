@@ -5,7 +5,7 @@ A self-hosted HTML page publishing service for a homelab. AI agents POST HTML co
 ## Stack
 
 - **Spring Boot 3.4** — publisher service (Java 25)
-- **SQLite** — metadata store (page id, title, created_at)
+- **SQLite** (default) / **PostgreSQL** (opt-in) — database, managed by Flyway
 - **Flyway** — database migrations (all schema changes must go through a versioned migration in `src/main/resources/db/migration/`)
 - **nginx** — static file serving + reverse proxy
 - **Docker Compose** — orchestration
@@ -14,8 +14,9 @@ A self-hosted HTML page publishing service for a homelab. AI agents POST HTML co
 
 ```
 push-page/
-├── docker-compose.yml          # prod — pulls images from Docker Hub (rgf2004/pushpage-publisher, rgf2004/pushpage-nginx)
-├── docker-compose.dev.yml      # dev  — builds image from source
+├── docker-compose.yml          # prod — SQLite, pulls images from Docker Hub
+├── docker-compose.postgres.yml # prod — PostgreSQL, pulls images from Docker Hub
+├── docker-compose.dev.yml      # dev  — builds image from source (SQLite by default)
 ├── .env                        # environment variables (see below)
 ├── publisher/
 │   └── Dockerfile              # multi-stage Maven build → JRE runtime
@@ -34,7 +35,7 @@ push-page/
     │   ├── PublishRequest.java
     │   └── PublishResponse.java
     ├── repository/
-    │   └── PageRepository.java     # SQLite via JdbcTemplate
+    │   └── PageRepository.java     # JdbcTemplate (works with SQLite and PostgreSQL)
     └── service/
         └── PublishService.java     # business logic
 ```
@@ -49,6 +50,10 @@ Whenever a change requires documentation (new endpoint, config variable, schema 
 
 Technical reference material (database schema, API contracts, architecture notes) lives in [`docs/`](docs/). Keep it up to date alongside code changes.
 
+## Database
+
+The service defaults to **SQLite** (no extra setup — the database file lives in the `data` Docker volume). To use **PostgreSQL** instead, set `SPRING_PROFILES_ACTIVE=postgres` and supply the connection variables below. Use `docker-compose.postgres.yml`, which starts a complete stack including a co-located `postgres:17-alpine` container.
+
 ## Environment Variables (`.env`)
 
 | Variable | Description | Example |
@@ -59,6 +64,10 @@ Technical reference material (database schema, API contracts, architecture notes
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
 | `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
+| `DB_HOST` | PostgreSQL host (only with `SPRING_PROFILES_ACTIVE=postgres`) | `localhost` |
+| `DB_NAME` | PostgreSQL database name | `pushpage` |
+| `DB_USER` | PostgreSQL username | `pushpage` |
+| `DB_PASSWORD` | PostgreSQL password | `changeme` |
 
 ## API
 
@@ -76,11 +85,14 @@ Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 ## Running
 
 ```bash
-# Dev (build from source)
-docker compose -f docker-compose.dev.yml up -d --build
-
-# Prod (pull from Docker Hub)
+# Prod — SQLite (default)
 docker compose up -d
+
+# Prod — PostgreSQL
+docker compose -f docker-compose.postgres.yml up -d
+
+# Dev — build from source (SQLite by default; uncomment postgres section in docker-compose.dev.yml to use PostgreSQL)
+docker compose -f docker-compose.dev.yml up -d --build
 ```
 
 ## Building & Pushing Multi-Arch Images

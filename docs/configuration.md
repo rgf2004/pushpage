@@ -2,6 +2,8 @@
 
 All variables are set in a `.env` file in the project root and passed to the containers via `docker-compose.yml`.
 
+## Core Variables
+
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `APP_SERVER_URL` | Full public URL of the service. Used to build the `url` field in publish responses. | `http://localhost:8080` |
@@ -10,3 +12,23 @@ All variables are set in a `.env` file in the project root and passed to the con
 | `CLEANUP_SCHEDULE` | Cron expression controlling how often the cleanup job runs. | `0 0 * * * *` (hourly) |
 | `MAX_FILE_SIZE` | Max HTML payload the publisher accepts (app-level check). | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling. Should exceed `MAX_FILE_SIZE`. | `10MB` |
+
+## Database Backend
+
+The active database backend is selected via the `SPRING_PROFILES_ACTIVE` environment variable.
+
+| Value | Backend |
+|-------|---------|
+| _(unset)_ | SQLite (default) |
+| `postgres` | PostgreSQL |
+
+Use `docker-compose.yml` for the SQLite default. Use `docker-compose.postgres.yml` for PostgreSQL — it starts a complete stack including the database container.
+
+### PostgreSQL Variables (`SPRING_PROFILES_ACTIVE=postgres`)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_HOST` | PostgreSQL hostname | `localhost` |
+| `DB_NAME` | Database name | `pushpage` |
+| `DB_USER` | Database username | `pushpage` |
+| `DB_PASSWORD` | Database password | `pushpage` |

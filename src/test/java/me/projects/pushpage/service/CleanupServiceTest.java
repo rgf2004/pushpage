@@ -102,6 +102,6 @@ class CleanupServiceTest {
     }
 
     private Page page(String id, int daysOld) {
-        return new Page(id, "Title", Instant.now().minus(daysOld, ChronoUnit.DAYS).toString(), null);
+        return new Page(id, "Title", Instant.now().minus(daysOld, ChronoUnit.DAYS), null, null);
     }
 }

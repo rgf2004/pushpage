@@ -4,6 +4,7 @@ import me.projects.pushpage.model.Page;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -20,17 +21,18 @@ public class PageRepository {
     public void save(String id, String title) {
         jdbc.update(
                 "INSERT INTO pages (id, title, created_at) VALUES (?, ?, ?)",
-                id, title, Instant.now().toString()
+                id, title, Timestamp.from(Instant.now())
         );
     }
 
     public List<Page> findAll(String baseUrl) {
         return jdbc.query(
-                "SELECT id, title, created_at FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
+                "SELECT id, title, created_at, deleted_at FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getString("created_at"),
+                        toInstant(rs.getTimestamp("created_at")),
+                        toInstant(rs.getTimestamp("deleted_at")),
                         baseUrl + "/" + rs.getString("id") + ".html"
                 )
         );
@@ -38,11 +40,12 @@ public class PageRepository {
 
     public Optional<Page> findById(String id) {
         List<Page> pages = jdbc.query(
-                "SELECT id, title, created_at FROM pages WHERE id = ? AND deleted_at IS NULL",
+                "SELECT id, title, created_at, deleted_at FROM pages WHERE id = ? AND deleted_at IS NULL",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getString("created_at"),
+                        toInstant(rs.getTimestamp("created_at")),
+                        toInstant(rs.getTimestamp("deleted_at")),
                         null),
                 id);
         return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
@@ -62,18 +65,23 @@ public class PageRepository {
 
     public List<Page> findOlderThan(Instant cutoff) {
         return jdbc.query(
-                "SELECT id, title, created_at FROM pages WHERE deleted_at IS NULL AND created_at < ?",
+                "SELECT id, title, created_at, deleted_at FROM pages WHERE deleted_at IS NULL AND created_at < ?",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getString("created_at"),
+                        toInstant(rs.getTimestamp("created_at")),
+                        toInstant(rs.getTimestamp("deleted_at")),
                         null),
-                cutoff.toString()
+                Timestamp.from(cutoff)
         );
     }
 
+    private Instant toInstant(Timestamp ts) {
+        return ts != null ? ts.toInstant() : null;
+    }
+
     public void softDeleteById(String id) {
-        jdbc.update("UPDATE pages SET deleted_at = ? WHERE id = ?", Instant.now().toString(), id);
+        jdbc.update("UPDATE pages SET deleted_at = ? WHERE id = ?", Timestamp.from(Instant.now()), id);
     }
 
     public record PageStats(long count, long deletedCount, String oldestCreatedAt, String newestCreatedAt) {}
@@ -88,12 +96,16 @@ public class PageRepository {
                   MAX(CASE WHEN deleted_at IS NULL THEN created_at END) AS newest
                 FROM pages
                 """,
-                (rs, i) -> new PageStats(
-                        rs.getLong("cnt"),
-                        rs.getLong("deleted_cnt"),
-                        rs.getString("oldest"),
-                        rs.getString("newest")
-                )
+                (rs, i) -> {
+                    Instant oldest = toInstant(rs.getTimestamp("oldest"));
+                    Instant newest = toInstant(rs.getTimestamp("newest"));
+                    return new PageStats(
+                            rs.getLong("cnt"),
+                            rs.getLong("deleted_cnt"),
+                            oldest != null ? oldest.toString() : null,
+                            newest != null ? newest.toString() : null
+                    );
+                }
         );
     }
 }

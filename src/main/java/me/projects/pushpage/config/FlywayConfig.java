@@ -11,7 +11,6 @@ public class FlywayConfig {
 
     @Bean
     public Flyway flyway(DataSource dataSource) {
-        // baseline at v0 so existing databases without a history table are handled gracefully
         Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
                 .baselineOnMigrate(true)
