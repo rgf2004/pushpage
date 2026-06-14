@@ -1,6 +1,7 @@
 package me.projects.pushpage.controller;
 
 import me.projects.pushpage.PostgresTestSupport;
+import me.projects.pushpage.filter.ApiKeyAuthFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,11 +44,14 @@ class PublishControllerIT extends PostgresTestSupport {
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    ApiKeyAuthFilter apiKeyAuthFilter;
+
     MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(wac).addFilters(apiKeyAuthFilter).build();
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
         jdbc.update(

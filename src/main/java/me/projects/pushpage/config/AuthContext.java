@@ -2,23 +2,26 @@ package me.projects.pushpage.config;
 
 import me.projects.pushpage.model.User;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.annotation.RequestScope;
 
 @Component
-@RequestScope
 public class AuthContext {
 
-    private User currentUser;
+    private static final ThreadLocal<User> holder = new ThreadLocal<>();
 
     public void setCurrentUser(User user) {
-        this.currentUser = user;
+        holder.set(user);
     }
 
     public User getCurrentUser() {
-        return currentUser;
+        return holder.get();
     }
 
     public boolean isAdmin() {
-        return currentUser != null && currentUser.admin();
+        User user = holder.get();
+        return user != null && user.admin();
+    }
+
+    public void clear() {
+        holder.remove();
     }
 }

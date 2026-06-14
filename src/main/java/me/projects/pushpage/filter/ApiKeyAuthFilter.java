@@ -60,11 +60,16 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         authContext.setCurrentUser(user.get());
 
         if (path.startsWith(ADMIN_PATH_PREFIX) && !user.get().admin()) {
+            authContext.clear();
             sendError(response, HttpServletResponse.SC_FORBIDDEN, "Admin access required");
             return;
         }
 
-        chain.doFilter(request, response);
+        try {
+            chain.doFilter(request, response);
+        } finally {
+            authContext.clear();
+        }
     }
 
     private boolean isPublicPath(String path) {
