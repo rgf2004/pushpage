@@ -16,6 +16,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.nio.file.Path;
+import java.sql.Timestamp;
+import java.time.Instant;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -23,6 +25,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @ActiveProfiles("test")
 class PublishControllerIT extends PostgresTestSupport {
+
+    static final String TEST_API_KEY = "test-admin-api-key";
+    static final String TEST_USER_ID = "testuser1";
 
     @TempDir
     static Path tempDir;
@@ -44,11 +49,17 @@ class PublishControllerIT extends PostgresTestSupport {
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
         jdbc.execute("DELETE FROM pages");
+        jdbc.execute("DELETE FROM users");
+        jdbc.update(
+                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 1)",
+                TEST_USER_ID, "testadmin", TEST_API_KEY, Timestamp.from(Instant.now())
+        );
     }
 
     @Test
     void publishPage_withValidHtml_returns200WithUrlAndId() throws Exception {
         mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"html": "<h1>Hello</h1>", "title": "Test"}
@@ -61,6 +72,7 @@ class PublishControllerIT extends PostgresTestSupport {
     @Test
     void publishPage_withEmptyHtml_returns400() throws Exception {
         mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"html": "", "title": "Test"}
@@ -72,6 +84,7 @@ class PublishControllerIT extends PostgresTestSupport {
     void publishPage_withOversizedHtml_returns413() throws Exception {
         String oversized = "a".repeat(2 * 1024 * 1024); // 2 MB
         mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"html\": \"" + oversized + "\", \"title\": \"Test\"}"))
                 .andExpect(status().isPayloadTooLarge());
@@ -80,6 +93,7 @@ class PublishControllerIT extends PostgresTestSupport {
     @Test
     void publishPage_withValidHtml_returnsXMaxFileSizeHeader() throws Exception {
         mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"html": "<h1>Hello</h1>", "title": "Test"}
@@ -90,7 +104,8 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void listPages_returns200WithJsonArray() throws Exception {
-        mockMvc.perform(get("/pages"))
+        mockMvc.perform(get("/pages")
+                        .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$").isArray());
@@ -99,6 +114,7 @@ class PublishControllerIT extends PostgresTestSupport {
     @Test
     void deletePage_whenPageExists_returns204() throws Exception {
         String response = mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"html": "<h1>Delete me</h1>", "title": "Temp"}
@@ -107,13 +123,15 @@ class PublishControllerIT extends PostgresTestSupport {
 
         String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
 
-        mockMvc.perform(delete("/pages/" + id))
+        mockMvc.perform(delete("/pages/" + id)
+                        .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deletePage_whenIdNotFound_returns404() throws Exception {
-        mockMvc.perform(delete("/pages/nonexistent"))
+        mockMvc.perform(delete("/pages/nonexistent")
+                        .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isNotFound());
     }
 
@@ -141,6 +159,7 @@ class PublishControllerIT extends PostgresTestSupport {
     @Test
     void health_withPages_returnsOldestAndNewestTimestamps() throws Exception {
         mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"html": "<h1>Health test</h1>", "title": "Health Test"}
@@ -159,5 +178,128 @@ class PublishControllerIT extends PostgresTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.oldestPage").doesNotExist())
                 .andExpect(jsonPath("$.newestPage").doesNotExist());
+    }
+
+    @Test
+    void publish_withoutApiKey_returns401() throws Exception {
+        mockMvc.perform(post("/publish")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Hello</h1>", "title": "Test"}
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void publish_withInvalidApiKey_returns401() throws Exception {
+        mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", "bad-key")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Hello</h1>", "title": "Test"}
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void publish_withBearerToken_returns200() throws Exception {
+        mockMvc.perform(post("/publish")
+                        .header("Authorization", "Bearer " + TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Hello</h1>", "title": "Test"}
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listPages_scopedToCurrentUser() throws Exception {
+        jdbc.update(
+                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "otheruser1", "otheruser", "other-api-key", Timestamp.from(Instant.now())
+        );
+
+        mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Admin page</h1>", "title": "Admin Page"}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", "other-api-key")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Other page</h1>", "title": "Other Page"}
+                                """))
+                .andExpect(status().isOk());
+
+        // admin sees all pages
+        mockMvc.perform(get("/pages").header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        // regular user sees only their own
+        mockMvc.perform(get("/pages").header("X-Api-Key", "other-api-key"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void deletePage_byNonOwner_returns403() throws Exception {
+        jdbc.update(
+                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "otheruser2", "otheruser2", "other-api-key-2", Timestamp.from(Instant.now())
+        );
+
+        String response = mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Admin's page</h1>", "title": "Admin Page"}
+                                """))
+                .andReturn().getResponse().getContentAsString();
+
+        String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+
+        mockMvc.perform(delete("/pages/" + id)
+                        .header("X-Api-Key", "other-api-key-2"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminEndpoints_withNonAdminKey_return403() throws Exception {
+        jdbc.update(
+                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "regularuser1", "regularuser", "regular-api-key", Timestamp.from(Instant.now())
+        );
+
+        mockMvc.perform(get("/admin/users")
+                        .header("X-Api-Key", "regular-api-key"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createUser_andAuthenticateWithNewKey() throws Exception {
+        String createResponse = mockMvc.perform(post("/admin/users")
+                        .header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username": "newuser", "admin": false}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.api_key").exists())
+                .andReturn().getResponse().getContentAsString();
+
+        String newApiKey = createResponse.replaceAll(".*\"api_key\":\"([^\"]+)\".*", "$1");
+
+        mockMvc.perform(post("/publish")
+                        .header("X-Api-Key", newApiKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>New user page</h1>", "title": "New User Page"}
+                                """))
+                .andExpect(status().isOk());
     }
 }

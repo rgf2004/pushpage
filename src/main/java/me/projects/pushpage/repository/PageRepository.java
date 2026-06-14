@@ -18,35 +18,31 @@ public class PageRepository {
         this.jdbc = jdbc;
     }
 
-    public void save(String id, String title) {
+    public void save(String id, String title, String userId) {
         jdbc.update(
-                "INSERT INTO pages (id, title, created_at) VALUES (?, ?, ?)",
-                id, title, Timestamp.from(Instant.now())
+                "INSERT INTO pages (id, title, created_at, user_id) VALUES (?, ?, ?, ?)",
+                id, title, Timestamp.from(Instant.now()), userId
         );
     }
 
-    public List<Page> findAll(String baseUrl) {
+    public List<Page> findAll(String baseUrl, String userId, boolean isAdmin) {
+        if (isAdmin) {
+            return jdbc.query(
+                    "SELECT id, title, created_at, deleted_at, user_id FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
+                    (rs, i) -> mapPage(rs, baseUrl)
+            );
+        }
         return jdbc.query(
-                "SELECT id, title, created_at, deleted_at FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
-                (rs, i) -> new Page(
-                        rs.getString("id"),
-                        rs.getString("title"),
-                        toInstant(rs.getTimestamp("created_at")),
-                        toInstant(rs.getTimestamp("deleted_at")),
-                        baseUrl + "/" + rs.getString("id") + ".html"
-                )
+                "SELECT id, title, created_at, deleted_at, user_id FROM pages WHERE deleted_at IS NULL AND user_id = ? ORDER BY created_at DESC",
+                (rs, i) -> mapPage(rs, baseUrl),
+                userId
         );
     }
 
     public Optional<Page> findById(String id) {
         List<Page> pages = jdbc.query(
-                "SELECT id, title, created_at, deleted_at FROM pages WHERE id = ? AND deleted_at IS NULL",
-                (rs, i) -> new Page(
-                        rs.getString("id"),
-                        rs.getString("title"),
-                        toInstant(rs.getTimestamp("created_at")),
-                        toInstant(rs.getTimestamp("deleted_at")),
-                        null),
+                "SELECT id, title, created_at, deleted_at, user_id FROM pages WHERE id = ? AND deleted_at IS NULL",
+                (rs, i) -> mapPage(rs, null),
                 id);
         return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
     }
@@ -65,19 +61,10 @@ public class PageRepository {
 
     public List<Page> findOlderThan(Instant cutoff) {
         return jdbc.query(
-                "SELECT id, title, created_at, deleted_at FROM pages WHERE deleted_at IS NULL AND created_at < ?",
-                (rs, i) -> new Page(
-                        rs.getString("id"),
-                        rs.getString("title"),
-                        toInstant(rs.getTimestamp("created_at")),
-                        toInstant(rs.getTimestamp("deleted_at")),
-                        null),
+                "SELECT id, title, created_at, deleted_at, user_id FROM pages WHERE deleted_at IS NULL AND created_at < ?",
+                (rs, i) -> mapPage(rs, null),
                 Timestamp.from(cutoff)
         );
-    }
-
-    private Instant toInstant(Timestamp ts) {
-        return ts != null ? ts.toInstant() : null;
     }
 
     public void softDeleteById(String id) {
@@ -107,5 +94,22 @@ public class PageRepository {
                     );
                 }
         );
+    }
+
+    private Page mapPage(java.sql.ResultSet rs, String baseUrl) throws java.sql.SQLException {
+        String id = rs.getString("id");
+        String url = baseUrl != null ? baseUrl + "/" + id + ".html" : null;
+        return new Page(
+                id,
+                rs.getString("title"),
+                toInstant(rs.getTimestamp("created_at")),
+                toInstant(rs.getTimestamp("deleted_at")),
+                url,
+                rs.getString("user_id")
+        );
+    }
+
+    private Instant toInstant(Timestamp ts) {
+        return ts != null ? ts.toInstant() : null;
     }
 }

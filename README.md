@@ -19,19 +19,54 @@ pushpage gives AI agents a publish endpoint so that the richer, more effective H
 
 All endpoints are under `/api` (Spring Boot context path). Examples below use `{APP_SERVER_URL}`, which defaults to `http://localhost:8080`.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/publish` | Publish HTML, returns `{ url, id }` |
-| `GET` | `/api/pages` | List all published pages |
-| `DELETE` | `/api/pages/{id}` | Delete a page |
-| `GET` | `/api/health` | Health check |
+Most endpoints require an API key passed via `X-Api-Key: <key>` header (or `Authorization: Bearer <key>`). The `/api/health` endpoint is public.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/publish` | User | Publish HTML, returns `{ url, id }` |
+| `GET` | `/api/pages` | User | List pages (scoped to caller; admins see all) |
+| `DELETE` | `/api/pages/{id}` | User | Delete own page (admins can delete any) |
+| `GET` | `/api/health` | None | Health check |
+| `POST` | `/api/admin/users` | Admin | Create a user, returns API key |
+| `GET` | `/api/admin/users` | Admin | List all users |
+| `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user |
 
 Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
+
+### Bootstrap
+
+Set the `ADMIN_BOOTSTRAP_API_KEY` environment variable before first run. If set and no users exist, an `admin` user is created automatically with that key on startup:
+
+```env
+ADMIN_BOOTSTRAP_API_KEY=your-secure-admin-key
+```
+
+### Create a user (admin only)
+
+```bash
+curl -X POST {APP_SERVER_URL}/api/admin/users \
+  -H "X-Api-Key: your-admin-key" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "myagent", "admin": false}'
+```
+
+Response — save the `api_key`, it is only shown once:
+
+```json
+{
+  "id": "a1b2c3d4",
+  "username": "myagent",
+  "api_key": "pp_abc123...",
+  "created_at": "2026-01-01T00:00:00Z",
+  "admin": false
+}
+```
 
 ### Publish a page
 
 ```bash
 curl -X POST {APP_SERVER_URL}/api/publish \
+  -H "X-Api-Key: pp_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"title": "My Report", "html": "<h1>Hello</h1><p>Some content here.</p>"}'
 ```

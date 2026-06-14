@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class AbstractPageRepositoryTest {
 
+    static final String TEST_USER_ID = "testuser1";
+
     DataSource dataSource;
     JdbcTemplate jdbc;
     PageRepository repository;
@@ -37,13 +39,18 @@ abstract class AbstractPageRepositoryTest {
         jdbc = new JdbcTemplate(dataSource);
         repository = new PageRepository(jdbc);
         jdbc.execute("DELETE FROM pages");
+        jdbc.execute("DELETE FROM users");
+        jdbc.update(
+                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                TEST_USER_ID, "testuser", "test-key-123", Timestamp.from(Instant.now())
+        );
     }
 
     // --- save / existsById ---
 
     @Test
     void save_shouldInsertRow() {
-        repository.save("abc12345", "My Page");
+        repository.save("abc12345", "My Page", TEST_USER_ID);
 
         assertThat(repository.existsById("abc12345")).isTrue();
     }
@@ -52,13 +59,14 @@ abstract class AbstractPageRepositoryTest {
 
     @Test
     void findById_shouldReturnCorrectPage() {
-        repository.save("abc12345", "My Page");
+        repository.save("abc12345", "My Page", TEST_USER_ID);
 
         Optional<Page> result = repository.findById("abc12345");
 
         assertThat(result).isPresent();
         assertThat(result.get().id()).isEqualTo("abc12345");
         assertThat(result.get().title()).isEqualTo("My Page");
+        assertThat(result.get().userId()).isEqualTo(TEST_USER_ID);
     }
 
     @Test
@@ -70,7 +78,7 @@ abstract class AbstractPageRepositoryTest {
 
     @Test
     void findById_whenSoftDeleted_shouldReturnEmpty() {
-        repository.save("abc12345", "My Page");
+        repository.save("abc12345", "My Page", TEST_USER_ID);
         repository.softDeleteById("abc12345");
 
         assertThat(repository.findById("abc12345")).isEmpty();
@@ -80,7 +88,7 @@ abstract class AbstractPageRepositoryTest {
 
     @Test
     void existsById_whenSoftDeleted_shouldReturnFalse() {
-        repository.save("abc12345", "My Page");
+        repository.save("abc12345", "My Page", TEST_USER_ID);
         repository.softDeleteById("abc12345");
 
         assertThat(repository.existsById("abc12345")).isFalse();
@@ -90,7 +98,7 @@ abstract class AbstractPageRepositoryTest {
 
     @Test
     void deleteById_shouldRemoveRow() {
-        repository.save("abc12345", "My Page");
+        repository.save("abc12345", "My Page", TEST_USER_ID);
 
         repository.deleteById("abc12345");
 
@@ -100,23 +108,38 @@ abstract class AbstractPageRepositoryTest {
     // --- findAll ---
 
     @Test
-    void findAll_shouldReturnAllRows() {
-        repository.save("id1", "First");
-        repository.save("id2", "Second");
+    void findAll_adminSeesAllRows() {
+        repository.save("id1", "First", TEST_USER_ID);
+        repository.save("id2", "Second", TEST_USER_ID);
 
-        List<Page> pages = repository.findAll("http://localhost");
+        List<Page> pages = repository.findAll("http://localhost", TEST_USER_ID, true);
 
         assertThat(pages).hasSize(2);
         assertThat(pages).extracting(Page::id).containsExactlyInAnyOrder("id1", "id2");
     }
 
     @Test
+    void findAll_userSeesOnlyOwnPages() {
+        jdbc.update(
+                "INSERT INTO users (id, username, api_key, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "otheruser1", "other", "other-key", Timestamp.from(Instant.now())
+        );
+        repository.save("id1", "My page", TEST_USER_ID);
+        repository.save("id2", "Other's page", "otheruser1");
+
+        List<Page> pages = repository.findAll("http://localhost", TEST_USER_ID, false);
+
+        assertThat(pages).hasSize(1);
+        assertThat(pages.get(0).id()).isEqualTo("id1");
+    }
+
+    @Test
     void findAll_shouldExcludeSoftDeletedPages() {
-        repository.save("id1", "Active");
-        repository.save("id2", "Deleted");
+        repository.save("id1", "Active", TEST_USER_ID);
+        repository.save("id2", "Deleted", TEST_USER_ID);
         repository.softDeleteById("id2");
 
-        List<Page> pages = repository.findAll("http://localhost");
+        List<Page> pages = repository.findAll("http://localhost", TEST_USER_ID, true);
 
         assertThat(pages).hasSize(1);
         assertThat(pages.get(0).id()).isEqualTo("id1");
@@ -126,7 +149,7 @@ abstract class AbstractPageRepositoryTest {
 
     @Test
     void softDeleteById_shouldStampDeletedAt() {
-        repository.save("abc12345", "My Page");
+        repository.save("abc12345", "My Page", TEST_USER_ID);
 
         repository.softDeleteById("abc12345");
 
@@ -170,7 +193,7 @@ abstract class AbstractPageRepositoryTest {
     }
 
     void insertPage(String id, String title, Instant createdAt) {
-        jdbc.update("INSERT INTO pages (id, title, created_at) VALUES (?, ?, ?)",
-                id, title, Timestamp.from(createdAt));
+        jdbc.update("INSERT INTO pages (id, title, created_at, user_id) VALUES (?, ?, ?, ?)",
+                id, title, Timestamp.from(createdAt), TEST_USER_ID);
     }
 }

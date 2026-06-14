@@ -64,21 +64,31 @@ The service defaults to **SQLite** (no extra setup — the database file lives i
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
 | `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
+| `ADMIN_BOOTSTRAP_API_KEY` | If set and no users exist, creates an admin user with this key on startup | `changeme-admin` |
 | `DB_HOST` | PostgreSQL host (only with `SPRING_PROFILES_ACTIVE=postgres`) | `localhost` |
 | `DB_NAME` | PostgreSQL database name | `pushpage` |
 | `DB_USER` | PostgreSQL username | `pushpage` |
 | `DB_PASSWORD` | PostgreSQL password | `changeme` |
 
+## Authentication
+
+API key authentication is required for all endpoints except `/api/health`. Pass the key via `X-Api-Key: <key>` header or `Authorization: Bearer <key>`.
+
+On first run, set `ADMIN_BOOTSTRAP_API_KEY` in the environment to auto-create an `admin` user with that key (only runs if no users exist).
+
 ## API
 
 All endpoints are under `/api` (Spring Boot context path).
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/publish` | Publish HTML, returns `{ url, id }` |
-| `GET` | `/api/pages` | List all published pages |
-| `DELETE` | `/api/pages/{id}` | Delete a page |
-| `GET` | `/api/health` | Health check |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/publish` | User | Publish HTML, returns `{ url, id }` |
+| `GET` | `/api/pages` | User | List pages scoped to caller (admin sees all) |
+| `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any) |
+| `GET` | `/api/health` | None | Health check |
+| `POST` | `/api/admin/users` | Admin | Create a user, response includes `api_key` |
+| `GET` | `/api/admin/users` | Admin | List all users (no API keys) |
+| `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user |
 
 Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 

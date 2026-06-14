@@ -2,9 +2,30 @@
 
 All endpoints are served under the `/api` Spring Boot context path.
 
+## Authentication
+
+All endpoints except `GET /api/health` require an API key.
+
+Pass the key in one of two ways:
+
+| Method | Header |
+|--------|--------|
+| API Key | `X-Api-Key: <key>` |
+| Bearer token | `Authorization: Bearer <key>` |
+
+Missing or invalid keys return `401 Unauthorized`. Calling an admin endpoint without admin privileges returns `403 Forbidden`.
+
+### Bootstrap
+
+Set `ADMIN_BOOTSTRAP_API_KEY` before first run to auto-create an `admin` user on startup (only runs when no users exist). Use that key to call the admin endpoints and create users for agents.
+
+---
+
 ## POST /api/publish
 
 Publish an HTML page and receive a shareable URL. If the content does not start with `<!DOCTYPE>`, it is automatically wrapped in a minimal HTML shell.
+
+**Auth:** any user
 
 **Request body:**
 
@@ -39,6 +60,7 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
 
 | Status | Reason |
 |--------|--------|
+| `401` | Missing or invalid API key |
 | `413` | Payload exceeds `MAX_FILE_SIZE` |
 | `500` | Failed to write file |
 
@@ -46,7 +68,9 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
 
 ## GET /api/pages
 
-List all published pages, ordered by publish date descending.
+List published pages ordered by publish date descending. Regular users see only their own pages; admins see all.
+
+**Auth:** any user
 
 **Response:** array of page objects.
 
@@ -56,6 +80,7 @@ List all published pages, ordered by publish date descending.
     "id": "abc123",
     "title": "My Report",
     "created_at": "2026-06-11T10:00:00Z",
+    "user_id": "a1b2c3d4",
     "url": "http://pushpage.homelab.local/pages/abc123.html"
   }
 ]
@@ -65,17 +90,28 @@ List all published pages, ordered by publish date descending.
 
 ## DELETE /api/pages/{id}
 
-Delete a published page by ID. Removes both the HTML file and the metadata record.
+Delete a published page. Users may only delete their own pages; admins can delete any page.
+
+**Auth:** any user (owner or admin)
 
 **Path parameter:** `id` — the page ID returned by `/api/publish`.
 
-**Response:** `204 No Content` on success, `404 Not Found` if the ID does not exist.
+**Response:** `204 No Content` on success.
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `403` | Page belongs to a different user |
+| `404` | Page not found |
 
 ---
 
 ## GET /api/health
 
 Health check endpoint. Returns runtime statistics and storage info. Stats are cached for 30 seconds.
+
+**Auth:** none (public)
 
 Returns `200` when healthy, `503` when a critical subsystem is unavailable.
 
@@ -114,3 +150,73 @@ Returns `200` when healthy, `503` when a critical subsystem is unavailable.
 | `storage.freeHuman` | Human-readable free space |
 
 When `status` is `DOWN`, `storage` is omitted and `livePages`/`deletedPages` are `0`.
+
+---
+
+## POST /api/admin/users
+
+Create a new user. The returned `api_key` is shown only once.
+
+**Auth:** admin
+
+**Request body:**
+
+```json
+{
+  "username": "myagent",
+  "admin": false
+}
+```
+
+**Response:** `201 Created`
+
+```json
+{
+  "id": "a1b2c3d4",
+  "username": "myagent",
+  "api_key": "pp_abc123...",
+  "created_at": "2026-01-01T00:00:00Z",
+  "admin": false
+}
+```
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `400` | Username is blank |
+| `409` | Username already exists |
+
+---
+
+## GET /api/admin/users
+
+List all users. API keys are not included.
+
+**Auth:** admin
+
+**Response:**
+
+```json
+[
+  {
+    "id": "a1b2c3d4",
+    "username": "myagent",
+    "created_at": "2026-01-01T00:00:00Z",
+    "active": true,
+    "admin": false
+  }
+]
+```
+
+---
+
+## PATCH /api/admin/users/{id}/deactivate
+
+Mark a user as inactive. Their pages are retained but they can no longer authenticate.
+
+**Auth:** admin
+
+**Path parameter:** `id` — 8-character user ID.
+
+**Response:** `204 No Content` on success, `404 Not Found` if the ID does not exist.
