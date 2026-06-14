@@ -65,7 +65,6 @@ The service defaults to **SQLite** (no extra setup — the database file lives i
 | `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
 | `DB_HOST` | PostgreSQL host (only with `SPRING_PROFILES_ACTIVE=postgres`) | `localhost` |
-| `DB_PORT` | PostgreSQL port | `5432` |
 | `DB_NAME` | PostgreSQL database name | `pushpage` |
 | `DB_USER` | PostgreSQL username | `pushpage` |
 | `DB_PASSWORD` | PostgreSQL password | `changeme` |

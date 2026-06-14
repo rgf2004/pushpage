@@ -31,7 +31,7 @@ public class PageRepository {
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getTimestamp("created_at").toInstant().toString(),
+                        rs.getTimestamp("created_at").toInstant(),
                         baseUrl + "/" + rs.getString("id") + ".html"
                 )
         );
@@ -43,7 +43,7 @@ public class PageRepository {
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getTimestamp("created_at").toInstant().toString(),
+                        rs.getTimestamp("created_at").toInstant(),
                         null),
                 id);
         return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
@@ -67,7 +67,7 @@ public class PageRepository {
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getTimestamp("created_at").toInstant().toString(),
+                        rs.getTimestamp("created_at").toInstant(),
                         null),
                 Timestamp.from(cutoff)
         );

@@ -8,14 +8,12 @@ services:
       # Uncomment to use PostgreSQL instead of the default SQLite:
       # SPRING_PROFILES_ACTIVE: postgres
       # DB_HOST: postgres
-      # DB_PORT: 5432
       # DB_NAME: ${DB_NAME:-pushpage}
       # DB_USER: ${DB_USER:-pushpage}
       # DB_PASSWORD: ${DB_PASSWORD:-pushpage}
     volumes:
       - pages:/var/www/pages
-      - data:/data
-    # Uncomment when using PostgreSQL (remove the data volume above too):
+    # Uncomment when using PostgreSQL:
     # depends_on:
     #   postgres:
     #     condition: service_healthy
@@ -40,8 +38,8 @@ services:
   #     POSTGRES_DB: ${DB_NAME:-pushpage}
   #     POSTGRES_USER: ${DB_USER:-pushpage}
   #     POSTGRES_PASSWORD: ${DB_PASSWORD:-pushpage}
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
+  #   tmpfs:
+  #     - /var/lib/postgresql/data
   #   healthcheck:
   #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pushpage} -d ${DB_NAME:-pushpage}"]
   #     interval: 5s
@@ -51,5 +49,3 @@ services:
 
 volumes:
   pages:
-  data:
-  # pgdata:  # Uncomment when using PostgreSQL

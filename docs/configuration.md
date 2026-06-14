@@ -29,7 +29,6 @@ Use `docker-compose.yml` for the SQLite default. Use `docker-compose.postgres.ym
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DB_HOST` | PostgreSQL hostname | `localhost` |
-| `DB_PORT` | PostgreSQL port | `5432` |
 | `DB_NAME` | Database name | `pushpage` |
 | `DB_USER` | Database username | `pushpage` |
 | `DB_PASSWORD` | Database password | `pushpage` |

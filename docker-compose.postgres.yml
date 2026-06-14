@@ -7,7 +7,6 @@ services:
       MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-10MB}
       SPRING_PROFILES_ACTIVE: postgres
       DB_HOST: postgres
-      DB_PORT: 5432
       DB_NAME: ${DB_NAME:-pushpage}
       DB_USER: ${DB_USER:-pushpage}
       DB_PASSWORD: ${DB_PASSWORD:-pushpage}
