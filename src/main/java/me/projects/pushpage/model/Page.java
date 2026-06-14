@@ -8,5 +8,6 @@ public record Page(
         String id,
         String title,
         @JsonProperty("created_at") Instant createdAt,
+        @JsonProperty("deleted_at") Instant deletedAt,
         String url
 ) {}

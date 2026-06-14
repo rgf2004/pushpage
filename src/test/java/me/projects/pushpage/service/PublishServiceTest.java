@@ -130,8 +130,8 @@ class PublishServiceTest {
     @Test
     void listPages_shouldReturnAllPagesFromRepository() {
         List<Page> pages = List.of(
-                new Page("id1", "Page 1", Instant.parse("2024-01-02T00:00:00Z"), "http://localhost/id1.html"),
-                new Page("id2", "Page 2", Instant.parse("2024-01-01T00:00:00Z"), "http://localhost/id2.html")
+                new Page("id1", "Page 1", Instant.parse("2024-01-02T00:00:00Z"), null, "http://localhost/id1.html"),
+                new Page("id2", "Page 2", Instant.parse("2024-01-01T00:00:00Z"), null, "http://localhost/id2.html")
         );
         when(pageRepository.findAll(anyString())).thenReturn(pages);
 

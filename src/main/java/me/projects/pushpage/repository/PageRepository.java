@@ -27,11 +27,12 @@ public class PageRepository {
 
     public List<Page> findAll(String baseUrl) {
         return jdbc.query(
-                "SELECT id, title, created_at FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
+                "SELECT id, title, created_at, deleted_at FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getTimestamp("created_at").toInstant(),
+                        toInstant(rs.getTimestamp("created_at")),
+                        toInstant(rs.getTimestamp("deleted_at")),
                         baseUrl + "/" + rs.getString("id") + ".html"
                 )
         );
@@ -39,11 +40,12 @@ public class PageRepository {
 
     public Optional<Page> findById(String id) {
         List<Page> pages = jdbc.query(
-                "SELECT id, title, created_at FROM pages WHERE id = ? AND deleted_at IS NULL",
+                "SELECT id, title, created_at, deleted_at FROM pages WHERE id = ? AND deleted_at IS NULL",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getTimestamp("created_at").toInstant(),
+                        toInstant(rs.getTimestamp("created_at")),
+                        toInstant(rs.getTimestamp("deleted_at")),
                         null),
                 id);
         return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
@@ -63,14 +65,19 @@ public class PageRepository {
 
     public List<Page> findOlderThan(Instant cutoff) {
         return jdbc.query(
-                "SELECT id, title, created_at FROM pages WHERE deleted_at IS NULL AND created_at < ?",
+                "SELECT id, title, created_at, deleted_at FROM pages WHERE deleted_at IS NULL AND created_at < ?",
                 (rs, i) -> new Page(
                         rs.getString("id"),
                         rs.getString("title"),
-                        rs.getTimestamp("created_at").toInstant(),
+                        toInstant(rs.getTimestamp("created_at")),
+                        toInstant(rs.getTimestamp("deleted_at")),
                         null),
                 Timestamp.from(cutoff)
         );
+    }
+
+    private Instant toInstant(Timestamp ts) {
+        return ts != null ? ts.toInstant() : null;
     }
 
     public void softDeleteById(String id) {
@@ -90,13 +97,13 @@ public class PageRepository {
                 FROM pages
                 """,
                 (rs, i) -> {
-                    Timestamp oldest = rs.getTimestamp("oldest");
-                    Timestamp newest = rs.getTimestamp("newest");
+                    Instant oldest = toInstant(rs.getTimestamp("oldest"));
+                    Instant newest = toInstant(rs.getTimestamp("newest"));
                     return new PageStats(
                             rs.getLong("cnt"),
                             rs.getLong("deleted_cnt"),
-                            oldest != null ? oldest.toInstant().toString() : null,
-                            newest != null ? newest.toInstant().toString() : null
+                            oldest != null ? oldest.toString() : null,
+                            newest != null ? newest.toString() : null
                     );
                 }
         );

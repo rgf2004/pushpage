@@ -36,5 +36,5 @@ build/
 data/
 pages/
 
-.claude/settings.local.json
+.claude/
 .env
