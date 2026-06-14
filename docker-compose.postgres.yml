@@ -1,16 +1,32 @@
 services:
   publisher:
+    image: rgf2004/pushpage-publisher:${IMAGE_TAG:-latest}
     environment:
+      APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1MB}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-10MB}
       SPRING_PROFILES_ACTIVE: postgres
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-pushpage}
       DB_USER: ${DB_USER:-pushpage}
       DB_PASSWORD: ${DB_PASSWORD:-pushpage}
-      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+    volumes:
+      - pages:/var/www/pages
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+
+  nginx:
+    image: rgf2004/pushpage-nginx:${IMAGE_TAG:-latest}
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - pages:/var/www/pages:ro
+    depends_on:
+      - publisher
+    restart: unless-stopped
 
   postgres:
     image: postgres:17-alpine
@@ -28,4 +44,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  pages:
   pgdata:

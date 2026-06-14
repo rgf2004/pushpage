@@ -1,5 +1,6 @@
 package me.projects.pushpage.controller;
 
+import me.projects.pushpage.PostgresTestSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-class PublishControllerIT {
+class PublishControllerIT extends PostgresTestSupport {
 
     @TempDir
     static Path tempDir;

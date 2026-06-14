@@ -94,46 +94,33 @@ Once the skill is loaded, the agent will automatically publish rich HTML output 
 
 See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage examples.
 
-## Database Backends
+## Database
 
-pushpage defaults to **SQLite** (zero-config, single-file). For higher concurrency or multi-instance deployments, **PostgreSQL** is available as an alternative.
+pushpage defaults to **SQLite** — no extra setup required. The database file lives in the `data` Docker volume.
 
-### SQLite (default)
-
-No extra setup needed. The database file is stored in the `data` Docker volume at `/data/pages.db`.
-
-### PostgreSQL
-
-Set `SPRING_PROFILES_ACTIVE=postgres` in your `.env` and use the `docker-compose.postgres.yml` overlay, which adds a co-located Postgres container:
+To use **PostgreSQL** instead, start the stack with `docker-compose.postgres.yml`:
 
 ```bash
-# Prod with PostgreSQL
-docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
-
-# Dev with PostgreSQL
-docker compose -f docker-compose.dev.yml -f docker-compose.postgres.yml up -d --build
+docker compose -f docker-compose.postgres.yml up -d
 ```
 
-Add the following variables to your `.env` file:
+This brings up a complete stack including a co-located `postgres:17-alpine` container. To point at an external PostgreSQL instance instead, override the connection variables in your `.env`:
 
 ```env
+DB_HOST=your-postgres-host
 DB_NAME=pushpage
 DB_USER=pushpage
 DB_PASSWORD=changeme
-# Optional — defaults shown
-# DB_HOST=postgres
-# DB_PORT=5432
-# DB_POOL_SIZE=10
 ```
-
-To bring up only an external PostgreSQL instance (not the bundled container), omit the overlay and point `DB_HOST` at your existing server.
 
 See [`docs/configuration.md`](docs/configuration.md) for the full variable reference.
 
 ## Contributing / Local Development
 
-To build from source and run locally:
+To build from source and run locally (SQLite by default):
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d --build
 ```
+
+To develop against PostgreSQL, uncomment the `postgres` service and the `SPRING_PROFILES_ACTIVE` environment variable in `docker-compose.dev.yml`.

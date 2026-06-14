@@ -1,16 +1,6 @@
 # Database
 
-pushpage supports two metadata storage backends: **SQLite** (default) and **PostgreSQL**. Both are managed by Flyway migrations with a shared migration path — the schema uses only standard SQL compatible with both engines.
-
-The active backend is selected via the `SPRING_PROFILES_ACTIVE` environment variable. See [`configuration.md`](configuration.md) for details.
-
-## SQLite (default)
-
-The database file is stored at `/data/pages.db` inside the `data` Docker volume.
-
-## PostgreSQL
-
-Activate with `SPRING_PROFILES_ACTIVE=postgres`. Flyway runs the same migration scripts on startup. Use the `docker-compose.postgres.yml` overlay to include a co-located Postgres container, or point `DB_HOST` at an external instance.
+pushpage requires a database to store page records. It supports **SQLite** (the default, no extra setup) and **PostgreSQL** (opt-in via `SPRING_PROFILES_ACTIVE=postgres`). Schema migrations are managed by Flyway and the migration scripts are compatible with both engines.
 
 ## Schema
 
@@ -20,8 +10,8 @@ Activate with `SPRING_PROFILES_ACTIVE=postgres`. Flyway runs the same migration 
 |--------|------|----------|-------------|
 | `id` | TEXT (PK) | no | Randomly generated 8-char hex identifier |
 | `title` | TEXT | no | Human-readable page title |
-| `created_at` | TEXT | no | ISO-8601 timestamp of when the page was published |
-| `deleted_at` | TEXT | yes | ISO-8601 timestamp of soft-deletion; `NULL` for live pages |
+| `created_at` | TIMESTAMP | no | Timestamp of when the page was published |
+| `deleted_at` | TIMESTAMP | yes | Timestamp of soft-deletion; `NULL` for live pages |
 
 **Indexes:**
 

@@ -15,12 +15,14 @@ All variables are set in a `.env` file in the project root and passed to the con
 
 ## Database Backend
 
-The active database backend is selected via `SPRING_PROFILES_ACTIVE`.
+The active database backend is selected via the `SPRING_PROFILES_ACTIVE` environment variable.
 
 | Value | Backend |
 |-------|---------|
 | _(unset)_ | SQLite (default) |
 | `postgres` | PostgreSQL |
+
+Use `docker-compose.yml` for the SQLite default. Use `docker-compose.postgres.yml` for PostgreSQL — it starts a complete stack including the database container.
 
 ### PostgreSQL Variables (`SPRING_PROFILES_ACTIVE=postgres`)
 
@@ -31,4 +33,3 @@ The active database backend is selected via `SPRING_PROFILES_ACTIVE`.
 | `DB_NAME` | Database name | `pushpage` |
 | `DB_USER` | Database username | `pushpage` |
 | `DB_PASSWORD` | Database password | `pushpage` |
-| `DB_POOL_SIZE` | HikariCP max connection pool size | `10` |
