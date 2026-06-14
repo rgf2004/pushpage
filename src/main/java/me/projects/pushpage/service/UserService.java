@@ -1,6 +1,5 @@
 package me.projects.pushpage.service;
 
-import jakarta.annotation.PostConstruct;
 import me.projects.pushpage.model.CreateUserRequest;
 import me.projects.pushpage.model.CreateUserResponse;
 import me.projects.pushpage.model.User;
@@ -9,6 +8,8 @@ import me.projects.pushpage.repository.UserRepository;
 import me.projects.pushpage.util.ApiKeyHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class UserService {
+public class UserService implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
@@ -28,8 +29,8 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    @PostConstruct
-    public void bootstrap() {
+    @Override
+    public void run(ApplicationArguments args) {
         if (userRepository.count() > 0) {
             return;
         }
