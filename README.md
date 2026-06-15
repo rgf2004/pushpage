@@ -17,21 +17,14 @@ pushpage gives AI agents a publish endpoint so that the richer, more effective H
 
 ## API
 
-All endpoints are under `/api` (Spring Boot context path). Examples below use `{APP_SERVER_URL}`, which defaults to `http://localhost:8080`.
-
-Most endpoints require an API key passed via `X-Api-Key: <key>` header (or `Authorization: Bearer <key>`). The `/api/health` endpoint is public.
+All endpoints are under `/api` (Spring Boot context path). Most require an API key via `X-Api-Key: <key>` or `Authorization: Bearer <key>`.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/publish` | User | Publish HTML, returns `{ url, id }` |
-| `GET` | `/api/pages` | User | List pages (scoped to caller; admins see all) |
-| `DELETE` | `/api/pages/{id}` | User | Delete own page (admins can delete any) |
 | `GET` | `/api/health` | None | Health check |
-| `POST` | `/api/admin/users` | Admin | Create a user, returns API key |
-| `GET` | `/api/admin/users` | Admin | List all users |
-| `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user |
 
-Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
+For the full API reference — page management, admin user endpoints, request/response schemas — see the Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
 ### Bootstrap
 
@@ -53,7 +46,7 @@ Copy the key, then restart the service. After restart (with a user now in the da
 curl -X POST {APP_SERVER_URL}/api/admin/users \
   -H "X-Api-Key: your-admin-key" \
   -H "Content-Type: application/json" \
-  -d '{"username": "myagent", "admin": false}'
+  -d '{"username": "myagent", "email": "agent@example.com", "admin": false}'
 ```
 
 Response — save the `api_key`, it is only shown once:
@@ -62,6 +55,7 @@ Response — save the `api_key`, it is only shown once:
 {
   "id": "a1b2c3d4",
   "username": "myagent",
+  "email": "agent@example.com",
   "api_key": "pp_abc123...",
   "created_at": "2026-01-01T00:00:00Z",
   "admin": false

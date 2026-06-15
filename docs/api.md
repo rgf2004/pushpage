@@ -174,9 +174,16 @@ Create a new user. The returned `api_key` is shown only once.
 ```json
 {
   "username": "myagent",
+  "email": "agent@example.com",
   "admin": false
 }
 ```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `username` | string | yes | Unique username |
+| `email` | string | no | Contact email address |
+| `admin` | boolean | no | Grant admin privileges (default: `false`) |
 
 **Response:** `201 Created`
 
@@ -184,6 +191,7 @@ Create a new user. The returned `api_key` is shown only once.
 {
   "id": "a1b2c3d4",
   "username": "myagent",
+  "email": "agent@example.com",
   "api_key": "pp_abc123...",
   "created_at": "2026-01-01T00:00:00Z",
   "admin": false
@@ -201,7 +209,7 @@ Create a new user. The returned `api_key` is shown only once.
 
 ## GET /api/admin/users
 
-List all users. API keys are not included.
+List all users ordered by creation date.
 
 **Auth:** admin
 
@@ -212,6 +220,7 @@ List all users. API keys are not included.
   {
     "id": "a1b2c3d4",
     "username": "myagent",
+    "email": "agent@example.com",
     "created_at": "2026-01-01T00:00:00Z",
     "active": true,
     "admin": false

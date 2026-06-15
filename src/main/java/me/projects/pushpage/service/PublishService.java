@@ -77,7 +77,7 @@ public class PublishService {
             throw new RuntimeException("Failed to write page file", e);
         }
 
-        String userId = authContext.getCurrentUser().id();
+        String userId = requireCurrentUser().id();
         pageRepository.save(id, title, userId);
         healthService.invalidateCache();
 
@@ -86,7 +86,7 @@ public class PublishService {
     }
 
     public List<Page> listPages() {
-        User currentUser = authContext.getCurrentUser();
+        User currentUser = requireCurrentUser();
         return pageRepository.findAll(baseUrl, currentUser.id(), currentUser.admin());
     }
 
@@ -94,7 +94,7 @@ public class PublishService {
         Page page = pageRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id));
 
-        User currentUser = authContext.getCurrentUser();
+        User currentUser = requireCurrentUser();
         if (!currentUser.admin() && !currentUser.id().equals(page.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own pages");
         }
@@ -107,6 +107,14 @@ public class PublishService {
 
         pageRepository.deleteById(id);
         healthService.invalidateCache();
+    }
+
+    private User requireCurrentUser() {
+        User user = authContext.getCurrentUser();
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return user;
     }
 
     private String wrapIfNeeded(String html, String title) {

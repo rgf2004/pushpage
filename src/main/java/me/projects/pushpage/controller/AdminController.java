@@ -40,7 +40,7 @@ public class AdminController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
-    @Operation(summary = "List all users", description = "Returns all users ordered by creation date. API keys are not included.")
+    @Operation(summary = "List all users", description = "Returns all users ordered by creation date.")
     @ApiResponse(responseCode = "200", description = "List of users",
             content = @Content(schema = @Schema(implementation = UserSummary.class)))
     @GetMapping("/users")
