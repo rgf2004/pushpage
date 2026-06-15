@@ -5,11 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 
-public record Page(
+public record CreateUserResponse(
         String id,
-        String title,
+        String username,
+        String email,
+        @JsonProperty("api_key") String apiKey,
         @JsonProperty("created_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant createdAt,
-        @JsonProperty("deleted_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant deletedAt,
-        String url,
-        @JsonProperty("user_id") String userId
+        boolean admin
 ) {}

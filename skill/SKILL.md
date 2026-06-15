@@ -16,13 +16,33 @@ Pushpage is a self-hosted service that accepts HTML and returns a public URL. Us
 http://pushpage.homelab.local/api
 ```
 
-## Publishing Content (primary operation)
+## Authentication
 
-POST to `/api/publish` with a JSON body:
+All endpoints (except `/api/health`) require an API key. Read it from the credentials file before making any request:
 
 ```bash
+PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
+```
+
+If the file is missing or empty, stop and tell the user:
+
+> Your pushpage API key is not configured. Run the following to save it:
+> ```bash
+> mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
+> ```
+> You can find your key in the pushpage startup logs, or ask an admin to create one for you via `POST /api/admin/users`.
+
+Pass the key in every request as `X-Api-Key: $PUSHPAGE_API_KEY`.
+
+## Publishing Content (primary operation)
+
+Read the key, then POST to `/api/publish`:
+
+```bash
+PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
 curl -s -X POST http://pushpage.homelab.local/api/publish \
   -H "Content-Type: application/json" \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
   -d '{
     "title": "My Report",
     "html": "<html>...</html>"
@@ -75,21 +95,25 @@ Since the content will be viewed in a browser, write clean, self-contained HTML.
 
 ## Secondary Operations
 
-### List all published pages
+### List published pages
 
 ```bash
-curl -s http://pushpage.homelab.local/api/pages
+PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
+curl -s http://pushpage.homelab.local/api/pages \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
-Returns an array of page objects with `id`, `title`, and `createdAt`.
+Returns an array of page objects with `id`, `title`, `created_at`, and `url`. Regular users see only their own pages; admins see all.
 
 ### Delete a page
 
 ```bash
-curl -s -X DELETE http://pushpage.homelab.local/api/pages/{id}
+PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
+curl -s -X DELETE http://pushpage.homelab.local/api/pages/{id} \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
-### Health check
+### Health check (no auth required)
 
 ```bash
 curl -s http://pushpage.homelab.local/api/health
@@ -98,13 +122,15 @@ curl -s http://pushpage.homelab.local/api/health
 ## Typical Flow
 
 **Creating HTML from a user request:**
-1. Build the full HTML for what the user asked for
-2. POST it to `/api/publish` with a descriptive `title`
-3. Return only the `url` to the user — do not paste the HTML into chat
+1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
+2. Build the full HTML for what the user asked for
+3. POST it to `/api/publish` with the key in `X-Api-Key` and a descriptive `title`
+4. Return only the `url` to the user — do not paste the HTML into chat
 
 **Publishing existing content:**
-1. Wrap the content in clean, styled HTML
-2. POST to `/api/publish` with a descriptive `title`
-3. Extract the `url` from the response and present it as a clickable link
+1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
+2. Wrap the content in clean, styled HTML
+3. POST to `/api/publish` with the key and a descriptive `title`
+4. Extract the `url` from the response and present it as a clickable link
 
-If the curl fails (connection refused, host unreachable), mention that the pushpage service at `pushpage.homelab.local` may be down and suggest the user check their homelab.
+If the curl fails with a connection error (not a 401/403), mention that the pushpage service at `pushpage.homelab.local` may be down and suggest the user check their homelab.

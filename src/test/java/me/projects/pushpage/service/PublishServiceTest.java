@@ -1,6 +1,8 @@
 package me.projects.pushpage.service;
 
+import me.projects.pushpage.config.AuthContext;
 import me.projects.pushpage.model.Page;
+import me.projects.pushpage.model.User;
 
 import java.time.Instant;
 import me.projects.pushpage.model.PublishRequest;
@@ -20,20 +22,27 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PublishServiceTest {
+
+    static final User ADMIN_USER = new User("admin1", "admin", null, "pp_key", Instant.now(), true, true);
+    static final User REGULAR_USER = new User("user1", "user", null, "pp_key2", Instant.now(), true, false);
 
     @Mock
     private PageRepository pageRepository;
 
     @Mock
     private HealthService healthService;
+
+    @Mock
+    private AuthContext authContext;
 
     @InjectMocks
     private PublishService publishService;
@@ -47,6 +56,7 @@ class PublishServiceTest {
         ReflectionTestUtils.setField(publishService, "pagesDir", tempDir.toString());
         ReflectionTestUtils.setField(publishService, "maxFileSize", DataSize.ofMegabytes(1));
         publishService.init();
+        lenient().when(authContext.getCurrentUser()).thenReturn(ADMIN_USER);
     }
 
     @Test
@@ -100,7 +110,8 @@ class PublishServiceTest {
 
     @Test
     void deletePage_shouldRemoveFileAndDbRecord() throws Exception {
-        when(pageRepository.existsById("abc123")).thenReturn(true);
+        Page page = new Page("abc123", "Title", Instant.now(), null, null, ADMIN_USER.id());
+        when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
 
         Path file = tempDir.resolve("abc123.html");
         file.toFile().createNewFile();
@@ -113,7 +124,7 @@ class PublishServiceTest {
 
     @Test
     void deletePage_whenPageNotFound_shouldThrowNotFound() {
-        when(pageRepository.existsById("missing")).thenReturn(false);
+        when(pageRepository.findById("missing")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> publishService.deletePage("missing"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -121,8 +132,30 @@ class PublishServiceTest {
     }
 
     @Test
+    void deletePage_byNonOwner_shouldThrowForbidden() {
+        Page page = new Page("abc123", "Title", Instant.now(), null, null, "someone-else");
+        when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
+        when(authContext.getCurrentUser()).thenReturn(REGULAR_USER);
+
+        assertThatThrownBy(() -> publishService.deletePage("abc123"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
+    void deletePage_adminCanDeleteAnyPage() throws Exception {
+        Page page = new Page("abc123", "Title", Instant.now(), null, null, "someone-else");
+        when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
+
+        publishService.deletePage("abc123");
+
+        verify(pageRepository).deleteById("abc123");
+    }
+
+    @Test
     void listPages_whenNoPagesExist_shouldReturnEmptyList() {
-        when(pageRepository.findAll(anyString())).thenReturn(List.of());
+        when(pageRepository.findAll(anyString(), anyString(), anyBoolean())).thenReturn(List.of());
 
         assertThat(publishService.listPages()).isEmpty();
     }
@@ -130,10 +163,10 @@ class PublishServiceTest {
     @Test
     void listPages_shouldReturnAllPagesFromRepository() {
         List<Page> pages = List.of(
-                new Page("id1", "Page 1", Instant.parse("2024-01-02T00:00:00Z"), null, "http://localhost/id1.html"),
-                new Page("id2", "Page 2", Instant.parse("2024-01-01T00:00:00Z"), null, "http://localhost/id2.html")
+                new Page("id1", "Page 1", Instant.parse("2024-01-02T00:00:00Z"), null, "http://localhost/id1.html", ADMIN_USER.id()),
+                new Page("id2", "Page 2", Instant.parse("2024-01-01T00:00:00Z"), null, "http://localhost/id2.html", ADMIN_USER.id())
         );
-        when(pageRepository.findAll(anyString())).thenReturn(pages);
+        when(pageRepository.findAll(anyString(), anyString(), anyBoolean())).thenReturn(pages);
 
         assertThat(publishService.listPages()).isEqualTo(pages);
     }

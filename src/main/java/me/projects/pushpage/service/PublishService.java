@@ -1,8 +1,10 @@
 package me.projects.pushpage.service;
 
+import me.projects.pushpage.config.AuthContext;
 import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
+import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.PageRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -37,10 +39,12 @@ public class PublishService {
 
     private final PageRepository pageRepository;
     private final HealthService healthService;
+    private final AuthContext authContext;
 
-    public PublishService(PageRepository pageRepository, HealthService healthService) {
+    public PublishService(PageRepository pageRepository, HealthService healthService, AuthContext authContext) {
         this.pageRepository = pageRepository;
         this.healthService = healthService;
+        this.authContext = authContext;
     }
 
     @PostConstruct
@@ -73,7 +77,8 @@ public class PublishService {
             throw new RuntimeException("Failed to write page file", e);
         }
 
-        pageRepository.save(id, title);
+        String userId = requireCurrentUser().id();
+        pageRepository.save(id, title, userId);
         healthService.invalidateCache();
 
         String url = baseUrl + "/" + id + ".html";
@@ -81,20 +86,35 @@ public class PublishService {
     }
 
     public List<Page> listPages() {
-        return pageRepository.findAll(baseUrl);
+        User currentUser = requireCurrentUser();
+        return pageRepository.findAll(baseUrl, currentUser.id(), currentUser.admin());
     }
 
     public void deletePage(String id) {
-        if (!pageRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id);
+        Page page = pageRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id));
+
+        User currentUser = requireCurrentUser();
+        if (!currentUser.admin() && !currentUser.id().equals(page.userId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own pages");
         }
+
         try {
             Files.deleteIfExists(Path.of(pagesDir, id + ".html"));
         } catch (IOException e) {
             throw new RuntimeException("Failed to delete page file", e);
         }
+
         pageRepository.deleteById(id);
         healthService.invalidateCache();
+    }
+
+    private User requireCurrentUser() {
+        User user = authContext.getCurrentUser();
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return user;
     }
 
     private String wrapIfNeeded(String html, String title) {
