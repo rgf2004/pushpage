@@ -26,60 +26,6 @@ All endpoints are under `/api` (Spring Boot context path). Most require an API k
 
 For the full API reference — page management, admin user endpoints, request/response schemas — see the Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
-### Bootstrap
-
-On first run, if the database has no users, the service automatically creates an `admin` user with a generated API key and logs it prominently:
-
-```
-=================================================================
-No admin user found — bootstrap admin created.
-API Key: pp_abc123...
-Copy this key now. It will NOT appear again after restart.
-=================================================================
-```
-
-Copy the key, then restart the service. After restart (with a user now in the database), the key is never logged again.
-
-### Create a user (admin only)
-
-```bash
-curl -X POST {APP_SERVER_URL}/api/admin/users \
-  -H "X-Api-Key: your-admin-key" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "myagent", "email": "agent@example.com", "admin": false}'
-```
-
-Response — save the `api_key`, it is only shown once:
-
-```json
-{
-  "id": "a1b2c3d4",
-  "username": "myagent",
-  "email": "agent@example.com",
-  "api_key": "pp_abc123...",
-  "created_at": "2026-01-01T00:00:00Z",
-  "admin": false
-}
-```
-
-### Publish a page
-
-```bash
-curl -X POST {APP_SERVER_URL}/api/publish \
-  -H "X-Api-Key: pp_abc123..." \
-  -H "Content-Type: application/json" \
-  -d '{"title": "My Report", "html": "<h1>Hello</h1><p>Some content here.</p>"}'
-```
-
-Response:
-
-```json
-{
-  "url": "{APP_SERVER_URL}/pages/a1b2c3d4.html",
-  "id": "a1b2c3d4"
-}
-```
-
 ## Deployment
 
 ### Prerequisites
@@ -120,6 +66,70 @@ To wipe all published pages and metadata:
 ```bash
 docker compose down -v
 ```
+
+## Getting Started
+
+### 1. Get your API key
+
+On first run, if the database has no users, the service automatically creates an `admin` user and logs its API key once:
+
+```
+==============================================================
+No admin user found — bootstrap admin created.
+API Key: pp_abc123...
+Copy this key now. It will NOT appear again after restart.
+==============================================================
+```
+
+Copy that key — you'll use it in the next step.
+
+### 2. Publish your first page
+
+You can start publishing immediately with the admin key. No extra setup required.
+
+```bash
+curl -X POST {APP_SERVER_URL}/api/publish \
+  -H "X-Api-Key: pp_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My Report", "html": "<h1>Hello</h1><p>Some content here.</p>"}'
+```
+
+Response:
+
+```json
+{
+  "url": "{APP_SERVER_URL}/pages/a1b2c3d4.html",
+  "id": "a1b2c3d4"
+}
+```
+
+Open the `url` in your browser — that's your published page.
+
+### 3. Create a dedicated user (optional)
+
+The admin key is enough for a single-agent or personal setup. If you want to give a separate key to a different agent or user (so their pages are scoped independently), create a dedicated user:
+
+```bash
+curl -X POST {APP_SERVER_URL}/api/admin/users \
+  -H "X-Api-Key: pp_abc123..." \
+  -H "Content-Type: application/json" \
+  -d '{"username": "myagent", "email": "agent@example.com", "admin": false}'
+```
+
+Response — save the `api_key`, it is only shown once:
+
+```json
+{
+  "id": "a1b2c3d4",
+  "username": "myagent",
+  "email": "agent@example.com",
+  "api_key": "pp_xyz789...",
+  "created_at": "2026-01-01T00:00:00Z",
+  "admin": false
+}
+```
+
+That user can now publish pages with their own key. Regular users only see their own pages in `GET /api/pages`; admins see all.
 
 ## Agent Skill File
 
