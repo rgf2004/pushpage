@@ -18,7 +18,7 @@
 		<java.version>25</java.version>
 		<springdoc-openapi.version>3.0.3</springdoc-openapi.version>
 		<testcontainers.version>1.21.1</testcontainers.version>
-		<sqlite-jdbc.version>3.47.1.0</sqlite-jdbc.version>
+		<sqlite-jdbc.version>3.53.2.0</sqlite-jdbc.version>
 	</properties>
 
 	<dependencyManagement>
