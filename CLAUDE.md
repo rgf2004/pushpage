@@ -91,6 +91,17 @@ All endpoints are under `/api` (Spring Boot context path).
 
 Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
+## Dashboard
+
+A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.html`). It authenticates with an API key stored in `sessionStorage` and calls the existing REST endpoints — no new backend endpoints required.
+
+**Tabs:**
+- **Pages** — lists the caller's pages (admins see all), with delete and pagination
+- **Account** — displays username, role, and a reveal/copy widget for the API key
+- **Users** (admin only) — lists all users; create new user (shows generated key once); deactivate user
+
+Shared visual styles live in `nginx/static/theme.css`, linked by both `index.html` and `dashboard.html`.
+
 ## Running
 
 ```bash

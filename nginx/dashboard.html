@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>pushpage · dashboard</title>
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        /* ── Login screen ─────────────────────────────────────────────── */
+        #login-screen {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+        }
+
+        .login-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-box h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .login-box p {
+            font-size: .88rem;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+        }
+
+        .field { margin-bottom: 16px; }
+
+        .field label {
+            display: block;
+            font-size: .82rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .field input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            padding: 9px 14px;
+            font-size: .92rem;
+            color: var(--text);
+            font-family: inherit;
+            outline: none;
+            transition: border-color .15s;
+        }
+
+        .field input:focus { border-color: var(--accent); }
+
+        .login-error {
+            background: rgba(218, 54, 51, .12);
+            border: 1px solid var(--red-border);
+            border-radius: var(--radius);
+            padding: 9px 14px;
+            font-size: .85rem;
+            color: var(--red-border);
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        /* ── Dashboard shell ──────────────────────────────────────────── */
+        #dashboard-screen { display: none; flex: 1; flex-direction: column; }
+
+        .dash-header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-chip {
+            font-size: .82rem;
+            color: var(--text-muted);
+        }
+
+        .user-chip strong { color: var(--text); }
+
+        /* ── Tabs ─────────────────────────────────────────────────────── */
+        .tabs-bar {
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-size: .9rem;
+            font-weight: 500;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+            margin-bottom: -1px;
+        }
+
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .tab-panel { display: none; flex: 1; padding: 36px 40px; }
+        .tab-panel.active { display: block; }
+
+        /* ── Pages table ──────────────────────────────────────────────── */
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .panel-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .875rem;
+        }
+
+        thead th {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            padding: 10px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr { border-bottom: 1px solid var(--border); }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,.03); }
+
+        td { padding: 12px 16px; vertical-align: middle; }
+
+        .page-title {
+            font-weight: 500;
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        .page-id {
+            font-family: var(--font-mono);
+            font-size: .78rem;
+            color: var(--text-dim);
+        }
+
+        .page-url a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: .82rem;
+        }
+
+        .page-url a:hover { text-decoration: underline; }
+
+        .date-cell { color: var(--text-muted); white-space: nowrap; font-size: .82rem; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-muted);
+        }
+
+        .empty-state p { font-size: .9rem; }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-dim);
+        }
+
+        /* ── Pagination ───────────────────────────────────────────────── */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+            font-size: .85rem;
+            color: var(--text-muted);
+        }
+
+        .pagination button {
+            background: var(--bg-input);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            color: var(--text);
+            padding: 5px 12px;
+            font-size: .82rem;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            opacity: .4;
+            cursor: default;
+        }
+
+        /* ── Account tab ──────────────────────────────────────────────── */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .info-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-label {
+            font-size: .75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-dim);
+        }
+
+        .info-value {
+            font-size: .95rem;
+            color: var(--text);
+        }
+
+        .role-badge {
+            display: inline-block;
+            background: var(--bg-input);
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            padding: 2px 12px;
+            font-size: .78rem;
+            color: var(--text-muted);
+        }
+
+        .role-badge.admin { border-color: var(--accent); color: var(--accent); }
+
+        .api-key-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .api-key-display {
+            font-family: var(--font-mono);
+            font-size: .82rem;
+            color: var(--accent-code);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 8px 14px;
+            flex: 1;
+            min-width: 0;
+            word-break: break-all;
+            filter: blur(4px);
+            transition: filter .2s;
+        }
+
+        .api-key-display.revealed { filter: none; }
+
+        /* ── Admin users table ────────────────────────────────────────── */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-dot.active { background: var(--green-dot); }
+        .status-dot.inactive { background: var(--text-dim); }
+
+        /* ── Create user modal ────────────────────────────────────────── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 24px;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .modal h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .key-reveal-box {
+            background: var(--bg-input);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 14px;
+            margin-top: 16px;
+            font-family: var(--font-mono);
+            font-size: .82rem;
+            color: var(--accent-code);
+            word-break: break-all;
+        }
+
+        .key-reveal-label {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        /* ── Confirm dialog ───────────────────────────────────────────── */
+        .confirm-msg {
+            font-size: .9rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .confirm-name {
+            font-size: .9rem;
+            color: var(--text);
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        /* ── Toast ────────────────────────────────────────────────────── */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            padding: 12px 20px;
+            font-size: .875rem;
+            color: var(--text);
+            box-shadow: 0 4px 20px rgba(0,0,0,.4);
+            transform: translateY(80px);
+            opacity: 0;
+            transition: transform .25s, opacity .25s;
+            z-index: 200;
+            max-width: 340px;
+        }
+
+        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast.success { border-color: var(--green-border); }
+        #toast.error   { border-color: var(--red-border); }
+
+        /* ── Responsive ───────────────────────────────────────────────── */
+        @media (max-width: 640px) {
+            header { padding: 16px 20px; }
+            .tabs-bar { padding: 0 16px; }
+            .tab-panel { padding: 24px 16px; }
+            .tab-btn { padding: 10px 10px; font-size: .82rem; }
+            thead th, td { padding: 10px 10px; }
+            .login-box { padding: 28px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="/" class="logo">push<span>page</span></a>
+    <div id="dash-user-area" class="dash-header-right" style="display:none">
+        <span class="user-chip">logged in as <strong id="hdr-username"></strong></span>
+        <button class="btn btn-secondary btn-sm" id="logout-btn">Sign out</button>
+    </div>
+</header>
+
+<!-- ── Login screen ──────────────────────────────────────────────────── -->
+<div id="login-screen">
+    <div class="login-box">
+        <h2>Sign in</h2>
+        <p>Enter your pushpage API key to access the dashboard.</p>
+        <div id="login-error" class="login-error"></div>
+        <div class="field">
+            <label for="api-key-input">API Key</label>
+            <input type="password" id="api-key-input" placeholder="pp_…" autocomplete="off" spellcheck="false">
+        </div>
+        <button class="btn btn-primary" id="login-btn" style="width:100%">Sign in</button>
+    </div>
+</div>
+
+<!-- ── Dashboard ─────────────────────────────────────────────────────── -->
+<div id="dashboard-screen">
+    <nav class="tabs-bar">
+        <button class="tab-btn active" data-tab="pages">Pages</button>
+        <button class="tab-btn" data-tab="account">Account</button>
+        <button class="tab-btn" data-tab="admin" id="admin-tab-btn" style="display:none">Users</button>
+    </nav>
+
+    <!-- Pages tab -->
+    <div class="tab-panel active" id="tab-pages">
+        <div class="panel-header">
+            <h2>Your pages</h2>
+        </div>
+        <div id="pages-loading" class="loading-state">Loading…</div>
+        <div id="pages-table-wrap" style="display:none">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title / ID</th>
+                            <th>URL</th>
+                            <th>Created</th>
+                            <th>Expires</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="pages-tbody"></tbody>
+                </table>
+            </div>
+            <div class="pagination" id="pages-pagination"></div>
+        </div>
+        <div id="pages-empty" class="empty-state" style="display:none">
+            <p>No pages yet. Publish one via <code>POST /api/publish</code>.</p>
+        </div>
+    </div>
+
+    <!-- Account tab -->
+    <div class="tab-panel" id="tab-account">
+        <div class="panel-header"><h2>Account</h2></div>
+        <div class="card" style="max-width:560px">
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Username</span>
+                    <span class="info-value" id="acc-username">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Role</span>
+                    <span class="info-value"><span class="role-badge" id="acc-role">—</span></span>
+                </div>
+            </div>
+            <div class="info-row" style="margin-bottom:12px">
+                <span class="info-label" style="margin-bottom:8px;display:block">API Key</span>
+                <div class="api-key-row">
+                    <div class="api-key-display" id="acc-key">—</div>
+                    <button class="btn btn-secondary btn-sm" id="reveal-key-btn">Reveal</button>
+                    <button class="btn btn-secondary btn-sm" id="copy-key-btn">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin → Users tab -->
+    <div class="tab-panel" id="tab-admin">
+        <div class="panel-header">
+            <h2>Users</h2>
+            <button class="btn btn-primary btn-sm" id="create-user-btn">+ New user</button>
+        </div>
+        <div id="users-loading" class="loading-state">Loading…</div>
+        <div id="users-table-wrap" style="display:none">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="users-empty" class="empty-state" style="display:none">
+            <p>No users found.</p>
+        </div>
+    </div>
+</div>
+
+<!-- ── Modals ─────────────────────────────────────────────────────────── -->
+
+<!-- Confirm delete page -->
+<div class="modal-overlay" id="confirm-modal" style="display:none">
+    <div class="modal">
+        <h3>Delete page?</h3>
+        <p class="confirm-msg">This will permanently delete:</p>
+        <p class="confirm-name" id="confirm-page-title"></p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="confirm-cancel">Cancel</button>
+            <button class="btn btn-danger" id="confirm-delete">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Create user -->
+<div class="modal-overlay" id="create-user-modal" style="display:none">
+    <div class="modal">
+        <h3 id="cu-modal-title">Create user</h3>
+        <div id="cu-form">
+            <div id="cu-error" class="login-error"></div>
+            <div class="field">
+                <label for="cu-username">Username</label>
+                <input type="text" id="cu-username" autocomplete="off">
+            </div>
+            <div class="field">
+                <label for="cu-role">Role</label>
+                <select id="cu-role" style="width:100%;background:var(--bg-input);border:1px solid var(--border-soft);border-radius:var(--radius);padding:9px 14px;font-size:.92rem;color:var(--text);font-family:inherit;outline:none">
+                    <option value="USER">User</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cu-cancel">Cancel</button>
+                <button class="btn btn-primary" id="cu-submit">Create</button>
+            </div>
+        </div>
+        <div id="cu-key-reveal" style="display:none">
+            <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:4px">User created. Copy the API key now — it won't be shown again.</p>
+            <div class="key-reveal-label">API Key</div>
+            <div class="key-reveal-box" id="cu-key-value"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cu-copy-key">Copy key</button>
+                <button class="btn btn-primary" id="cu-done">Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm deactivate user -->
+<div class="modal-overlay" id="deactivate-modal" style="display:none">
+    <div class="modal">
+        <h3>Deactivate user?</h3>
+        <p class="confirm-msg">This will deactivate:</p>
+        <p class="confirm-name" id="deactivate-username"></p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="deactivate-cancel">Cancel</button>
+            <button class="btn btn-danger" id="deactivate-confirm">Deactivate</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<footer>pushpage · homelab internal</footer>
+
+<script>
+const PAGE_SIZE = 20;
+
+// ── State ────────────────────────────────────────────────────────────────
+let apiKey = '';
+let currentUser = null;
+let allPages = [];
+let pagesPage = 0;
+let pendingDeleteId = null;
+let pendingDeactivateId = null;
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+function api(path, opts = {}) {
+    return fetch('/api' + path, {
+        ...opts,
+        headers: { 'X-Api-Key': apiKey, 'Content-Type': 'application/json', ...(opts.headers || {}) }
+    });
+}
+
+function fmtDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+let toastTimer;
+function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+
+// ── Login ────────────────────────────────────────────────────────────────
+document.getElementById('api-key-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') login();
+});
+document.getElementById('login-btn').addEventListener('click', login);
+
+async function login() {
+    const key = document.getElementById('api-key-input').value.trim();
+    if (!key) return;
+    const errEl = document.getElementById('login-error');
+    errEl.style.display = 'none';
+    document.getElementById('login-btn').textContent = 'Signing in…';
+
+    try {
+        const r = await fetch('/api/pages', { headers: { 'X-Api-Key': key } });
+        if (r.status === 401 || r.status === 403) {
+            errEl.textContent = 'Invalid API key.';
+            errEl.style.display = 'block';
+            document.getElementById('login-btn').textContent = 'Sign in';
+            return;
+        }
+        apiKey = key;
+        sessionStorage.setItem('pp_key', key);
+        await loadDashboard();
+    } catch {
+        errEl.textContent = 'Could not reach the server.';
+        errEl.style.display = 'block';
+        document.getElementById('login-btn').textContent = 'Sign in';
+    }
+}
+
+async function loadDashboard() {
+    // Determine current user by fetching users list (admins) or just loading pages
+    // We detect role by attempting the admin endpoint
+    let username = 'user';
+    let isAdmin = false;
+
+    const adminR = await fetch('/api/admin/users', { headers: { 'X-Api-Key': apiKey } });
+    if (adminR.ok) {
+        isAdmin = true;
+        const users = await adminR.json();
+        // The API key we used must belong to one of these users — try matching
+        // by seeing which user's key we have (we can't, so just show admin)
+        // We'll show username from pages owner info below
+    }
+
+    // Get pages to find out username (pages include owner)
+    const pagesR = await fetch('/api/pages', { headers: { 'X-Api-Key': apiKey } });
+    const pages = pagesR.ok ? await pagesR.json() : [];
+
+    // Infer username from first page's owner, or fall back
+    if (pages.length > 0 && pages[0].owner) {
+        username = pages[0].owner;
+    } else if (isAdmin) {
+        username = 'admin';
+    }
+
+    currentUser = { username, isAdmin };
+    allPages = pages;
+
+    // Show dashboard
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard-screen').style.display = 'flex';
+    document.getElementById('dash-user-area').style.display = 'flex';
+    document.getElementById('hdr-username').textContent = username;
+
+    // Account tab
+    document.getElementById('acc-username').textContent = username;
+    document.getElementById('acc-key').textContent = apiKey;
+    const roleEl = document.getElementById('acc-role');
+    roleEl.textContent = isAdmin ? 'admin' : 'user';
+    if (isAdmin) roleEl.classList.add('admin');
+
+    // Admin tab
+    if (isAdmin) {
+        document.getElementById('admin-tab-btn').style.display = '';
+    }
+
+    renderPages();
+}
+
+// ── Logout ───────────────────────────────────────────────────────────────
+document.getElementById('logout-btn').addEventListener('click', () => {
+    sessionStorage.removeItem('pp_key');
+    apiKey = '';
+    currentUser = null;
+    allPages = [];
+    pagesPage = 0;
+    document.getElementById('dashboard-screen').style.display = 'none';
+    document.getElementById('dash-user-area').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('api-key-input').value = '';
+    document.getElementById('login-btn').textContent = 'Sign in';
+    // Reset tabs
+    switchTab('pages');
+    document.getElementById('admin-tab-btn').style.display = 'none';
+    document.getElementById('acc-role').classList.remove('admin');
+});
+
+// ── Tabs ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+    if (name === 'admin') loadUsers();
+}
+
+// ── Pages tab ─────────────────────────────────────────────────────────────
+async function renderPages() {
+    document.getElementById('pages-loading').style.display = 'none';
+
+    if (allPages.length === 0) {
+        document.getElementById('pages-empty').style.display = 'block';
+        return;
+    }
+
+    document.getElementById('pages-table-wrap').style.display = 'block';
+    renderPageRows();
+}
+
+function renderPageRows() {
+    const start = pagesPage * PAGE_SIZE;
+    const slice = allPages.slice(start, start + PAGE_SIZE);
+    const tbody = document.getElementById('pages-tbody');
+    tbody.innerHTML = '';
+
+    slice.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.id = 'page-row-' + p.id;
+        tr.innerHTML = `
+            <td>
+                <div class="page-title">${esc(p.title || 'Untitled')}</div>
+                <div class="page-id">${esc(p.id)}</div>
+            </td>
+            <td class="page-url"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a></td>
+            <td class="date-cell">${fmtDate(p.createdAt)}</td>
+            <td class="date-cell">${fmtDate(p.expiresAt)}</td>
+            <td><button class="btn btn-danger btn-sm" data-id="${esc(p.id)}" data-title="${esc(p.title || p.id)}">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('[data-id]').forEach(btn => {
+        btn.addEventListener('click', () => promptDeletePage(btn.dataset.id, btn.dataset.title));
+    });
+
+    renderPagination();
+}
+
+function renderPagination() {
+    const total = allPages.length;
+    const pages = Math.ceil(total / PAGE_SIZE);
+    const el = document.getElementById('pages-pagination');
+    if (pages <= 1) { el.innerHTML = ''; return; }
+
+    el.innerHTML = `
+        <span>${pagesPage * PAGE_SIZE + 1}–${Math.min((pagesPage + 1) * PAGE_SIZE, total)} of ${total}</span>
+        <button id="pg-prev" ${pagesPage === 0 ? 'disabled' : ''}>← Prev</button>
+        <button id="pg-next" ${pagesPage >= pages - 1 ? 'disabled' : ''}>Next →</button>
+    `;
+    el.querySelector('#pg-prev').addEventListener('click', () => { pagesPage--; renderPageRows(); });
+    el.querySelector('#pg-next').addEventListener('click', () => { pagesPage++; renderPageRows(); });
+}
+
+// ── Delete page ───────────────────────────────────────────────────────────
+function promptDeletePage(id, title) {
+    pendingDeleteId = id;
+    document.getElementById('confirm-page-title').textContent = title;
+    showModal('confirm-modal');
+}
+
+document.getElementById('confirm-cancel').addEventListener('click', () => hideModal('confirm-modal'));
+
+document.getElementById('confirm-delete').addEventListener('click', async () => {
+    const id = pendingDeleteId;
+    hideModal('confirm-modal');
+    try {
+        const r = await api('/pages/' + id, { method: 'DELETE' });
+        if (r.ok) {
+            allPages = allPages.filter(p => p.id !== id);
+            const row = document.getElementById('page-row-' + id);
+            if (row) row.remove();
+            if (allPages.length === 0) {
+                document.getElementById('pages-table-wrap').style.display = 'none';
+                document.getElementById('pages-empty').style.display = 'block';
+            } else {
+                renderPagination();
+            }
+            toast('Page deleted.');
+        } else {
+            toast('Failed to delete page.', 'error');
+        }
+    } catch {
+        toast('Network error.', 'error');
+    }
+});
+
+// ── Account tab ───────────────────────────────────────────────────────────
+let keyRevealed = false;
+document.getElementById('reveal-key-btn').addEventListener('click', () => {
+    const el = document.getElementById('acc-key');
+    keyRevealed = !keyRevealed;
+    el.classList.toggle('revealed', keyRevealed);
+    document.getElementById('reveal-key-btn').textContent = keyRevealed ? 'Hide' : 'Reveal';
+});
+
+document.getElementById('copy-key-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(apiKey).then(() => toast('API key copied.'));
+});
+
+// ── Admin → Users tab ─────────────────────────────────────────────────────
+async function loadUsers() {
+    document.getElementById('users-loading').style.display = 'block';
+    document.getElementById('users-table-wrap').style.display = 'none';
+    document.getElementById('users-empty').style.display = 'none';
+
+    try {
+        const r = await api('/admin/users');
+        if (!r.ok) { toast('Failed to load users.', 'error'); return; }
+        const users = await r.json();
+        document.getElementById('users-loading').style.display = 'none';
+
+        if (users.length === 0) {
+            document.getElementById('users-empty').style.display = 'block';
+            return;
+        }
+
+        const tbody = document.getElementById('users-tbody');
+        tbody.innerHTML = '';
+        users.forEach(u => {
+            const tr = document.createElement('tr');
+            const isActive = u.active !== false;
+            tr.innerHTML = `
+                <td style="font-weight:500">${esc(u.username)}</td>
+                <td><span class="role-badge ${u.role === 'ADMIN' ? 'admin' : ''}">${esc(u.role || 'USER').toLowerCase()}</span></td>
+                <td><span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>${isActive ? 'Active' : 'Inactive'}</td>
+                <td class="date-cell">${fmtDate(u.createdAt)}</td>
+                <td>${isActive ? `<button class="btn btn-secondary btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.username)}">Deactivate</button>` : ''}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('[data-uid]').forEach(btn => {
+            btn.addEventListener('click', () => promptDeactivate(btn.dataset.uid, btn.dataset.uname));
+        });
+
+        document.getElementById('users-table-wrap').style.display = 'block';
+    } catch {
+        toast('Network error.', 'error');
+    }
+}
+
+// ── Create user ───────────────────────────────────────────────────────────
+document.getElementById('create-user-btn').addEventListener('click', () => {
+    document.getElementById('cu-username').value = '';
+    document.getElementById('cu-role').value = 'USER';
+    document.getElementById('cu-error').style.display = 'none';
+    document.getElementById('cu-form').style.display = 'block';
+    document.getElementById('cu-key-reveal').style.display = 'none';
+    document.getElementById('cu-modal-title').textContent = 'Create user';
+    showModal('create-user-modal');
+});
+
+document.getElementById('cu-cancel').addEventListener('click', () => hideModal('create-user-modal'));
+
+document.getElementById('cu-submit').addEventListener('click', async () => {
+    const username = document.getElementById('cu-username').value.trim();
+    const role = document.getElementById('cu-role').value;
+    const errEl = document.getElementById('cu-error');
+    if (!username) { errEl.textContent = 'Username is required.'; errEl.style.display = 'block'; return; }
+
+    try {
+        const r = await api('/admin/users', { method: 'POST', body: JSON.stringify({ username, role }) });
+        const data = await r.json();
+        if (!r.ok) {
+            errEl.textContent = data.message || 'Failed to create user.';
+            errEl.style.display = 'block';
+            return;
+        }
+        document.getElementById('cu-form').style.display = 'none';
+        document.getElementById('cu-key-value').textContent = data.apiKey || data.api_key || '(not returned)';
+        document.getElementById('cu-key-reveal').style.display = 'block';
+        document.getElementById('cu-modal-title').textContent = 'User created';
+        loadUsers();
+    } catch {
+        errEl.textContent = 'Network error.'; errEl.style.display = 'block';
+    }
+});
+
+document.getElementById('cu-copy-key').addEventListener('click', () => {
+    const key = document.getElementById('cu-key-value').textContent;
+    navigator.clipboard.writeText(key).then(() => toast('Key copied.'));
+});
+
+document.getElementById('cu-done').addEventListener('click', () => hideModal('create-user-modal'));
+
+// ── Deactivate user ───────────────────────────────────────────────────────
+function promptDeactivate(uid, uname) {
+    pendingDeactivateId = uid;
+    document.getElementById('deactivate-username').textContent = uname;
+    showModal('deactivate-modal');
+}
+
+document.getElementById('deactivate-cancel').addEventListener('click', () => hideModal('deactivate-modal'));
+
+document.getElementById('deactivate-confirm').addEventListener('click', async () => {
+    const uid = pendingDeactivateId;
+    hideModal('deactivate-modal');
+    try {
+        const r = await api('/admin/users/' + uid + '/deactivate', { method: 'PATCH' });
+        if (r.ok) {
+            toast('User deactivated.');
+            loadUsers();
+        } else {
+            toast('Failed to deactivate user.', 'error');
+        }
+    } catch {
+        toast('Network error.', 'error');
+    }
+});
+
+// ── Close modals on overlay click ─────────────────────────────────────────
+['confirm-modal', 'create-user-modal', 'deactivate-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => {
+        if (e.target === e.currentTarget) hideModal(id);
+    });
+});
+
+// ── XSS-safe escape ───────────────────────────────────────────────────────
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Auto-login from sessionStorage ───────────────────────────────────────
+(async () => {
+    const saved = sessionStorage.getItem('pp_key');
+    if (saved) {
+        apiKey = saved;
+        document.getElementById('api-key-input').value = saved;
+        try {
+            await loadDashboard();
+        } catch {
+            sessionStorage.removeItem('pp_key');
+            apiKey = '';
+        }
+    }
+})();
+</script>
+</body>
+</html>

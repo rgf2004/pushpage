@@ -55,6 +55,8 @@ curl {APP_SERVER_URL}/api/health
 
 Or open the Swagger UI in a browser: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
+Or open the dashboard: `{APP_SERVER_URL}/dashboard`
+
 To stop the stack:
 
 ```bash
@@ -83,7 +85,11 @@ Copy this key now. It will NOT appear again after restart.
 
 Copy that key — you'll use it in the next step.
 
-### 2. Publish your first page
+### 2. Open the dashboard (optional)
+
+Navigate to `{APP_SERVER_URL}/dashboard` and enter your API key. The dashboard lets you browse and delete your pages, view account info, and (as admin) manage users — all without touching the API directly.
+
+### 3. Publish your first page
 
 You can start publishing immediately with the admin key. No extra setup required.
 
@@ -105,7 +111,7 @@ Response:
 
 Open the `url` in your browser — that's your published page.
 
-### 3. Create a dedicated user (optional)
+### 4. Create a dedicated user (optional)
 
 The admin key is enough for a single-agent or personal setup. If you want to give a separate key to a different agent or user (so their pages are scoped independently), create a dedicated user:
 
