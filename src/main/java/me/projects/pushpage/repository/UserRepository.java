@@ -38,8 +38,8 @@ public class UserRepository {
                         rs.getString("email"),
                         rs.getString("api_key_hash"),
                         rs.getTimestamp("created_at").toInstant(),
-                        rs.getBoolean("active"),
-                        rs.getBoolean("admin")
+                        rs.getInt("active") != 0,
+                        rs.getInt("admin") != 0
                 ),
                 apiKeyHash
         );
@@ -54,8 +54,8 @@ public class UserRepository {
                         rs.getString("username"),
                         rs.getString("email"),
                         rs.getTimestamp("created_at").toInstant(),
-                        rs.getBoolean("active"),
-                        rs.getBoolean("admin")
+                        rs.getInt("active") != 0,
+                        rs.getInt("admin") != 0
                 )
         );
     }

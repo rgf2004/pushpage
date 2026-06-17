@@ -76,6 +76,27 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
 
 ---
 
+## GET /api/me
+
+Return the profile of the currently authenticated user.
+
+**Auth:** any user
+
+**Response:**
+
+```json
+{
+  "id": "a1b2c3d4",
+  "username": "myagent",
+  "email": "agent@example.com",
+  "created_at": "2026-01-01T00:00:00Z",
+  "active": true,
+  "admin": false
+}
+```
+
+---
+
 ## GET /api/pages
 
 List published pages ordered by publish date descending. Regular users see only their own pages; admins see all.
@@ -90,11 +111,21 @@ List published pages ordered by publish date descending. Regular users see only 
     "id": "abc123",
     "title": "My Report",
     "created_at": "2026-06-11T10:00:00Z",
-    "user_id": "a1b2c3d4",
-    "url": "http://pushpage.homelab.local/pages/abc123.html"
+    "deleted_at": null,
+    "url": "http://pushpage.homelab.local/pages/abc123.html",
+    "user_id": "a1b2c3d4"
   }
 ]
 ```
+
+| Field | Description |
+|-------|-------------|
+| `id` | 8-character page identifier |
+| `title` | Page title set at publish time |
+| `created_at` | ISO-8601 publish timestamp |
+| `deleted_at` | ISO-8601 soft-deletion timestamp, or `null` for live pages |
+| `url` | Full public URL to the HTML file |
+| `user_id` | ID of the user who published the page |
 
 ---
 
