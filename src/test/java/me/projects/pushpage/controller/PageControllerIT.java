@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-class PublishControllerIT extends PostgresTestSupport {
+class PageControllerIT extends PostgresTestSupport {
 
     static final String TEST_API_KEY = "test-admin-api-key";
     static final String TEST_USER_ID = "testuser1";
@@ -64,7 +64,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void publishPage_withValidHtml_returns200WithUrlAndId() throws Exception {
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -77,7 +77,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void publishPage_withEmptyHtml_returns400() throws Exception {
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -89,7 +89,7 @@ class PublishControllerIT extends PostgresTestSupport {
     @Test
     void publishPage_withOversizedHtml_returns413() throws Exception {
         String oversized = "a".repeat(2 * 1024 * 1024); // 2 MB
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"html\": \"" + oversized + "\", \"title\": \"Test\"}"))
@@ -98,7 +98,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void publishPage_withValidHtml_returnsXMaxFileSizeHeader() throws Exception {
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -119,7 +119,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void deletePage_whenPageExists_returns204() throws Exception {
-        String response = mockMvc.perform(post("/publish")
+        String response = mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -164,7 +164,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void health_withPages_returnsOldestAndNewestTimestamps() throws Exception {
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -188,7 +188,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void publish_withoutApiKey_returns401() throws Exception {
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"html": "<h1>Hello</h1>", "title": "Test"}
@@ -198,7 +198,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void publish_withInvalidApiKey_returns401() throws Exception {
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", "bad-key")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -209,7 +209,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
     @Test
     void publish_withBearerToken_returns200() throws Exception {
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("Authorization", "Bearer " + TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -225,7 +225,7 @@ class PublishControllerIT extends PostgresTestSupport {
                 "otheruser1", "otheruser", ApiKeyHasher.hash("other-api-key"), Timestamp.from(Instant.now())
         );
 
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -233,7 +233,7 @@ class PublishControllerIT extends PostgresTestSupport {
                                 """))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", "other-api-key")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -259,7 +259,7 @@ class PublishControllerIT extends PostgresTestSupport {
                 "otheruser2", "otheruser2", ApiKeyHasher.hash("other-api-key-2"), Timestamp.from(Instant.now())
         );
 
-        String response = mockMvc.perform(post("/publish")
+        String response = mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -300,7 +300,7 @@ class PublishControllerIT extends PostgresTestSupport {
 
         String newApiKey = createResponse.replaceAll(".*\"api_key\":\"([^\"]+)\".*", "$1");
 
-        mockMvc.perform(post("/publish")
+        mockMvc.perform(post("/pages")
                         .header("X-Api-Key", newApiKey)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

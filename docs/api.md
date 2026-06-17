@@ -31,7 +31,7 @@ Restart after copying. The key is never logged again once a user exists.
 
 ---
 
-## POST /api/publish
+## POST /api/pages
 
 Publish an HTML page and receive a shareable URL. If the content does not start with `<!DOCTYPE>`, it is automatically wrapped in a minimal HTML shell.
 
@@ -135,7 +135,7 @@ Delete a published page. Users may only delete their own pages; admins can delet
 
 **Auth:** any user (owner or admin)
 
-**Path parameter:** `id` — the page ID returned by `/api/publish`.
+**Path parameter:** `id` — the page ID returned by `POST /api/pages`.
 
 **Response:** `204 No Content` on success.
 

@@ -20,11 +20,11 @@ import java.util.List;
 
 @RestController
 @Tag(name = "Pages", description = "Publish and manage HTML pages")
-public class PublishController {
+public class PageController {
 
     private final PublishService publishService;
 
-    public PublishController(PublishService publishService) {
+    public PageController(PublishService publishService) {
         this.publishService = publishService;
     }
 
@@ -37,7 +37,7 @@ public class PublishController {
             @ApiResponse(responseCode = "413", description = "Payload exceeds the configured size limit", content = @Content),
             @ApiResponse(responseCode = "500", description = "Failed to write file", content = @Content)
     })
-    @PostMapping("/publish")
+    @PostMapping("/pages")
     public ResponseEntity<PublishResponse> publish(@RequestBody PublishRequest request) {
         return ResponseEntity.ok()
                 .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(publishService.getMaxFileSizeBytes()))

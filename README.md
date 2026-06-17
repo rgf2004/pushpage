@@ -21,7 +21,7 @@ All endpoints are under `/api` (Spring Boot context path). Most require an API k
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/publish` | User | Publish HTML, returns `{ url, id }` |
+| `POST` | `/api/pages` | User | Publish HTML, returns `{ url, id }` |
 | `GET` | `/api/me` | User | Returns the authenticated user's profile |
 | `GET` | `/api/health` | None | Health check |
 
@@ -95,7 +95,7 @@ Navigate to `{APP_SERVER_URL}/dashboard` and enter your API key. The dashboard l
 You can start publishing immediately with the admin key. No extra setup required.
 
 ```bash
-curl -X POST {APP_SERVER_URL}/api/publish \
+curl -X POST {APP_SERVER_URL}/api/pages \
   -H "X-Api-Key: pp_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"title": "My Report", "html": "<h1>Hello</h1><p>Some content here.</p>"}'
