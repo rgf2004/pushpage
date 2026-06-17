@@ -845,9 +845,9 @@ async function loadUsers() {
             const isActive = u.active !== false;
             tr.innerHTML = `
                 <td style="font-weight:500">${esc(u.username)}</td>
-                <td><span class="role-badge ${u.role === 'ADMIN' ? 'admin' : ''}">${esc(u.role || 'USER').toLowerCase()}</span></td>
+                <td><span class="role-badge ${u.admin ? 'admin' : ''}">${u.admin ? 'admin' : 'user'}</span></td>
                 <td><span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>${isActive ? 'Active' : 'Inactive'}</td>
-                <td class="date-cell">${fmtDate(u.createdAt)}</td>
+                <td class="date-cell">${fmtDate(u['created_at'])}</td>
                 <td>${isActive ? `<button class="btn btn-secondary btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.username)}">Deactivate</button>` : ''}</td>
             `;
             tbody.appendChild(tr);
