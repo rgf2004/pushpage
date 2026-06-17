@@ -4,21 +4,21 @@ updates:
     directory: /
     schedule:
       interval: weekly
-      day: monday
+      day: saturday
     open-pull-requests-limit: 5
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-      day: monday
+      day: saturday
     open-pull-requests-limit: 5
 
   - package-ecosystem: docker
     directory: /publisher
     schedule:
       interval: weekly
-      day: monday
+      day: saturday
     open-pull-requests-limit: 5
     ignore:
       # Stay on JDK 25.x — block bumps to JDK 26+ or Maven 4+
