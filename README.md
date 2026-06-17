@@ -22,7 +22,6 @@ All endpoints are under `/api` (Spring Boot context path). Most require an API k
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/pages` | User | Publish HTML, returns `{ url, id }` |
-| `GET` | `/api/me` | User | Returns the authenticated user's profile |
 | `GET` | `/api/health` | None | Health check |
 
 For the full API reference — page management, admin user endpoints, request/response schemas — see the Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
