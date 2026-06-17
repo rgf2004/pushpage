@@ -50,6 +50,8 @@ Whenever a change requires documentation (new endpoint, config variable, schema 
 
 Technical reference material (database schema, API contracts, architecture notes) lives in [`docs/`](docs/). Keep it up to date alongside code changes.
 
+For every change, evaluate whether **`skill/SKILL.md`** and **`nginx/llms.txt`** need updating. These are agent-facing instruction files — any change to the API surface, auth mechanism, base URL, or agent workflow must be reflected in both. Stale agent instructions cause agents to call wrong endpoints or follow broken flows.
+
 ## Database
 
 The service defaults to **SQLite** (no extra setup — the database file lives in the `data` Docker volume). To use **PostgreSQL** instead, set `SPRING_PROFILES_ACTIVE=postgres` and supply the connection variables below. Use `docker-compose.postgres.yml`, which starts a complete stack including a co-located `postgres:17-alpine` container.
