@@ -439,7 +439,7 @@
     <!-- Pages tab -->
     <div class="tab-panel active" id="tab-pages">
         <div class="panel-header">
-            <h2>Your pages</h2>
+            <h2 id="pages-heading">Your pages</h2>
         </div>
         <div id="pages-loading" class="loading-state">Loading…</div>
         <div id="pages-table-wrap" style="display:none">
@@ -683,6 +683,7 @@ async function loadDashboard() {
     // Admin tab
     if (isAdmin) {
         document.getElementById('admin-tab-btn').style.display = '';
+        document.getElementById('pages-heading').textContent = 'All pages';
     }
 
     renderPages();
