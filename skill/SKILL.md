@@ -36,11 +36,11 @@ Pass the key in every request as `X-Api-Key: $PUSHPAGE_API_KEY`.
 
 ## Publishing Content (primary operation)
 
-Read the key, then POST to `/api/publish`:
+Read the key, then POST to `/api/pages`:
 
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-curl -s -X POST http://pushpage.homelab.local/api/publish \
+curl -s -X POST http://pushpage.homelab.local/api/pages \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: $PUSHPAGE_API_KEY" \
   -d '{
@@ -124,13 +124,13 @@ curl -s http://pushpage.homelab.local/api/health
 **Creating HTML from a user request:**
 1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
 2. Build the full HTML for what the user asked for
-3. POST it to `/api/publish` with the key in `X-Api-Key` and a descriptive `title`
+3. POST it to `/api/pages` with the key in `X-Api-Key` and a descriptive `title`
 4. Return only the `url` to the user — do not paste the HTML into chat
 
 **Publishing existing content:**
 1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
 2. Wrap the content in clean, styled HTML
-3. POST to `/api/publish` with the key and a descriptive `title`
+3. POST to `/api/pages` with the key and a descriptive `title`
 4. Extract the `url` from the response and present it as a clickable link
 
 If the curl fails with a connection error (not a 401/403), mention that the pushpage service at `pushpage.homelab.local` may be down and suggest the user check their homelab.

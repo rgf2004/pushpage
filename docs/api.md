@@ -31,7 +31,9 @@ Restart after copying. The key is never logged again once a user exists.
 
 ---
 
-## POST /api/publish
+## Pages
+
+### POST /api/pages
 
 Publish an HTML page and receive a shareable URL. If the content does not start with `<!DOCTYPE>`, it is automatically wrapped in a minimal HTML shell.
 
@@ -76,28 +78,7 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
 
 ---
 
-## GET /api/me
-
-Return the profile of the currently authenticated user.
-
-**Auth:** any user
-
-**Response:**
-
-```json
-{
-  "id": "a1b2c3d4",
-  "username": "myagent",
-  "email": "agent@example.com",
-  "created_at": "2026-01-01T00:00:00Z",
-  "active": true,
-  "admin": false
-}
-```
-
----
-
-## GET /api/pages
+### GET /api/pages
 
 List published pages ordered by publish date descending. Regular users see only their own pages; admins see all.
 
@@ -129,13 +110,13 @@ List published pages ordered by publish date descending. Regular users see only 
 
 ---
 
-## DELETE /api/pages/{id}
+### DELETE /api/pages/{id}
 
 Delete a published page. Users may only delete their own pages; admins can delete any page.
 
 **Auth:** any user (owner or admin)
 
-**Path parameter:** `id` — the page ID returned by `/api/publish`.
+**Path parameter:** `id` — the page ID returned by `POST /api/pages`.
 
 **Response:** `204 No Content` on success.
 
@@ -148,7 +129,32 @@ Delete a published page. Users may only delete their own pages; admins can delet
 
 ---
 
-## GET /api/health
+## User
+
+### GET /api/me
+
+Return the profile of the currently authenticated user.
+
+**Auth:** any user
+
+**Response:**
+
+```json
+{
+  "id": "a1b2c3d4",
+  "username": "myagent",
+  "email": "agent@example.com",
+  "created_at": "2026-01-01T00:00:00Z",
+  "active": true,
+  "admin": false
+}
+```
+
+---
+
+## Health
+
+### GET /api/health
 
 Health check endpoint. Returns runtime statistics and storage info. Stats are cached for 30 seconds.
 
@@ -194,7 +200,9 @@ When `status` is `DOWN`, `storage` is omitted and `livePages`/`deletedPages` are
 
 ---
 
-## POST /api/admin/users
+## Admin
+
+### POST /api/admin/users
 
 Create a new user. The returned `api_key` is shown only once.
 
@@ -238,7 +246,7 @@ Create a new user. The returned `api_key` is shown only once.
 
 ---
 
-## GET /api/admin/users
+### GET /api/admin/users
 
 List all users ordered by creation date.
 
@@ -261,7 +269,7 @@ List all users ordered by creation date.
 
 ---
 
-## PATCH /api/admin/users/{id}/deactivate
+### PATCH /api/admin/users/{id}/deactivate
 
 Mark a user as inactive. Their pages are retained but they can no longer authenticate.
 

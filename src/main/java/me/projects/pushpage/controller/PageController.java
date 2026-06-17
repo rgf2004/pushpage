@@ -11,7 +11,6 @@ import me.projects.pushpage.constants.AppHeaders;
 import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
-import me.projects.pushpage.model.UserSummary;
 import me.projects.pushpage.service.PublishService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,11 +19,11 @@ import java.util.List;
 
 @RestController
 @Tag(name = "Pages", description = "Publish and manage HTML pages")
-public class PublishController {
+public class PageController {
 
     private final PublishService publishService;
 
-    public PublishController(PublishService publishService) {
+    public PageController(PublishService publishService) {
         this.publishService = publishService;
     }
 
@@ -37,19 +36,11 @@ public class PublishController {
             @ApiResponse(responseCode = "413", description = "Payload exceeds the configured size limit", content = @Content),
             @ApiResponse(responseCode = "500", description = "Failed to write file", content = @Content)
     })
-    @PostMapping("/publish")
+    @PostMapping("/pages")
     public ResponseEntity<PublishResponse> publish(@RequestBody PublishRequest request) {
         return ResponseEntity.ok()
                 .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(publishService.getMaxFileSizeBytes()))
                 .body(publishService.publish(request));
-    }
-
-    @Operation(summary = "Get current authenticated user")
-    @ApiResponse(responseCode = "200", description = "Current user",
-            content = @Content(schema = @Schema(implementation = UserSummary.class)))
-    @GetMapping("/me")
-    public UserSummary me() {
-        return publishService.getCurrentUser();
     }
 
     @Operation(summary = "List all published pages",

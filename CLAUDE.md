@@ -81,10 +81,10 @@ All endpoints are under `/api` (Spring Boot context path).
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/publish` | User | Publish HTML, returns `{ url, id }` |
-| `GET` | `/api/me` | User | Returns the authenticated user's profile |
+| `POST` | `/api/pages` | User | Publish HTML, returns `{ url, id }` |
 | `GET` | `/api/pages` | User | List pages scoped to caller (admin sees all) |
 | `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any) |
+| `GET` | `/api/me` | User | Returns the authenticated user's profile |
 | `GET` | `/api/health` | None | Health check |
 | `POST` | `/api/admin/users` | Admin | Create a user, response includes `api_key` |
 | `GET` | `/api/admin/users` | Admin | List all users (no API keys) |
