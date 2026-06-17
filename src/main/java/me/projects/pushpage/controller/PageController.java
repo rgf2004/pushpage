@@ -11,7 +11,6 @@ import me.projects.pushpage.constants.AppHeaders;
 import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
-import me.projects.pushpage.model.UserSummary;
 import me.projects.pushpage.service.PublishService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,14 +41,6 @@ public class PageController {
         return ResponseEntity.ok()
                 .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(publishService.getMaxFileSizeBytes()))
                 .body(publishService.publish(request));
-    }
-
-    @Operation(summary = "Get current authenticated user")
-    @ApiResponse(responseCode = "200", description = "Current user",
-            content = @Content(schema = @Schema(implementation = UserSummary.class)))
-    @GetMapping("/me")
-    public UserSummary me() {
-        return publishService.getCurrentUser();
     }
 
     @Operation(summary = "List all published pages",
