@@ -1,6 +1,6 @@
 # pushpage
 
-A self-hosted HTML page publishing service for a homelab. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
+An HTML page publishing service for a homelab. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
 
 ## Stack
 
@@ -49,6 +49,8 @@ Before starting any work, pull the latest `main` branch. Create a new feature br
 Whenever a change requires documentation (new endpoint, config variable, schema change, behavior change), **both** `CLAUDE.md` and `README.md` must be updated in the same PR. Do not merge changes that leave either file stale.
 
 Technical reference material (database schema, API contracts, architecture notes) lives in [`docs/`](docs/). Keep it up to date alongside code changes.
+
+For every change, evaluate whether **`skill/SKILL.md`** and **`nginx/llms.txt`** need updating. These are agent-facing instruction files — any change to the API surface, auth mechanism, base URL, or agent workflow must be reflected in both. Stale agent instructions cause agents to call wrong endpoints or follow broken flows.
 
 ## Database
 
@@ -128,8 +130,8 @@ podman manifest push --all rgf2004/pushpage-publisher:latest docker://docker.io/
 
 **Nginx image (`rgf2004/pushpage-nginx`):**
 ```bash
-podman build --no-cache --platform linux/amd64 -t rgf2004/pushpage-nginx:amd64 -f nginx/Dockerfile nginx/
-podman build --no-cache --platform linux/arm64 -t rgf2004/pushpage-nginx:arm64 -f nginx/Dockerfile nginx/
+podman build --no-cache --platform linux/amd64 -t rgf2004/pushpage-nginx:amd64 -f nginx/Dockerfile .
+podman build --no-cache --platform linux/arm64 -t rgf2004/pushpage-nginx:arm64 -f nginx/Dockerfile .
 podman manifest create rgf2004/pushpage-nginx:latest rgf2004/pushpage-nginx:amd64 rgf2004/pushpage-nginx:arm64
 podman manifest push --all rgf2004/pushpage-nginx:latest docker://docker.io/rgf2004/pushpage-nginx:latest
 ```

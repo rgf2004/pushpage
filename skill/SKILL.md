@@ -5,7 +5,7 @@ description: Use this skill any time the user asks to create, build, generate, o
 
 # Pushpage — Publish HTML and Get a Shareable URL
 
-Pushpage is a self-hosted service that accepts HTML and returns a public URL. Use it in two situations:
+Pushpage is a service that accepts HTML and returns a public URL. Use it in two situations:
 
 1. **The user asks to create an HTML page** — build the HTML yourself, then publish it. Return only the URL, not the raw HTML.
 2. **You have output better viewed in a browser** — reports, data tables, dashboards, styled summaries. Publish instead of dumping HTML into chat.

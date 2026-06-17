@@ -1,0 +1,94 @@
+# pushpage
+
+pushpage is a service that accepts HTML and returns a shareable public URL. It is purpose-built for AI agents: instead of dumping HTML or long-form content into chat, an agent POSTs to pushpage and hands the user a clean, clickable link.
+
+## Base URL
+
+```
+{APP_SERVER_URL}/api
+```
+
+Replace `{APP_SERVER_URL}` with the actual service URL (e.g. `http://pushpage.homelab.local`).
+
+## Authentication
+
+All endpoints except `GET /api/health` require an API key. Read it from the credentials file:
+
+```bash
+PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
+```
+
+If the file is missing or empty, stop and tell the user:
+
+> Your pushpage API key is not configured. Run the following to save it:
+> ```bash
+> mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
+> ```
+> You can find your key in the pushpage startup logs, or ask an admin to create one via `POST /api/admin/users`.
+
+Pass the key in every request as `X-Api-Key: $PUSHPAGE_API_KEY`.
+
+## Primary operation — publish HTML
+
+```bash
+PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
+curl -s -X POST {APP_SERVER_URL}/api/pages \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -d '{
+    "title": "My Report",
+    "html": "<html>...</html>"
+  }'
+```
+
+Response:
+
+```json
+{
+  "url": "{APP_SERVER_URL}/pages/abc123.html",
+  "id": "abc123"
+}
+```
+
+Return the `url` to the user. That is the shareable link.
+
+## Secondary operations
+
+### List published pages
+
+```bash
+curl -s {APP_SERVER_URL}/api/pages \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY"
+```
+
+Returns an array of page objects with `id`, `title`, `created_at`, and `url`. Regular users see only their own pages; admins see all.
+
+### Delete a page
+
+```bash
+curl -s -X DELETE {APP_SERVER_URL}/api/pages/{id} \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY"
+```
+
+### Health check (no auth required)
+
+```bash
+curl -s {APP_SERVER_URL}/api/health
+```
+
+## Writing good HTML for pushpage
+
+Pages are served directly in a browser, so write clean, self-contained HTML:
+
+- Use inline CSS — no external stylesheets
+- Add `<meta name="viewport" content="width=device-width, initial-scale=1">` for responsiveness
+- Include a `<title>` tag — it appears in the browser tab
+- No references to local files; everything must be self-contained
+- Tailwind via CDN works well: `<script src="https://cdn.tailwindcss.com"></script>`
+
+## Typical agent flow
+
+1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
+2. Build the full HTML for what the user asked for
+3. POST to `/api/pages` with the key in `X-Api-Key` and a descriptive `title`
+4. Extract the `url` from the response and return it to the user — do not paste the HTML into chat
