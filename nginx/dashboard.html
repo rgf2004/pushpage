@@ -6,8 +6,11 @@
     <title>pushpage · dashboard</title>
     <link rel="stylesheet" href="/static/theme.css">
     <style>
-        /* Extension iframes (e.g. Bitwarden) are opacity:0 but still intercept clicks */
-        iframe { pointer-events: none !important; }
+        /* Bitwarden's notification bar (bit-notification-bar-root) injects a
+           position:fixed z-index:2147483647 overlay into the top-right corner.
+           Its iframe is inside a closed shadow DOM so our CSS can't reach it,
+           but the host element itself is in the main document and targetable. */
+        bit-notification-bar-root { display: none !important; pointer-events: none !important; }
 
         /* ── Login screen ─────────────────────────────────────────────── */
         #login-screen {
