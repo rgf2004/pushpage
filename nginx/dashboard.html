@@ -848,7 +848,7 @@ async function loadUsers() {
                 <td><span class="role-badge ${u.admin ? 'admin' : ''}">${u.admin ? 'admin' : 'user'}</span></td>
                 <td><span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>${isActive ? 'Active' : 'Inactive'}</td>
                 <td class="date-cell">${fmtDate(u['created_at'])}</td>
-                <td>${isActive ? `<button class="btn btn-secondary btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.username)}">Deactivate</button>` : ''}</td>
+                <td>${isActive && !u.admin ? `<button class="btn btn-secondary btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.username)}">Deactivate</button>` : ''}</td>
             `;
             tbody.appendChild(tr);
         });
