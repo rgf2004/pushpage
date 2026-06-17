@@ -751,8 +751,8 @@ function renderPageRows() {
                 <div class="page-id">${esc(p.id)}</div>
             </td>
             <td class="page-url"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a></td>
-            <td class="date-cell">${fmtDate(p.createdAt)}</td>
-            <td class="date-cell">${fmtDate(p.expiresAt)}</td>
+            <td class="date-cell">${fmtDate(p['created_at'])}</td>
+            <td class="date-cell">${fmtDate(p['deleted_at'])}</td>
             <td><button class="btn btn-danger btn-sm" data-id="${esc(p.id)}" data-title="${esc(p.title || p.id)}">Delete</button></td>
         `;
         tbody.appendChild(tr);
@@ -888,7 +888,7 @@ document.getElementById('cu-submit').addEventListener('click', async () => {
     if (!username) { errEl.textContent = 'Username is required.'; errEl.style.display = 'block'; return; }
 
     try {
-        const r = await api('/admin/users', { method: 'POST', body: JSON.stringify({ username, role }) });
+        const r = await api('/admin/users', { method: 'POST', body: JSON.stringify({ username, admin: role === 'ADMIN' }) });
         const data = await r.json();
         if (!r.ok) {
             errEl.textContent = data.message || 'Failed to create user.';
