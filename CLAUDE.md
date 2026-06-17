@@ -82,6 +82,7 @@ All endpoints are under `/api` (Spring Boot context path).
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/publish` | User | Publish HTML, returns `{ url, id }` |
+| `GET` | `/api/me` | User | Returns the authenticated user's profile |
 | `GET` | `/api/pages` | User | List pages scoped to caller (admin sees all) |
 | `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any) |
 | `GET` | `/api/health` | None | Health check |
@@ -93,7 +94,7 @@ Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
 ## Dashboard
 
-A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.html`). It authenticates with an API key stored in `sessionStorage` and calls the existing REST endpoints — no new backend endpoints required.
+A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.html`). It authenticates with an API key stored in `sessionStorage` and calls the REST endpoints, including `/api/me` to resolve the logged-in username on load.
 
 **Tabs:**
 - **Pages** — lists the caller's pages (admins see all), with delete and pagination

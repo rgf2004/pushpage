@@ -647,30 +647,16 @@ async function login() {
 }
 
 async function loadDashboard() {
-    // Determine current user by fetching users list (admins) or just loading pages
-    // We detect role by attempting the admin endpoint
-    let username = 'user';
-    let isAdmin = false;
+    const [meR, pagesR] = await Promise.all([
+        fetch('/api/me', { headers: { 'X-Api-Key': apiKey } }),
+        fetch('/api/pages', { headers: { 'X-Api-Key': apiKey } }),
+    ]);
 
-    const adminR = await fetch('/api/admin/users', { headers: { 'X-Api-Key': apiKey } });
-    if (adminR.ok) {
-        isAdmin = true;
-        const users = await adminR.json();
-        // The API key we used must belong to one of these users — try matching
-        // by seeing which user's key we have (we can't, so just show admin)
-        // We'll show username from pages owner info below
-    }
-
-    // Get pages to find out username (pages include owner)
-    const pagesR = await fetch('/api/pages', { headers: { 'X-Api-Key': apiKey } });
+    const me = meR.ok ? await meR.json() : {};
     const pages = pagesR.ok ? await pagesR.json() : [];
 
-    // Infer username from first page's owner, or fall back
-    if (pages.length > 0 && pages[0].owner) {
-        username = pages[0].owner;
-    } else if (isAdmin) {
-        username = 'admin';
-    }
+    const username = me.username || 'unknown';
+    const isAdmin = me.admin === true;
 
     currentUser = { username, isAdmin };
     allPages = pages;
