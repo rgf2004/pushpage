@@ -302,10 +302,11 @@
             inset: 0;
             background: rgba(0,0,0,.65);
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             z-index: 100;
             padding: 24px;
+            overflow-y: auto;
         }
 
         .modal {
@@ -315,6 +316,7 @@
             padding: 32px;
             width: 100%;
             max-width: 440px;
+            margin: auto;
         }
 
         .modal h3 {
@@ -696,6 +698,7 @@ async function loadDashboard() {
 
 // ── Logout ───────────────────────────────────────────────────────────────
 document.getElementById('logout-btn').addEventListener('click', () => {
+    ['confirm-modal', 'create-user-modal', 'deactivate-modal'].forEach(id => hideModal(id));
     sessionStorage.removeItem('pp_key');
     apiKey = '';
     currentUser = null;
