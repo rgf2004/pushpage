@@ -6,6 +6,9 @@
     <title>pushpage · dashboard</title>
     <link rel="stylesheet" href="/static/theme.css">
     <style>
+        /* Extension iframes (e.g. Bitwarden) are opacity:0 but still intercept clicks */
+        iframe { pointer-events: none !important; }
+
         /* ── Login screen ─────────────────────────────────────────────── */
         #login-screen {
             flex: 1;
