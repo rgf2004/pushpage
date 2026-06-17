@@ -137,13 +137,19 @@ Response — save the `api_key`, it is only shown once:
 
 That user can now publish pages with their own key. Regular users only see their own pages in `GET /api/pages`; admins see all.
 
-## Agent Skill File
+## Agent Integration
+
+### Skill file
 
 The `skill/` directory contains a skill file (`skill/SKILL.md`) for use with AI agent frameworks such as Claude Code. Loading this skill tells the agent how to interact with pushpage: when to publish, how to structure the HTML, and how to return the resulting URL to the user.
 
 Once the skill is loaded, the agent will automatically publish rich HTML output to pushpage instead of dumping content into chat, and return a clickable link.
 
 See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage examples.
+
+### llms.txt
+
+[`llms.txt`](llms.txt) is served at `{APP_SERVER_URL}/llms.txt` and follows the [llms.txt convention](https://llmstxt.org) — a plain-text file that describes what a service does and how to interact with it. An agent that discovers the pushpage instance via HTTP can read this file to understand the API, authentication, and typical usage flow without any prior configuration.
 
 ## Database
 
