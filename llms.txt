@@ -1,6 +1,6 @@
 # pushpage
 
-pushpage is a self-hosted service that accepts HTML and returns a shareable public URL. It is purpose-built for AI agents: instead of dumping HTML or long-form content into chat, an agent POSTs to pushpage and hands the user a clean, clickable link.
+pushpage is a service that accepts HTML and returns a shareable public URL. It is purpose-built for AI agents: instead of dumping HTML or long-form content into chat, an agent POSTs to pushpage and hands the user a clean, clickable link.
 
 ## Base URL
 
