@@ -81,6 +81,28 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Extract metadata (mcp)
+        id: meta-mcp
+        uses: docker/metadata-action@v6
+        with:
+          images: rgf2004/pushpage-mcp
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push mcp
+        uses: docker/build-push-action@v7
+        with:
+          context: ./mcp
+          file: mcp/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-mcp.outputs.tags }}
+          labels: ${{ steps.meta-mcp.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Bump to next snapshot version
         run: mvn -B versions:set -DnewVersion=${{ env.NEXT_SNAPSHOT }} -DgenerateBackupPoms=false
 
