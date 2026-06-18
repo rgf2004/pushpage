@@ -30,7 +30,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class PublishServiceTest {
+class PageServiceTest {
 
     static final User ADMIN_USER = new User("admin1", "admin", null, "pp_key", Instant.now(), true, true);
     static final User REGULAR_USER = new User("user1", "user", null, "pp_key2", Instant.now(), true, false);
@@ -45,54 +45,54 @@ class PublishServiceTest {
     private AuthContext authContext;
 
     @InjectMocks
-    private PublishService publishService;
+    private PageService pageService;
 
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() throws Exception {
-        ReflectionTestUtils.setField(publishService, "baseUrl", "http://localhost");
-        ReflectionTestUtils.setField(publishService, "pagesDir", tempDir.toString());
-        ReflectionTestUtils.setField(publishService, "maxFileSize", DataSize.ofMegabytes(1));
-        publishService.init();
+        ReflectionTestUtils.setField(pageService, "baseUrl", "http://localhost");
+        ReflectionTestUtils.setField(pageService, "pagesDir", tempDir.toString());
+        ReflectionTestUtils.setField(pageService, "maxFileSize", DataSize.ofMegabytes(1));
+        pageService.init();
         lenient().when(authContext.getCurrentUser()).thenReturn(ADMIN_USER);
     }
 
     @Test
     void publishPage_shouldReturnUrlContainingPageId() {
-        PublishResponse response = publishService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
+        PublishResponse response = pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
 
         assertThat(response.url()).contains(response.id());
     }
 
     @Test
     void publishPage_shouldStoreHtmlFileOnDisk() {
-        PublishResponse response = publishService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
+        PublishResponse response = pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
 
         assertThat(tempDir.resolve(response.id() + ".html")).exists();
     }
 
     @Test
     void publishPage_whenHtmlIsNull_shouldThrowBadRequest() {
-        assertThatThrownBy(() -> publishService.publish(new PublishRequest(null, "Title")))
+        assertThatThrownBy(() -> pageService.publish(new PublishRequest(null, "Title")))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("HTML content is required");
     }
 
     @Test
     void publishPage_whenHtmlIsBlank_shouldThrowBadRequest() {
-        assertThatThrownBy(() -> publishService.publish(new PublishRequest("   ", "Title")))
+        assertThatThrownBy(() -> pageService.publish(new PublishRequest("   ", "Title")))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("HTML content is required");
     }
 
     @Test
     void publishPage_whenHtmlExceedsMaxSize_shouldThrow413() {
-        ReflectionTestUtils.setField(publishService, "maxFileSize", DataSize.ofBytes(10));
+        ReflectionTestUtils.setField(pageService, "maxFileSize", DataSize.ofBytes(10));
         String oversized = "a".repeat(11);
 
-        assertThatThrownBy(() -> publishService.publish(new PublishRequest(oversized, "Title")))
+        assertThatThrownBy(() -> pageService.publish(new PublishRequest(oversized, "Title")))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.CONTENT_TOO_LARGE));
@@ -100,10 +100,10 @@ class PublishServiceTest {
 
     @Test
     void publishPage_whenHtmlExactlyAtLimit_shouldSucceed() {
-        ReflectionTestUtils.setField(publishService, "maxFileSize", DataSize.ofBytes(10));
+        ReflectionTestUtils.setField(pageService, "maxFileSize", DataSize.ofBytes(10));
         String exactSize = "a".repeat(10);
 
-        PublishResponse response = publishService.publish(new PublishRequest(exactSize, "Title"));
+        PublishResponse response = pageService.publish(new PublishRequest(exactSize, "Title"));
 
         assertThat(response.id()).isNotBlank();
     }
@@ -112,7 +112,7 @@ class PublishServiceTest {
     void publishPage_whenTitleIsNull_extractsTitleFromHtml() {
         String html = "<!DOCTYPE html><html><head><title>From HTML</title></head><body></body></html>";
 
-        publishService.publish(new PublishRequest(html, null));
+        pageService.publish(new PublishRequest(html, null));
 
         verify(pageRepository).save(anyString(), eq("From HTML"), anyString());
     }
@@ -121,14 +121,14 @@ class PublishServiceTest {
     void publishPage_whenTitleIsBlank_extractsTitleFromHtml() {
         String html = "<!DOCTYPE html><html><head><title>From HTML</title></head><body></body></html>";
 
-        publishService.publish(new PublishRequest(html, "   "));
+        pageService.publish(new PublishRequest(html, "   "));
 
         verify(pageRepository).save(anyString(), eq("From HTML"), anyString());
     }
 
     @Test
     void publishPage_whenTitleNullAndNoTitleTag_usesUntitled() {
-        publishService.publish(new PublishRequest("<h1>Hello</h1>", null));
+        pageService.publish(new PublishRequest("<h1>Hello</h1>", null));
 
         verify(pageRepository).save(anyString(), eq("Untitled"), anyString());
     }
@@ -137,7 +137,7 @@ class PublishServiceTest {
     void publishPage_whenTitleNullAndTitleTagIsBlank_usesUntitled() {
         String html = "<!DOCTYPE html><html><head><title>   </title></head><body></body></html>";
 
-        publishService.publish(new PublishRequest(html, null));
+        pageService.publish(new PublishRequest(html, null));
 
         verify(pageRepository).save(anyString(), eq("Untitled"), anyString());
     }
@@ -146,7 +146,7 @@ class PublishServiceTest {
     void publishPage_explicitTitleTakesPrecedenceOverHtmlTitle() {
         String html = "<!DOCTYPE html><html><head><title>HTML Title</title></head><body></body></html>";
 
-        publishService.publish(new PublishRequest(html, "Explicit Title"));
+        pageService.publish(new PublishRequest(html, "Explicit Title"));
 
         verify(pageRepository).save(anyString(), eq("Explicit Title"), anyString());
     }
@@ -159,7 +159,7 @@ class PublishServiceTest {
         Path file = tempDir.resolve("abc123.html");
         file.toFile().createNewFile();
 
-        publishService.deletePage("abc123");
+        pageService.deletePage("abc123");
 
         assertThat(file).doesNotExist();
         verify(pageRepository).deleteById("abc123");
@@ -169,7 +169,7 @@ class PublishServiceTest {
     void deletePage_whenPageNotFound_shouldThrowNotFound() {
         when(pageRepository.findById("missing")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> publishService.deletePage("missing"))
+        assertThatThrownBy(() -> pageService.deletePage("missing"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Page not found");
     }
@@ -180,7 +180,7 @@ class PublishServiceTest {
         when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
         when(authContext.getCurrentUser()).thenReturn(REGULAR_USER);
 
-        assertThatThrownBy(() -> publishService.deletePage("abc123"))
+        assertThatThrownBy(() -> pageService.deletePage("abc123"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN));
@@ -191,7 +191,7 @@ class PublishServiceTest {
         Page page = new Page("abc123", "Title", Instant.now(), null, null, "someone-else");
         when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
 
-        publishService.deletePage("abc123");
+        pageService.deletePage("abc123");
 
         verify(pageRepository).deleteById("abc123");
     }
@@ -200,7 +200,7 @@ class PublishServiceTest {
     void listPages_whenNoPagesExist_shouldReturnEmptyList() {
         when(pageRepository.findAll(anyString(), anyString(), anyBoolean())).thenReturn(List.of());
 
-        assertThat(publishService.listPages()).isEmpty();
+        assertThat(pageService.listPages()).isEmpty();
     }
 
     @Test
@@ -211,6 +211,6 @@ class PublishServiceTest {
         );
         when(pageRepository.findAll(anyString(), anyString(), anyBoolean())).thenReturn(pages);
 
-        assertThat(publishService.listPages()).isEqualTo(pages);
+        assertThat(pageService.listPages()).isEqualTo(pages);
     }
 }

@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import me.projects.pushpage.model.UserSummary;
-import me.projects.pushpage.service.PublishService;
+import me.projects.pushpage.service.PageService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "User", description = "Authenticated user info")
 public class UserController {
 
-    private final PublishService publishService;
+    private final PageService pageService;
 
-    public UserController(PublishService publishService) {
-        this.publishService = publishService;
+    public UserController(PageService pageService) {
+        this.pageService = pageService;
     }
 
     @Operation(summary = "Get current authenticated user")
@@ -25,7 +25,7 @@ public class UserController {
             content = @Content(schema = @Schema(implementation = UserSummary.class)))
     @GetMapping("/me")
     public UserSummary me() {
-        return publishService.getCurrentUser();
+        return pageService.getCurrentUser();
     }
 
 }

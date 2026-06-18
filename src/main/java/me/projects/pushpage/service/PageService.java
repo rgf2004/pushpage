@@ -27,9 +27,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class PublishService {
+public class PageService {
 
-    private static final Logger log = LoggerFactory.getLogger(PublishService.class);
+    private static final Logger log = LoggerFactory.getLogger(PageService.class);
     private static final Pattern TITLE_TAG = Pattern.compile("<title[^>]*>(.*?)</title>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     @Value("${app.base-url}")
@@ -45,7 +45,7 @@ public class PublishService {
     private final HealthService healthService;
     private final AuthContext authContext;
 
-    public PublishService(PageRepository pageRepository, HealthService healthService, AuthContext authContext) {
+    public PageService(PageRepository pageRepository, HealthService healthService, AuthContext authContext) {
         this.pageRepository = pageRepository;
         this.healthService = healthService;
         this.authContext = authContext;
