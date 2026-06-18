@@ -17,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
 
+import org.jsoup.Jsoup;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,9 +27,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class PublishService {
+public class PageService {
 
-    private static final Logger log = LoggerFactory.getLogger(PublishService.class);
+    private static final Logger log = LoggerFactory.getLogger(PageService.class);
 
     @Value("${app.base-url}")
     private String baseUrl;
@@ -42,7 +44,7 @@ public class PublishService {
     private final HealthService healthService;
     private final AuthContext authContext;
 
-    public PublishService(PageRepository pageRepository, HealthService healthService, AuthContext authContext) {
+    public PageService(PageRepository pageRepository, HealthService healthService, AuthContext authContext) {
         this.pageRepository = pageRepository;
         this.healthService = healthService;
         this.authContext = authContext;
@@ -69,7 +71,7 @@ public class PublishService {
         }
         String id = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         String title = (request.title() != null && !request.title().isBlank())
-                ? request.title() : "Untitled";
+                ? request.title() : extractTitle(request.html());
         String html = wrapIfNeeded(request.html(), title);
 
         try {
@@ -121,6 +123,11 @@ public class PublishService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
         return user;
+    }
+
+    private String extractTitle(String html) {
+        String candidate = Jsoup.parse(html).title().strip();
+        return candidate.isBlank() ? "Untitled" : candidate;
     }
 
     private String wrapIfNeeded(String html, String title) {

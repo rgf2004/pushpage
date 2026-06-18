@@ -11,7 +11,7 @@ import me.projects.pushpage.constants.AppHeaders;
 import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
-import me.projects.pushpage.service.PublishService;
+import me.projects.pushpage.service.PageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,10 +21,10 @@ import java.util.List;
 @Tag(name = "Pages", description = "Publish and manage HTML pages")
 public class PageController {
 
-    private final PublishService publishService;
+    private final PageService pageService;
 
-    public PageController(PublishService publishService) {
-        this.publishService = publishService;
+    public PageController(PageService pageService) {
+        this.pageService = pageService;
     }
 
     @Operation(summary = "Publish an HTML page",
@@ -39,8 +39,8 @@ public class PageController {
     @PostMapping("/pages")
     public ResponseEntity<PublishResponse> publish(@RequestBody PublishRequest request) {
         return ResponseEntity.ok()
-                .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(publishService.getMaxFileSizeBytes()))
-                .body(publishService.publish(request));
+                .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(pageService.getMaxFileSizeBytes()))
+                .body(pageService.publish(request));
     }
 
     @Operation(summary = "List all published pages",
@@ -49,7 +49,7 @@ public class PageController {
             content = @Content(schema = @Schema(implementation = Page.class)))
     @GetMapping("/pages")
     public List<Page> listPages() {
-        return publishService.listPages();
+        return pageService.listPages();
     }
 
     @Operation(summary = "Delete a published page",
@@ -62,7 +62,7 @@ public class PageController {
     public ResponseEntity<Void> deletePage(
             @Parameter(description = "8-character page ID", example = "a1b2c3d4")
             @PathVariable String id) {
-        publishService.deletePage(id);
+        pageService.deletePage(id);
         return ResponseEntity.noContent().build();
     }
 

@@ -76,6 +76,19 @@ class PageControllerIT extends PostgresTestSupport {
     }
 
     @Test
+    void publishPage_withoutTitle_returns200AndExtractsTitleFromHtml() throws Exception {
+        mockMvc.perform(post("/pages")
+                        .header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<!DOCTYPE html><html><head><title>Auto Title</title></head><body></body></html>"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").exists())
+                .andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
     void publishPage_withEmptyHtml_returns400() throws Exception {
         mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)

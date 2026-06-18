@@ -83,7 +83,7 @@ All endpoints are under `/api` (Spring Boot context path).
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/pages` | User | Publish HTML, returns `{ url, id }` |
+| `POST` | `/api/pages` | User | Publish HTML, returns `{ url, id }`. `title` is optional — extracted from `<title>` tag when absent, falls back to `"Untitled"` |
 | `GET` | `/api/pages` | User | List pages scoped to caller (admin sees all) |
 | `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any) |
 | `GET` | `/api/me` | User | Returns the authenticated user's profile |
