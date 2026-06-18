@@ -33,8 +33,7 @@ services:
 
   mcp:
     build:
-      context: .
-      dockerfile: mcp/Dockerfile
+      context: ./mcp
     environment:
       PUSHPAGE_URL: http://publisher:8080
     depends_on:
