@@ -174,9 +174,7 @@ docker compose up -d
 
 ### Connecting agents
 
-Each client supplies their own pushpage API key via the `Authorization` header in their MCP client config. The server never holds a shared key — clients authenticate independently.
-
-Once running, the MCP server is available at `http://your-domain/mcp`.
+Each client supplies their own pushpage API key via the `Authorization` header in their MCP client config. Once running, the MCP server is available at `http://your-domain/mcp`.
 
 **Claude Desktop `claude_desktop_config.json`:**
 ```json

@@ -18,7 +18,6 @@ mcp = FastMCP(
     "pushpage",
     instructions=(
         "This MCP server lets you publish, list, and delete HTML pages on a pushpage instance. "
-        "Authenticate by passing your pushpage API key as 'Authorization: Bearer <key>' when connecting. "
         "Use publish_page to POST HTML and receive a shareable URL, list_pages to see your published pages, "
         "delete_page to remove a page by ID, and health to verify the service is reachable."
     ),
@@ -58,10 +57,17 @@ def _client() -> httpx.Client:
 
 
 @mcp.tool()
-def publish_page(title: str, html: str) -> dict:
-    """Publish an HTML page and return its shareable URL."""
+def publish_page(html: str, title: str | None = None) -> dict:
+    """Publish an HTML page and return its shareable URL.
+
+    title is optional — omit it to let the service extract it from the <title> tag,
+    or fall back to 'Untitled'.
+    """
     with _client() as client:
-        r = client.post("/api/pages", json={"title": title, "html": html})
+        payload = {"html": html}
+        if title is not None:
+            payload["title"] = title
+        r = client.post("/api/pages", json=payload)
         r.raise_for_status()
         data = r.json()
         return {"url": data["url"], "id": data["id"]}
