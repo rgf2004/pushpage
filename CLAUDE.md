@@ -75,7 +75,6 @@ The service defaults to **SQLite** (no extra setup — the database file lives i
 | `DB_NAME` | PostgreSQL database name | `pushpage` |
 | `DB_USER` | PostgreSQL username | `pushpage` |
 | `DB_PASSWORD` | PostgreSQL password | `changeme` |
-| `PUSHPAGE_API_KEY` | API key the MCP server uses to authenticate with pushpage (only with `--profile mcp`) | `pp_abc123...` |
 
 ## Authentication
 

@@ -166,34 +166,27 @@ pushpage ships an optional **cloud MCP server** that lets any MCP-compatible cli
 
 ### Enabling the MCP server
 
-The MCP server is **opt-in**. Enable it by starting the stack with the `mcp` profile:
+The MCP server is **opt-in**. Enable it by starting the stack with the `mcp` profile — no extra env vars needed on the server side:
 
 ```bash
 docker compose --profile mcp up -d
 ```
 
-Before running, set `PUSHPAGE_API_KEY` in your `.env` file to a valid API key for the pushpage service (copy it from the bootstrap log or create a dedicated user):
-
-```env
-PUSHPAGE_API_KEY=pp_your_key_here
-```
-
 ### Connecting agents
 
-Once running, the MCP server is available at:
+Each client supplies their own pushpage API key via the `Authorization` header in their MCP client config. The server never holds a shared key — clients authenticate independently.
 
-```
-http://your-domain/mcp
-```
+Once running, the MCP server is available at `http://your-domain/mcp`.
 
-Add it as an MCP server in your client — no auth config needed at the client side; the server authenticates to pushpage internally using `PUSHPAGE_API_KEY`.
-
-**Claude Desktop / Claude Code `claude_desktop_config.json`:**
+**Claude Desktop `claude_desktop_config.json`:**
 ```json
 {
   "mcpServers": {
     "pushpage": {
-      "url": "http://your-domain/mcp"
+      "url": "http://your-domain/mcp",
+      "headers": {
+        "Authorization": "Bearer pp_your_key_here"
+      }
     }
   }
 }
@@ -201,7 +194,8 @@ Add it as an MCP server in your client — no auth config needed at the client s
 
 **Claude Code CLI:**
 ```bash
-claude mcp add --transport http pushpage http://your-domain/mcp
+claude mcp add --transport http pushpage http://your-domain/mcp \
+  --header "Authorization: Bearer pp_your_key_here"
 ```
 
 ## Database

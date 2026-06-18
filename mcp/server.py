@@ -1,23 +1,52 @@
+import contextvars
 import os
 import sys
+
 import httpx
+import uvicorn
 from fastmcp import FastMCP
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
 _url = os.environ.get("PUSHPAGE_URL", "").rstrip("/")
-_key = os.environ.get("PUSHPAGE_API_KEY", "")
 
-if not _url or not _key:
-    missing = [v for v, val in [("PUSHPAGE_URL", _url), ("PUSHPAGE_API_KEY", _key)] if not val]
-    print(f"ERROR: missing required environment variables: {', '.join(missing)}", file=sys.stderr)
+if not _url:
+    print("ERROR: missing required environment variable: PUSHPAGE_URL", file=sys.stderr)
     sys.exit(1)
 
 mcp = FastMCP("pushpage")
 
-_headers = {"X-Api-Key": _key, "Content-Type": "application/json"}
+# Per-request API key extracted from the incoming Authorization / X-Api-Key header.
+_request_api_key: contextvars.ContextVar[str] = contextvars.ContextVar("request_api_key", default="")
+
+
+class ApiKeyMiddleware(BaseHTTPMiddleware):
+    """Extracts the client's pushpage API key from the request and stores it for tool use."""
+
+    async def dispatch(self, request, call_next):
+        auth = request.headers.get("Authorization", "")
+        key = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else ""
+        if not key:
+            key = request.headers.get("X-Api-Key", "").strip()
+        if not key:
+            return JSONResponse(
+                {"error": "Missing API key. Set Authorization: Bearer <key> in your MCP client config."},
+                status_code=401,
+            )
+        token = _request_api_key.set(key)
+        try:
+            return await call_next(request)
+        finally:
+            _request_api_key.reset(token)
 
 
 def _client() -> httpx.Client:
-    return httpx.Client(base_url=_url, headers=_headers, timeout=30)
+    key = _request_api_key.get()
+    return httpx.Client(
+        base_url=_url,
+        headers={"X-Api-Key": key, "Content-Type": "application/json"},
+        timeout=30,
+    )
 
 
 @mcp.tool()
@@ -58,4 +87,6 @@ def health() -> dict:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, path="/mcp")
+    app = mcp.http_app(path="/mcp", transport="streamable-http")
+    mcp.add_middleware(ApiKeyMiddleware)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

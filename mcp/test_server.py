@@ -8,11 +8,12 @@ import unittest
 from unittest.mock import MagicMock
 
 
-def _load_server(url: str = "http://localhost:8080", key: str = "pp_test") -> types.ModuleType:
-    """Import server.py with required env vars set and httpx stubbed out."""
+def _load_server(url: str = "http://localhost:8080") -> types.ModuleType:
+    """Import server.py with PUSHPAGE_URL set and httpx/uvicorn stubbed out."""
     os.environ["PUSHPAGE_URL"] = url
-    os.environ["PUSHPAGE_API_KEY"] = key
+    os.environ.pop("PUSHPAGE_API_KEY", None)  # must not be required anymore
     sys.modules["httpx"] = MagicMock()
+    sys.modules["uvicorn"] = MagicMock()
 
     sys.modules.pop("server", None)
     sys.path.insert(0, os.path.dirname(__file__))
@@ -32,14 +33,20 @@ class TestServerRegistration(unittest.TestCase):
             {"publish_page", "list_pages", "delete_page", "health"},
         )
 
-    def test_missing_env_vars_exits(self):
-        saved = {k: os.environ.pop(k, None) for k in ("PUSHPAGE_URL", "PUSHPAGE_API_KEY")}
+    def test_missing_pushpage_url_exits(self):
+        saved = os.environ.pop("PUSHPAGE_URL", None)
         sys.modules.pop("server", None)
         with self.assertRaises(SystemExit):
             importlib.import_module("server")
-        for k, v in saved.items():
-            if v is not None:
-                os.environ[k] = v
+        if saved:
+            os.environ["PUSHPAGE_URL"] = saved
+
+    def test_no_server_side_api_key_required(self):
+        """Server must start without PUSHPAGE_API_KEY — keys come from clients."""
+        os.environ.pop("PUSHPAGE_API_KEY", None)
+        sys.modules.pop("server", None)
+        mod = importlib.import_module("server")
+        self.assertIsNotNone(mod.mcp)
 
 
 if __name__ == "__main__":
