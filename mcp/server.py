@@ -5,7 +5,6 @@ import sys
 import httpx
 import uvicorn
 from fastmcp import FastMCP
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 _url = os.environ.get("PUSHPAGE_URL", "").rstrip("/")
@@ -27,22 +26,34 @@ mcp = FastMCP(
 _request_api_key: contextvars.ContextVar[str] = contextvars.ContextVar("request_api_key", default="")
 
 
-class ApiKeyMiddleware(BaseHTTPMiddleware):
-    """Extracts the client's pushpage API key from the request and stores it for tool use."""
+class ApiKeyMiddleware:
+    """Raw ASGI middleware — extracts the client's API key per request without buffering responses."""
 
-    async def dispatch(self, request, call_next):
-        auth = request.headers.get("Authorization", "")
-        key = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else ""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = {k.lower(): v for k, v in scope.get("headers", [])}
+        auth = headers.get(b"authorization", b"").decode()
+        key = auth[len("Bearer "):].strip() if auth.startswith("Bearer ") else ""
         if not key:
-            key = request.headers.get("X-Api-Key", "").strip()
+            key = headers.get(b"x-api-key", b"").decode().strip()
+
         if not key:
-            return JSONResponse(
+            response = JSONResponse(
                 {"error": "Missing API key. Set Authorization: Bearer <key> in your MCP client config."},
                 status_code=401,
             )
+            await response(scope, receive, send)
+            return
+
         token = _request_api_key.set(key)
         try:
-            return await call_next(request)
+            await self.app(scope, receive, send)
         finally:
             _request_api_key.reset(token)
 
@@ -101,6 +112,5 @@ def health() -> dict:
 
 
 if __name__ == "__main__":
-    app = mcp.http_app(path="/mcp", transport="streamable-http")
-    mcp.add_middleware(ApiKeyMiddleware)
+    app = ApiKeyMiddleware(mcp.http_app(path="/mcp", transport="streamable-http"))
     uvicorn.run(app, host="0.0.0.0", port=8000)
