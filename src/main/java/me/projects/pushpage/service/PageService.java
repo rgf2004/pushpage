@@ -17,20 +17,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.unit.DataSize;
 
+import org.jsoup.Jsoup;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 public class PageService {
 
     private static final Logger log = LoggerFactory.getLogger(PageService.class);
-    private static final Pattern TITLE_TAG = Pattern.compile("<title[^>]*>(.*?)</title>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     @Value("${app.base-url}")
     private String baseUrl;
@@ -127,12 +126,8 @@ public class PageService {
     }
 
     private String extractTitle(String html) {
-        Matcher m = TITLE_TAG.matcher(html);
-        if (m.find()) {
-            String candidate = m.group(1).trim();
-            if (!candidate.isBlank()) return candidate;
-        }
-        return "Untitled";
+        String candidate = Jsoup.parse(html).title().strip();
+        return candidate.isBlank() ? "Untitled" : candidate;
     }
 
     private String wrapIfNeeded(String html, String title) {
