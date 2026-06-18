@@ -1,10 +1,10 @@
-import contextvars
 import os
 import sys
 
 import httpx
 import uvicorn
 from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_http_request
 from starlette.responses import JSONResponse
 
 _url = os.environ.get("PUSHPAGE_URL", "").rstrip("/")
@@ -22,12 +22,9 @@ mcp = FastMCP(
     ),
 )
 
-# Per-request API key extracted from the incoming Authorization / X-Api-Key header.
-_request_api_key: contextvars.ContextVar[str] = contextvars.ContextVar("request_api_key", default="")
-
 
 class ApiKeyMiddleware:
-    """Raw ASGI middleware — extracts the client's API key per request without buffering responses."""
+    """Raw ASGI middleware — rejects requests that carry no API key."""
 
     def __init__(self, app):
         self.app = app
@@ -51,18 +48,23 @@ class ApiKeyMiddleware:
             await response(scope, receive, send)
             return
 
-        token = _request_api_key.set(key)
-        try:
-            await self.app(scope, receive, send)
-        finally:
-            _request_api_key.reset(token)
+        await self.app(scope, receive, send)
+
+
+def _api_key() -> str:
+    """Extract the pushpage API key from the current HTTP request."""
+    request = get_http_request()
+    auth = request.headers.get("authorization", "")
+    key = auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else ""
+    if not key:
+        key = request.headers.get("x-api-key", "").strip()
+    return key
 
 
 def _client() -> httpx.Client:
-    key = _request_api_key.get()
     return httpx.Client(
         base_url=_url,
-        headers={"X-Api-Key": key, "Content-Type": "application/json"},
+        headers={"X-Api-Key": _api_key(), "Content-Type": "application/json"},
         timeout=30,
     )
 

@@ -5,13 +5,13 @@ import os
 import sys
 import types
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 def _load_server(url: str = "http://localhost:8080") -> types.ModuleType:
-    """Import server.py with PUSHPAGE_URL set and httpx/uvicorn stubbed out."""
+    """Import server.py with PUSHPAGE_URL set and external deps stubbed out."""
     os.environ["PUSHPAGE_URL"] = url
-    os.environ.pop("PUSHPAGE_API_KEY", None)  # must not be required anymore
+    os.environ.pop("PUSHPAGE_API_KEY", None)
     sys.modules["httpx"] = MagicMock()
     sys.modules["uvicorn"] = MagicMock()
 
@@ -47,6 +47,16 @@ class TestServerRegistration(unittest.TestCase):
         sys.modules.pop("server", None)
         mod = importlib.import_module("server")
         self.assertIsNotNone(mod.mcp)
+
+    def test_api_key_read_from_request(self):
+        """_api_key() extracts the key from the current HTTP request."""
+        mock_request = MagicMock()
+        mock_request.headers.get.side_effect = lambda h, d="": (
+            "Bearer pp_test123" if h == "authorization" else d
+        )
+        with patch("server.get_http_request", return_value=mock_request):
+            key = self.server._api_key()
+        self.assertEqual(key, "pp_test123")
 
 
 if __name__ == "__main__":
