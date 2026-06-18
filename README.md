@@ -166,10 +166,10 @@ pushpage ships an optional **cloud MCP server** that lets any MCP-compatible cli
 
 ### Enabling the MCP server
 
-The MCP server is **opt-in**. Enable it by starting the stack with the `mcp` profile — no extra env vars needed on the server side:
+The MCP server starts automatically with the rest of the stack — no extra configuration needed:
 
 ```bash
-docker compose --profile mcp up -d
+docker compose up -d
 ```
 
 ### Connecting agents

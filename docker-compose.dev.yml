@@ -31,18 +31,15 @@ services:
       - publisher
     restart: unless-stopped
 
-  # Uncomment to enable the MCP server:
-  # mcp:
-  #   build:
-  #     context: .
-  #     dockerfile: mcp/Dockerfile
-  #   environment:
-  #     PUSHPAGE_URL: http://publisher:8080
-  #   depends_on:
-  #     - publisher
-  #   restart: unless-stopped
-  #   profiles:
-  #     - mcp
+  mcp:
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    environment:
+      PUSHPAGE_URL: http://publisher:8080
+    depends_on:
+      - publisher
+    restart: unless-stopped
 
   # Uncomment to use PostgreSQL:
   # postgres:

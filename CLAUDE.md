@@ -8,7 +8,7 @@ An HTML page publishing service for a homelab. AI agents POST HTML content and g
 - **SQLite** (default) / **PostgreSQL** (opt-in) — database, managed by Flyway
 - **Flyway** — database migrations (all schema changes must go through a versioned migration in `src/main/resources/db/migration/`)
 - **nginx** — static file serving + reverse proxy
-- **FastMCP** (Python) — cloud MCP server, opt-in via Docker Compose `mcp` profile
+- **FastMCP** (Python) — cloud MCP server, runs by default alongside the main stack
 - **Docker Compose** — orchestration
 
 ## Project Structure

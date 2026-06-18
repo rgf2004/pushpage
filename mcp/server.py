@@ -14,7 +14,15 @@ if not _url:
     print("ERROR: missing required environment variable: PUSHPAGE_URL", file=sys.stderr)
     sys.exit(1)
 
-mcp = FastMCP("pushpage")
+mcp = FastMCP(
+    "pushpage",
+    instructions=(
+        "This MCP server lets you publish, list, and delete HTML pages on a pushpage instance. "
+        "Authenticate by passing your pushpage API key as 'Authorization: Bearer <key>' when connecting. "
+        "Use publish_page to POST HTML and receive a shareable URL, list_pages to see your published pages, "
+        "delete_page to remove a page by ID, and health to verify the service is reachable."
+    ),
+)
 
 # Per-request API key extracted from the incoming Authorization / X-Api-Key header.
 _request_api_key: contextvars.ContextVar[str] = contextvars.ContextVar("request_api_key", default="")
