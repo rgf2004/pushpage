@@ -20,6 +20,17 @@ services:
       - publisher
     restart: unless-stopped
 
+  mcp:
+    image: rgf2004/pushpage-mcp:${IMAGE_TAG:-latest}
+    environment:
+      PUSHPAGE_URL: http://publisher:8080
+      PUSHPAGE_API_KEY: ${PUSHPAGE_API_KEY}
+    depends_on:
+      - publisher
+    restart: unless-stopped
+    profiles:
+      - mcp
+
 volumes:
   pages:
   data:

@@ -31,6 +31,20 @@ services:
       - publisher
     restart: unless-stopped
 
+  # Uncomment to enable the MCP server:
+  # mcp:
+  #   build:
+  #     context: .
+  #     dockerfile: mcp/Dockerfile
+  #   environment:
+  #     PUSHPAGE_URL: http://publisher:8080
+  #     PUSHPAGE_API_KEY: ${PUSHPAGE_API_KEY}
+  #   depends_on:
+  #     - publisher
+  #   restart: unless-stopped
+  #   profiles:
+  #     - mcp
+
   # Uncomment to use PostgreSQL:
   # postgres:
   #   image: postgres:17-alpine

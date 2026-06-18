@@ -151,6 +151,59 @@ See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage e
 
 [`llms.txt`](llms.txt) is served at `{APP_SERVER_URL}/llms.txt` and follows the [llms.txt convention](https://llmstxt.org) — a plain-text file that describes what a service does and how to interact with it. An agent that discovers the pushpage instance via HTTP can read this file to understand the API, authentication, and typical usage flow without any prior configuration.
 
+## MCP Server
+
+pushpage ships an optional **cloud MCP server** that lets any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.) publish, list, and delete pages — no local install required. Agents connect to it with a single URL.
+
+### Tools exposed
+
+| Tool | Description |
+|------|-------------|
+| `publish_page(title, html)` | Publish an HTML page, returns the shareable URL |
+| `list_pages()` | List published pages visible to the authenticated user |
+| `delete_page(id)` | Delete a page by ID |
+| `health` | Check whether the pushpage service is reachable |
+
+### Enabling the MCP server
+
+The MCP server is **opt-in**. Enable it by starting the stack with the `mcp` profile:
+
+```bash
+docker compose --profile mcp up -d
+```
+
+Before running, set `PUSHPAGE_API_KEY` in your `.env` file to a valid API key for the pushpage service (copy it from the bootstrap log or create a dedicated user):
+
+```env
+PUSHPAGE_API_KEY=pp_your_key_here
+```
+
+### Connecting agents
+
+Once running, the MCP server is available at:
+
+```
+http://your-domain/mcp
+```
+
+Add it as an MCP server in your client — no auth config needed at the client side; the server authenticates to pushpage internally using `PUSHPAGE_API_KEY`.
+
+**Claude Desktop / Claude Code `claude_desktop_config.json`:**
+```json
+{
+  "mcpServers": {
+    "pushpage": {
+      "url": "http://your-domain/mcp"
+    }
+  }
+}
+```
+
+**Claude Code CLI:**
+```bash
+claude mcp add --transport http pushpage http://your-domain/mcp
+```
+
 ## Database
 
 pushpage defaults to **SQLite** — no extra setup required. The database file lives in the `data` Docker volume.
