@@ -17,7 +17,7 @@ if not _url:
 mcp = FastMCP(
     "pushpage",
     instructions=(
-        "This MCP server lets you publish, list, and delete HTML pages on a pushpage instance. "
+        "This MCP server lets you publish, list, and delete HTML pages using the pushpage service. "
         "Use publish_page to POST HTML and receive a shareable URL, list_pages to see your published pages, "
         "delete_page to remove a page by ID, and health to verify the service is reachable."
     ),

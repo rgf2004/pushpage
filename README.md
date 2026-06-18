@@ -153,7 +153,7 @@ See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage e
 
 ## MCP Server
 
-pushpage ships an optional **cloud MCP server** that lets any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.) publish, list, and delete pages — no local install required. Agents connect to it with a single URL.
+pushpage ships a **cloud MCP server** that lets any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.) publish, list, and delete pages — no local install required. Agents connect to it with a single URL.
 
 ### Tools exposed
 
