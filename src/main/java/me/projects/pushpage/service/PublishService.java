@@ -23,11 +23,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class PublishService {
 
     private static final Logger log = LoggerFactory.getLogger(PublishService.class);
+    private static final Pattern TITLE_TAG = Pattern.compile("<title[^>]*>(.*?)</title>", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     @Value("${app.base-url}")
     private String baseUrl;
@@ -69,7 +72,7 @@ public class PublishService {
         }
         String id = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         String title = (request.title() != null && !request.title().isBlank())
-                ? request.title() : "Untitled";
+                ? request.title() : extractTitle(request.html());
         String html = wrapIfNeeded(request.html(), title);
 
         try {
@@ -121,6 +124,15 @@ public class PublishService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
         return user;
+    }
+
+    private String extractTitle(String html) {
+        Matcher m = TITLE_TAG.matcher(html);
+        if (m.find()) {
+            String candidate = m.group(1).trim();
+            if (!candidate.isBlank()) return candidate;
+        }
+        return "Untitled";
     }
 
     private String wrapIfNeeded(String html, String title) {

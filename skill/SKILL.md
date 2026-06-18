@@ -44,10 +44,11 @@ curl -s -X POST http://pushpage.homelab.local/api/pages \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: $PUSHPAGE_API_KEY" \
   -d '{
-    "title": "My Report",
     "html": "<html>...</html>"
   }'
 ```
+
+`title` is optional. When omitted or blank, the server extracts it from the HTML `<title>` tag; falls back to `"Untitled"`. Pass it explicitly only to override what's in the HTML.
 
 Response:
 ```json
@@ -123,14 +124,14 @@ curl -s http://pushpage.homelab.local/api/health
 
 **Creating HTML from a user request:**
 1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
-2. Build the full HTML for what the user asked for
-3. POST it to `/api/pages` with the key in `X-Api-Key` and a descriptive `title`
+2. Build the full HTML for what the user asked for — include a `<title>` tag in the `<head>`
+3. POST it to `/api/pages` with the key in `X-Api-Key` — no need to repeat the title in the request body
 4. Return only the `url` to the user — do not paste the HTML into chat
 
 **Publishing existing content:**
 1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
-2. Wrap the content in clean, styled HTML
-3. POST to `/api/pages` with the key and a descriptive `title`
+2. Wrap the content in clean, styled HTML with a `<title>` tag
+3. POST to `/api/pages` with the key — the server extracts the title from the HTML automatically
 4. Extract the `url` from the response and present it as a clickable link
 
 If the curl fails with a connection error (not a 401/403), mention that the pushpage service at `pushpage.homelab.local` may be down and suggest the user check their homelab.

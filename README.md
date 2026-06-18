@@ -97,7 +97,7 @@ You can start publishing immediately with the admin key. No extra setup required
 curl -X POST {APP_SERVER_URL}/api/pages \
   -H "X-Api-Key: pp_abc123..." \
   -H "Content-Type: application/json" \
-  -d '{"title": "My Report", "html": "<h1>Hello</h1><p>Some content here.</p>"}'
+  -d '{"html": "<html><head><title>My Report</title></head><body><h1>Hello</h1><p>Some content here.</p></body></html>"}'
 ```
 
 Response:

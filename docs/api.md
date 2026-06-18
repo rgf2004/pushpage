@@ -43,15 +43,15 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
 
 ```json
 {
-  "title": "My Report",
-  "html": "<html>...</html>"
+  "html": "<html>...</html>",
+  "title": "My Report"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `title` | string | yes | Human-readable title for the page |
 | `html` | string | yes | Full HTML content. Max size controlled by `MAX_FILE_SIZE`. |
+| `title` | string | no | Human-readable title. If omitted or blank, extracted from the HTML `<title>` tag; falls back to `"Untitled"`. An explicit value always takes precedence. |
 
 **Response headers:**
 

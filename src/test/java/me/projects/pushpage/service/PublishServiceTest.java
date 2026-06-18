@@ -109,6 +109,49 @@ class PublishServiceTest {
     }
 
     @Test
+    void publishPage_whenTitleIsNull_extractsTitleFromHtml() {
+        String html = "<!DOCTYPE html><html><head><title>From HTML</title></head><body></body></html>";
+
+        publishService.publish(new PublishRequest(html, null));
+
+        verify(pageRepository).save(anyString(), eq("From HTML"), anyString());
+    }
+
+    @Test
+    void publishPage_whenTitleIsBlank_extractsTitleFromHtml() {
+        String html = "<!DOCTYPE html><html><head><title>From HTML</title></head><body></body></html>";
+
+        publishService.publish(new PublishRequest(html, "   "));
+
+        verify(pageRepository).save(anyString(), eq("From HTML"), anyString());
+    }
+
+    @Test
+    void publishPage_whenTitleNullAndNoTitleTag_usesUntitled() {
+        publishService.publish(new PublishRequest("<h1>Hello</h1>", null));
+
+        verify(pageRepository).save(anyString(), eq("Untitled"), anyString());
+    }
+
+    @Test
+    void publishPage_whenTitleNullAndTitleTagIsBlank_usesUntitled() {
+        String html = "<!DOCTYPE html><html><head><title>   </title></head><body></body></html>";
+
+        publishService.publish(new PublishRequest(html, null));
+
+        verify(pageRepository).save(anyString(), eq("Untitled"), anyString());
+    }
+
+    @Test
+    void publishPage_explicitTitleTakesPrecedenceOverHtmlTitle() {
+        String html = "<!DOCTYPE html><html><head><title>HTML Title</title></head><body></body></html>";
+
+        publishService.publish(new PublishRequest(html, "Explicit Title"));
+
+        verify(pageRepository).save(anyString(), eq("Explicit Title"), anyString());
+    }
+
+    @Test
     void deletePage_shouldRemoveFileAndDbRecord() throws Exception {
         Page page = new Page("abc123", "Title", Instant.now(), null, null, ADMIN_USER.id());
         when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
