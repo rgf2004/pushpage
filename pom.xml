@@ -19,6 +19,7 @@
 		<springdoc-openapi.version>3.0.3</springdoc-openapi.version>
 		<testcontainers.version>2.0.5</testcontainers.version>
 		<sqlite-jdbc.version>3.53.2.0</sqlite-jdbc.version>
+		<jsoup.version>1.20.1</jsoup.version>
 	</properties>
 
 	<dependencyManagement>
@@ -83,7 +84,7 @@
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.20.1</version>
+			<version>${jsoup.version}</version>
 		</dependency>
 	</dependencies>
 
