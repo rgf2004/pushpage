@@ -111,17 +111,7 @@ Response:
 
 Open the `url` in your browser — that's your published page.
 
-### Guest publishing (no API key required)
-
-`POST /api/pages` also works without any authentication. Guest pages auto-expire after 30 minutes and are not associated with any user account — ideal for quick one-off shares or anonymous agent use-cases:
-
-```bash
-curl -X POST {APP_SERVER_URL}/api/pages \
-  -H "Content-Type: application/json" \
-  -d '{"html": "<h1>Quick share</h1>"}'
-```
-
-The response is identical — you get a `url` and `id` back immediately. Guest pages are visible to admins in the dashboard (highlighted) but never appear in any user's page listing.
+`POST /api/pages` also works without an API key — guest pages auto-expire after 30 minutes and are not tied to any account, ideal for quick one-off shares.
 
 ### 4. Create a dedicated user (optional)
 
