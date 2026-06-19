@@ -177,9 +177,9 @@ abstract class AbstractPageRepositoryTest {
     @Test
     void findExpired_shouldReturnPagesWhereExpiresAtHasPassed() {
         Instant legacyCutoff = Instant.now().minus(30, ChronoUnit.DAYS);
-        insertPageWithExpiry("exp1", "Expired 1", Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.HOURS));
-        insertPageWithExpiry("exp2", "Expired 2", Instant.now().minus(60, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.DAYS));
-        insertPageWithExpiry("fut1", "Future", Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().plus(29, ChronoUnit.DAYS));
+        insertPage("exp1", "Expired 1", Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.HOURS));
+        insertPage("exp2", "Expired 2", Instant.now().minus(60, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.DAYS));
+        insertPage("fut1", "Future", Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().plus(29, ChronoUnit.DAYS));
 
         List<Page> result = repository.findExpired(legacyCutoff);
 
@@ -189,8 +189,8 @@ abstract class AbstractPageRepositoryTest {
     @Test
     void findExpired_legacyRowsWithoutExpiresAt_shouldBePickedUpByCreatedAtFallback() {
         Instant legacyCutoff = Instant.now().minus(30, ChronoUnit.DAYS);
-        insertPage("legacy1", "Legacy Old", legacyCutoff.minus(1, ChronoUnit.DAYS));
-        insertPage("legacy2", "Legacy New", legacyCutoff.plus(1, ChronoUnit.DAYS));
+        insertPage("legacy1", "Legacy Old", legacyCutoff.minus(1, ChronoUnit.DAYS), null);
+        insertPage("legacy2", "Legacy New", legacyCutoff.plus(1, ChronoUnit.DAYS), null);
 
         List<Page> result = repository.findExpired(legacyCutoff);
 
@@ -200,8 +200,8 @@ abstract class AbstractPageRepositoryTest {
     @Test
     void findExpired_shouldExcludeSoftDeletedPages() {
         Instant legacyCutoff = Instant.now().minus(30, ChronoUnit.DAYS);
-        insertPageWithExpiry("exp1", "Active expired", Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.HOURS));
-        insertPageWithExpiry("exp2", "Soft deleted", Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.HOURS));
+        insertPage("exp1", "Active expired", Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.HOURS));
+        insertPage("exp2", "Soft deleted", Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.HOURS));
         repository.softDeleteById("exp2");
 
         List<Page> result = repository.findExpired(legacyCutoff);
@@ -212,18 +212,15 @@ abstract class AbstractPageRepositoryTest {
     @Test
     void findExpired_whenNoCandidates_shouldReturnEmptyList() {
         Instant legacyCutoff = Instant.now().minus(30, ChronoUnit.DAYS);
-        insertPageWithExpiry("fut1", "Future", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS));
+        insertPage("fut1", "Future", Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS));
 
         assertThat(repository.findExpired(legacyCutoff)).isEmpty();
     }
 
-    void insertPage(String id, String title, Instant createdAt) {
-        jdbc.update("INSERT INTO pages (id, title, created_at, user_id) VALUES (?, ?, ?, ?)",
-                id, title, Timestamp.from(createdAt), TEST_USER_ID);
-    }
-
-    void insertPageWithExpiry(String id, String title, Instant createdAt, Instant expiresAt) {
+    void insertPage(String id, String title, Instant createdAt, Instant expiresAt) {
         jdbc.update("INSERT INTO pages (id, title, created_at, expires_at, user_id) VALUES (?, ?, ?, ?, ?)",
-                id, title, Timestamp.from(createdAt), Timestamp.from(expiresAt), TEST_USER_ID);
+                id, title, Timestamp.from(createdAt),
+                expiresAt != null ? Timestamp.from(expiresAt) : null,
+                TEST_USER_ID);
     }
 }

@@ -12,7 +12,7 @@ pushpage uses a relational database for persistence. It supports **SQLite** (the
 | `title` | TEXT | no | Human-readable page title |
 | `created_at` | TIMESTAMP | no | Timestamp of when the page was published |
 | `deleted_at` | TIMESTAMP | yes | Timestamp of soft-deletion; `NULL` for live pages |
-| `expires_at` | TIMESTAMP | yes | `created_at + retention_days`; `NULL` for rows created before V4 migration |
+| `expires_at` | TIMESTAMP | yes | Scheduled deletion time; `NULL` means the page does not have an explicit expiry |
 | `user_id` | TEXT (FK → users.id) | yes | Owner of the page |
 
 **Indexes:**
