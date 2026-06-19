@@ -49,11 +49,9 @@ class TestServerRegistration(unittest.TestCase):
         self.assertIsNotNone(mod.mcp)
 
     def test_api_key_read_from_request(self):
-        """_api_key() extracts the key from the current HTTP request."""
+        """_api_key() extracts the Bearer token from the current HTTP request."""
         mock_request = MagicMock()
-        mock_request.headers.get.side_effect = lambda h, d="": (
-            "Bearer pp_test123" if h == "authorization" else d
-        )
+        mock_request.headers = {"authorization": "Bearer pp_test123"}
         with patch("server.get_http_request", return_value=mock_request):
             key = self.server._api_key()
         self.assertEqual(key, "pp_test123")

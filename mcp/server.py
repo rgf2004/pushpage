@@ -17,51 +17,20 @@ if not _url:
 mcp = FastMCP(
     "pushpage",
     instructions=(
-        "This MCP server lets you publish, list, and delete HTML pages using the pushpage service. "
-        "Use publish_page to POST HTML and receive a shareable URL, list_pages to see your published pages, "
-        "delete_page to remove a page by ID, and health to verify the service is reachable."
+        "Publish HTML as shareable pages, list your pages, and delete them by ID. "
+        "The id returned by publish_page can be passed directly to delete_page."
     ),
 )
 
 
-def _extract_api_key_from_headers(headers: dict) -> str:
-    auth = headers.get("authorization", "")
-    key = auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else ""
-    if not key:
-        key = headers.get("x-api-key", "").strip()
-    return key
-
-
-class ApiKeyMiddleware:
-    """Raw ASGI middleware — rejects requests that carry no API key."""
-
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-
-        raw_headers = {k.lower().decode(): v.decode() for k, v in scope.get("headers", [])}
-        key = _extract_api_key_from_headers(raw_headers)
-
-        if not key:
-            body = json.dumps(
-                {"error": "Missing API key. Set Authorization: Bearer <key> in your MCP client config."},
-                ensure_ascii=False,
-            ).encode()
-            response = Response(body, status_code=401, media_type="application/json")
-            await response(scope, receive, send)
-            return
-
-        await self.app(scope, receive, send)
-
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _api_key() -> str:
-    """Extract the pushpage API key from the current HTTP request."""
     request = get_http_request()
-    return _extract_api_key_from_headers(dict(request.headers))
+    headers = dict(request.headers)
+    auth = headers.get("authorization", "")
+    key = auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else ""
+    return key or headers.get("x-api-key", "").strip()
 
 
 def _client() -> httpx.Client:
@@ -72,12 +41,14 @@ def _client() -> httpx.Client:
     )
 
 
+# ── Tools ─────────────────────────────────────────────────────────────────────
+
 @mcp.tool()
 def publish_page(html: str, title: str | None = None) -> dict:
     """Publish an HTML page and return its shareable URL.
 
-    title is optional — omit it to let the service extract it from the <title> tag,
-    or fall back to 'Untitled'.
+    Returns {url, id}. title is optional — when omitted it is extracted from
+    the HTML <title> tag, or falls back to 'Untitled'.
     """
     with _client() as client:
         payload = {"html": html}
@@ -94,7 +65,10 @@ def publish_page(html: str, title: str | None = None) -> dict:
 
 @mcp.tool()
 def list_pages() -> list[dict]:
-    """List published pages visible to the authenticated user."""
+    """List all pages published by the current user.
+
+    Returns a list of page objects, each with id, title, url, and created_at.
+    """
     with _client() as client:
         r = client.get("/api/pages")
         try:
@@ -106,7 +80,10 @@ def list_pages() -> list[dict]:
 
 @mcp.tool()
 def delete_page(id: str) -> dict:
-    """Delete a published page by its ID."""
+    """Delete a page by its id.
+
+    Use the id from publish_page or list_pages.
+    """
     with _client() as client:
         r = client.delete(f"/api/pages/{id}")
         try:
@@ -127,6 +104,38 @@ def health() -> dict:
             return {"error": "Service unreachable", "status_code": e.response.status_code, "detail": e.response.text}
         return r.json()
 
+
+# ── Middleware ─────────────────────────────────────────────────────────────────
+
+class ApiKeyMiddleware:
+    """Raw ASGI middleware — rejects requests that carry no API key."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        raw_headers = {k.lower().decode(): v.decode() for k, v in scope.get("headers", [])}
+        auth = raw_headers.get("authorization", "")
+        key = auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else ""
+        if not key:
+            key = raw_headers.get("x-api-key", "").strip()
+
+        if not key:
+            body = json.dumps(
+                {"error": "Missing API key. Set Authorization: Bearer <key> in your MCP client config."},
+                ensure_ascii=False,
+            ).encode()
+            await Response(body, status_code=401, media_type="application/json")(scope, receive, send)
+            return
+
+        await self.app(scope, receive, send)
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     app = ApiKeyMiddleware(mcp.http_app(path="/mcp", transport="streamable-http"))
