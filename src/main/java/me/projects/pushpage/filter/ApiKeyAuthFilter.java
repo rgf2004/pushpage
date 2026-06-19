@@ -22,6 +22,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             "/health", "/swagger-ui", "/v3/api-docs", "/api-docs"
     );
     private static final String ADMIN_PATH_PREFIX = "/admin";
+    private static final Set<String> GUEST_ALLOWED = Set.of("POST /pages");
 
     private final UserRepository userRepository;
     private final AuthContext authContext;
@@ -48,6 +49,10 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
         String apiKey = extractApiKey(request);
         if (apiKey == null) {
+            if (GUEST_ALLOWED.contains(request.getMethod() + " " + path)) {
+                chain.doFilter(request, response);
+                return;
+            }
             sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "API key required");
             return;
         }

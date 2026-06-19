@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.time.Instant;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -200,13 +201,61 @@ class PageControllerIT extends PostgresTestSupport {
     }
 
     @Test
-    void publish_withoutApiKey_returns401() throws Exception {
+    void publish_withoutApiKey_asGuest_returns200() throws Exception {
         mockMvc.perform(post("/pages")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"html": "<h1>Hello</h1>", "title": "Test"}
+                                {"html": "<h1>Hello</h1>", "title": "Guest Page"}
                                 """))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").exists())
+                .andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
+    void publish_asGuest_pageHasNullUserIdAndShortExpiry() throws Exception {
+        String response = mockMvc.perform(post("/pages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Guest</h1>", "title": "Guest"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+
+        String userId = jdbc.queryForObject(
+                "SELECT user_id FROM pages WHERE id = ?", String.class, id);
+        assertThat(userId).isNull();
+
+        String expiresAt = jdbc.queryForObject(
+                "SELECT expires_at FROM pages WHERE id = ?", String.class, id);
+        assertThat(expiresAt).isNotNull();
+    }
+
+    @Test
+    void publish_asGuest_pageVisibleToAdminButNotRegularUser() throws Exception {
+        jdbc.update(
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "regularguest1", "regularguest", ApiKeyHasher.hash("regular-guest-key"), Timestamp.from(Instant.now())
+        );
+
+        mockMvc.perform(post("/pages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Guest</h1>", "title": "Guest"}
+                                """))
+                .andExpect(status().isOk());
+
+        // admin sees guest pages
+        mockMvc.perform(get("/pages").header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+
+        // regular user does not see guest pages
+        mockMvc.perform(get("/pages").header("X-Api-Key", "regular-guest-key"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test

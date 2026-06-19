@@ -45,6 +45,9 @@ public class PageService {
     @Value("${app.cleanup.retention-days:30}")
     private int retentionDays;
 
+    @Value("${app.guest.expiration-minutes:30}")
+    private int guestExpirationMinutes;
+
     private final PageRepository pageRepository;
     private final HealthService healthService;
     private final AuthContext authContext;
@@ -85,8 +88,11 @@ public class PageService {
             throw new RuntimeException("Failed to write page file", e);
         }
 
-        String userId = requireCurrentUser().id();
-        Instant expiresAt = Instant.now().plus(retentionDays, ChronoUnit.DAYS);
+        boolean isGuest = authContext.getCurrentUser() == null;
+        String userId = isGuest ? null : requireCurrentUser().id();
+        Instant expiresAt = isGuest
+                ? Instant.now().plus(guestExpirationMinutes, ChronoUnit.MINUTES)
+                : Instant.now().plus(retentionDays, ChronoUnit.DAYS);
         pageRepository.save(id, title, userId, expiresAt);
         healthService.invalidateCache();
 

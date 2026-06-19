@@ -18,7 +18,7 @@ http://pushpage.homelab.local/api
 
 ## Authentication
 
-All endpoints (except `/api/health`) require an API key. Read it from the credentials file before making any request:
+Most endpoints require an API key. Read it from the credentials file before making any request:
 
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
@@ -33,6 +33,8 @@ If the file is missing or empty, stop and tell the user:
 > You can find your key in the pushpage startup logs, or ask an admin to create one for you via `POST /api/admin/users`.
 
 Pass the key in every request as `X-Api-Key: $PUSHPAGE_API_KEY`.
+
+**Exception — guest publishing:** `POST /api/pages` accepts requests with **no API key**. Omit the `X-Api-Key` header entirely and the page is created as a guest page that auto-expires after 30 minutes. Use this for quick one-off shares when no credentials are available.
 
 ## Publishing Content (primary operation)
 

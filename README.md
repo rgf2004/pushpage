@@ -1,6 +1,6 @@
 # pushpage
 
-An HTML page publishing service. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
+An HTML page publishing service for AI agents. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
 
 ## Why this project exists
 

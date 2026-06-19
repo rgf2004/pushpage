@@ -13,6 +13,18 @@ All variables are set in a `.env` file in the project root and passed to the con
 | `MAX_FILE_SIZE` | Max HTML payload the publisher accepts (app-level check). | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling. Should exceed `MAX_FILE_SIZE`. | `10MB` |
 
+## Guest Publishing
+
+`POST /api/pages` accepts unauthenticated requests. Guest pages are auto-expired after a short window and are never shown in any user's page listing (admins see them highlighted in the dashboard).
+
+The expiry duration is controlled by an application property in `application.properties`:
+
+```properties
+app.guest.expiration-minutes=30
+```
+
+Change this value and rebuild to adjust how long guest pages live.
+
 ## Database Backend
 
 The active database backend is selected via the `SPRING_PROFILES_ACTIVE` environment variable.
