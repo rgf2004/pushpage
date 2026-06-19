@@ -10,6 +10,19 @@ Pushpage is a service that accepts HTML and returns a public URL. Use it in two 
 1. **The user asks to create an HTML page** — build the HTML yourself, then publish it. Return only the URL, not the raw HTML.
 2. **You have output better viewed in a browser** — reports, data tables, dashboards, styled summaries. Publish instead of dumping HTML into chat.
 
+## MCP vs direct API
+
+**Always prefer the MCP when it is available.** Before falling back to curl, check whether the pushpage MCP tools are present in your available tool list — look for a tool named `publish_page` coming from a server named `pushpage` (in Claude Code it surfaces as `mcp__pushpage__publish_page`). If it exists, use it for every operation:
+
+| Operation | MCP tool | Direct API |
+|-----------|----------|------------|
+| Publish | `publish_page(html, title?)` | `POST /api/pages` |
+| List | `list_pages()` | `GET /api/pages` |
+| Delete | `delete_page(id)` | `DELETE /api/pages/{id}` |
+| Health | `health()` | `GET /api/health` |
+
+The MCP handles authentication transparently — no key reading or header wiring needed. Only fall through to the direct API (curl) when the MCP tool is not available.
+
 ## Base URL
 
 ```
@@ -125,15 +138,16 @@ curl -s http://pushpage.homelab.local/api/health
 ## Typical Flow
 
 **Creating HTML from a user request:**
+
+*If the MCP is available (`mcp__pushpage__publish_page` is in your tool list):*
+1. Build the full HTML — include a `<title>` tag in the `<head>`
+2. Call `publish_page(html=...)` — no key handling needed
+3. Return only the `url` to the user — do not paste the HTML into chat
+
+*If the MCP is not available (fall back to curl):*
 1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
-2. Build the full HTML for what the user asked for — include a `<title>` tag in the `<head>`
+2. Build the full HTML — include a `<title>` tag in the `<head>`
 3. POST it to `/api/pages` with the key in `X-Api-Key` — no need to repeat the title in the request body
 4. Return only the `url` to the user — do not paste the HTML into chat
 
-**Publishing existing content:**
-1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
-2. Wrap the content in clean, styled HTML with a `<title>` tag
-3. POST to `/api/pages` with the key — the server extracts the title from the HTML automatically
-4. Extract the `url` from the response and present it as a clickable link
-
-If the curl fails with a connection error (not a 401/403), mention that the pushpage service at `pushpage.homelab.local` may be down and suggest the user check their homelab.
+If a connection error occurs (not a 401/403), mention that the pushpage service at `pushpage.homelab.local` may be down and suggest the user check their homelab.
