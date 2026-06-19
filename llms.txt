@@ -79,6 +79,10 @@ curl -s -X DELETE {APP_SERVER_URL}/api/pages/{id} \
 curl -s {APP_SERVER_URL}/api/health
 ```
 
+## MCP server
+
+A FastMCP server is available at `{APP_SERVER_URL}:8000/mcp` for clients that support the MCP protocol (streamable-http transport). It exposes `publish_page`, `list_pages`, `delete_page`, and `health` tools. If your client supports MCP, prefer it over the direct API — authentication is handled transparently by the server.
+
 ## Writing good HTML for pushpage
 
 Pages are served directly in a browser, so write clean, self-contained HTML:
