@@ -88,11 +88,9 @@ public class PageService {
             throw new RuntimeException("Failed to write page file", e);
         }
 
-        boolean isGuest = authContext.getCurrentUser() == null;
-        String userId = isGuest ? null : requireCurrentUser().id();
-        Instant expiresAt = isGuest
-                ? Instant.now().plus(guestExpirationMinutes, ChronoUnit.MINUTES)
-                : Instant.now().plus(retentionDays, ChronoUnit.DAYS);
+        User currentUser = authContext.getCurrentUser();
+        String userId = currentUser != null ? currentUser.id() : null;
+        Instant expiresAt = expiresAt(currentUser);
         pageRepository.save(id, title, userId, expiresAt);
         healthService.invalidateCache();
 
@@ -127,6 +125,12 @@ public class PageService {
 
         pageRepository.softDeleteById(id);
         healthService.invalidateCache();
+    }
+
+    private Instant expiresAt(User user) {
+        return user == null
+                ? Instant.now().plus(guestExpirationMinutes, ChronoUnit.MINUTES)
+                : Instant.now().plus(retentionDays, ChronoUnit.DAYS);
     }
 
     private User requireCurrentUser() {
