@@ -155,26 +155,13 @@ See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage e
 
 pushpage ships a **cloud MCP server** that lets any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.) publish, list, and delete pages — no local install required. Agents connect to it with a single URL.
 
-### Tools exposed
-
-| Tool | Description |
-|------|-------------|
-| `publish_page(title, html)` | Publish an HTML page, returns the shareable URL |
-| `list_pages()` | List published pages visible to the authenticated user |
-| `delete_page(id)` | Delete a page by ID |
-| `health` | Check whether the pushpage service is reachable |
-
-### Enabling the MCP server
-
 The MCP server starts automatically with the rest of the stack — no extra configuration needed:
 
 ```bash
 docker compose up -d
 ```
 
-### Connecting agents
-
-Each client supplies their own pushpage API key via the `Authorization` header in their MCP client config. Once running, the MCP server is available at `http://your-domain/mcp`.
+Once running, the server is available at `{APP_SERVER_URL}/mcp`. Each client supplies their own pushpage API key via the `Authorization` header.
 
 **Claude Desktop `claude_desktop_config.json`:**
 ```json
@@ -195,6 +182,8 @@ Each client supplies their own pushpage API key via the `Authorization` header i
 claude mcp add --transport http pushpage http://your-domain/mcp \
   --header "Authorization: Bearer pp_your_key_here"
 ```
+
+For the full tool reference, alternative connection methods (including `mcp-remote` for HTTP-only or older clients), and troubleshooting, see [`docs/mcp.md`](docs/mcp.md).
 
 ## Database
 

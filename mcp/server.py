@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 
@@ -5,7 +6,7 @@ import httpx
 import uvicorn
 from fastmcp import FastMCP
 from fastmcp.server.dependencies import get_http_request
-from starlette.responses import JSONResponse
+from starlette.responses import Response
 
 _url = os.environ.get("PUSHPAGE_URL", "").rstrip("/")
 
@@ -23,6 +24,14 @@ mcp = FastMCP(
 )
 
 
+def _extract_api_key_from_headers(headers: dict) -> str:
+    auth = headers.get("authorization", "")
+    key = auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else ""
+    if not key:
+        key = headers.get("x-api-key", "").strip()
+    return key
+
+
 class ApiKeyMiddleware:
     """Raw ASGI middleware — rejects requests that carry no API key."""
 
@@ -34,17 +43,15 @@ class ApiKeyMiddleware:
             await self.app(scope, receive, send)
             return
 
-        headers = {k.lower(): v for k, v in scope.get("headers", [])}
-        auth = headers.get(b"authorization", b"").decode()
-        key = auth[len("Bearer "):].strip() if auth.startswith("Bearer ") else ""
-        if not key:
-            key = headers.get(b"x-api-key", b"").decode().strip()
+        raw_headers = {k.lower().decode(): v.decode() for k, v in scope.get("headers", [])}
+        key = _extract_api_key_from_headers(raw_headers)
 
         if not key:
-            response = JSONResponse(
+            body = json.dumps(
                 {"error": "Missing API key. Set Authorization: Bearer <key> in your MCP client config."},
-                status_code=401,
-            )
+                ensure_ascii=False,
+            ).encode()
+            response = Response(body, status_code=401, media_type="application/json")
             await response(scope, receive, send)
             return
 
@@ -54,11 +61,7 @@ class ApiKeyMiddleware:
 def _api_key() -> str:
     """Extract the pushpage API key from the current HTTP request."""
     request = get_http_request()
-    auth = request.headers.get("authorization", "")
-    key = auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else ""
-    if not key:
-        key = request.headers.get("x-api-key", "").strip()
-    return key
+    return _extract_api_key_from_headers(dict(request.headers))
 
 
 def _client() -> httpx.Client:
@@ -81,17 +84,23 @@ def publish_page(html: str, title: str | None = None) -> dict:
         if title is not None:
             payload["title"] = title
         r = client.post("/api/pages", json=payload)
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            return {"error": "Failed to publish page", "status_code": e.response.status_code, "detail": e.response.text}
         data = r.json()
         return {"url": data["url"], "id": data["id"]}
 
 
 @mcp.tool()
-def list_pages() -> list:
+def list_pages() -> list[dict]:
     """List published pages visible to the authenticated user."""
     with _client() as client:
         r = client.get("/api/pages")
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            return [{"error": "Failed to list pages", "status_code": e.response.status_code, "detail": e.response.text}]
         return r.json()
 
 
@@ -100,7 +109,10 @@ def delete_page(id: str) -> dict:
     """Delete a published page by its ID."""
     with _client() as client:
         r = client.delete(f"/api/pages/{id}")
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            return {"error": "Failed to delete page", "status_code": e.response.status_code, "detail": e.response.text}
         return {"deleted": True, "id": id}
 
 
@@ -109,7 +121,10 @@ def health() -> dict:
     """Check whether the pushpage service is reachable and healthy."""
     with _client() as client:
         r = client.get("/api/health")
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            return {"error": "Service unreachable", "status_code": e.response.status_code, "detail": e.response.text}
         return r.json()
 
 
