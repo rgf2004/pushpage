@@ -27,6 +27,14 @@ services:
       - publisher
     restart: unless-stopped
 
+  mcp:
+    image: rgf2004/pushpage-mcp:${IMAGE_TAG:-latest}
+    environment:
+      PUSHPAGE_URL: http://publisher:8080
+    depends_on:
+      - publisher
+    restart: unless-stopped
+
   postgres:
     image: postgres:17-alpine
     environment:

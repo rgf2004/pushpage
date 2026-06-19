@@ -151,6 +151,40 @@ See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage e
 
 [`llms.txt`](llms.txt) is served at `{APP_SERVER_URL}/llms.txt` and follows the [llms.txt convention](https://llmstxt.org) — a plain-text file that describes what a service does and how to interact with it. An agent that discovers the pushpage instance via HTTP can read this file to understand the API, authentication, and typical usage flow without any prior configuration.
 
+## MCP Server
+
+pushpage ships a **cloud MCP server** that lets any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.) publish, list, and delete pages — no local install required. Agents connect to it with a single URL.
+
+The MCP server starts automatically with the rest of the stack — no extra configuration needed:
+
+```bash
+docker compose up -d
+```
+
+Once running, the server is available at `{APP_SERVER_URL}/mcp`. Each client supplies their own pushpage API key via the `Authorization` header.
+
+**Claude Desktop `claude_desktop_config.json`:**
+```json
+{
+  "mcpServers": {
+    "pushpage": {
+      "url": "http://your-domain/mcp",
+      "headers": {
+        "Authorization": "Bearer pp_your_key_here"
+      }
+    }
+  }
+}
+```
+
+**Claude Code CLI:**
+```bash
+claude mcp add --transport http pushpage http://your-domain/mcp \
+  --header "Authorization: Bearer pp_your_key_here"
+```
+
+For the full tool reference, alternative connection methods (including `mcp-remote` for HTTP-only or older clients), and troubleshooting, see [`docs/mcp.md`](docs/mcp.md).
+
 ## Database
 
 pushpage defaults to **SQLite** — no extra setup required. The database file lives in the `data` Docker volume.

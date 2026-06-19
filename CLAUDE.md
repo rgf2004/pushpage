@@ -8,6 +8,7 @@ An HTML page publishing service for a homelab. AI agents POST HTML content and g
 - **SQLite** (default) / **PostgreSQL** (opt-in) — database, managed by Flyway
 - **Flyway** — database migrations (all schema changes must go through a versioned migration in `src/main/resources/db/migration/`)
 - **nginx** — static file serving + reverse proxy
+- **FastMCP** (Python) — cloud MCP server, runs by default alongside the main stack
 - **Docker Compose** — orchestration
 
 ## Project Structure
@@ -24,6 +25,10 @@ push-page/
 │   ├── Dockerfile              # custom nginx image (bakes in config + landing page)
 │   ├── default.conf            # nginx routing config
 │   └── index.html              # landing page
+├── mcp/
+│   ├── server.py               # FastMCP server (streamable-http transport)
+│   ├── Dockerfile              # Python image for the MCP service
+│   └── requirements.txt
 └── src/main/java/me/projects/pushpage/
     ├── PushPageApplication.java
     ├── config/

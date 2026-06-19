@@ -38,3 +38,4 @@ pages/
 
 .claude/
 .env
+mcp/__pycache__/

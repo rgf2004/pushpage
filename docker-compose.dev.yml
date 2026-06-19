@@ -31,6 +31,15 @@ services:
       - publisher
     restart: unless-stopped
 
+  mcp:
+    build:
+      context: ./mcp
+    environment:
+      PUSHPAGE_URL: http://publisher:8080
+    depends_on:
+      - publisher
+    restart: unless-stopped
+
   # Uncomment to use PostgreSQL:
   # postgres:
   #   image: postgres:17-alpine
