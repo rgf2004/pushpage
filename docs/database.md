@@ -12,6 +12,7 @@ pushpage uses a relational database for persistence. It supports **SQLite** (the
 | `title` | TEXT | no | Human-readable page title |
 | `created_at` | TIMESTAMP | no | Timestamp of when the page was published |
 | `deleted_at` | TIMESTAMP | yes | Timestamp of soft-deletion; `NULL` for live pages |
+| `expires_at` | TIMESTAMP | yes | Scheduled deletion time; `NULL` means the page does not have an explicit expiry |
 | `user_id` | TEXT (FK → users.id) | yes | Owner of the page |
 
 **Indexes:**
@@ -19,6 +20,7 @@ pushpage uses a relational database for persistence. It supports **SQLite** (the
 | Name | Column | Purpose |
 |------|--------|---------|
 | `idx_pages_created_at` | `created_at` | Speeds up chronological ordering and range queries |
+| `idx_pages_expires_at` | `expires_at` | Speeds up the cleanup predicate scan |
 
 ---
 
@@ -55,3 +57,4 @@ Migration files follow the naming convention: `V{version}__{description}.sql`
 | `V1__create_pages_table.sql` | Initial `pages` table (`id`, `title`, `created_at`) |
 | `V2__add_deleted_at_and_index.sql` | Adds `deleted_at` to `pages`; adds `idx_pages_created_at` |
 | `V3__add_users_table.sql` | Creates `users` table; adds `user_id` FK column to `pages` |
+| `V4__add_expires_at_to_pages.sql` | Adds `expires_at` to `pages`; adds `idx_pages_expires_at` |

@@ -43,7 +43,7 @@ class CleanupServiceTest {
 
     @Test
     void runCleanup_whenNoCandidates_shouldNotSoftDelete() {
-        when(pageRepository.findOlderThan(any())).thenReturn(List.of());
+        when(pageRepository.findExpired(any())).thenReturn(List.of());
 
         cleanupService.runCleanup();
 
@@ -53,7 +53,7 @@ class CleanupServiceTest {
     @Test
     void runCleanup_shouldDeleteFileAndSoftDeleteRecord() throws Exception {
         Page oldPage = page("abc12345", 31);
-        when(pageRepository.findOlderThan(any())).thenReturn(List.of(oldPage));
+        when(pageRepository.findExpired(any())).thenReturn(List.of(oldPage));
         Files.createFile(tempDir.resolve("abc12345.html"));
 
         cleanupService.runCleanup();
@@ -66,7 +66,7 @@ class CleanupServiceTest {
     void runCleanup_shouldProcessAllCandidates() throws Exception {
         Page page1 = page("aaaaaaaa", 40);
         Page page2 = page("bbbbbbbb", 35);
-        when(pageRepository.findOlderThan(any())).thenReturn(List.of(page1, page2));
+        when(pageRepository.findExpired(any())).thenReturn(List.of(page1, page2));
         Files.createFile(tempDir.resolve("aaaaaaaa.html"));
         Files.createFile(tempDir.resolve("bbbbbbbb.html"));
 
@@ -81,7 +81,7 @@ class CleanupServiceTest {
     @Test
     void runCleanup_whenFileAlreadyMissing_shouldStillSoftDelete() {
         Page oldPage = page("abc12345", 31);
-        when(pageRepository.findOlderThan(any())).thenReturn(List.of(oldPage));
+        when(pageRepository.findExpired(any())).thenReturn(List.of(oldPage));
         // no file created — deleteIfExists is a no-op, not an error
 
         cleanupService.runCleanup();
@@ -93,7 +93,7 @@ class CleanupServiceTest {
     void runCleanup_cutoffShouldReflectRetentionDays() {
         ReflectionTestUtils.setField(cleanupService, "retentionDays", 7);
         ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
-        when(pageRepository.findOlderThan(cutoffCaptor.capture())).thenReturn(List.of());
+        when(pageRepository.findExpired(cutoffCaptor.capture())).thenReturn(List.of());
 
         cleanupService.runCleanup();
 
@@ -102,6 +102,7 @@ class CleanupServiceTest {
     }
 
     private Page page(String id, int daysOld) {
-        return new Page(id, "Title", Instant.now().minus(daysOld, ChronoUnit.DAYS), null, null, null);
+        Instant createdAt = Instant.now().minus(daysOld, ChronoUnit.DAYS);
+        return new Page(id, "Title", createdAt, null, createdAt.plus(30, ChronoUnit.DAYS), null, null);
     }
 }

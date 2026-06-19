@@ -10,6 +10,7 @@ public record Page(
         String title,
         @JsonProperty("created_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant createdAt,
         @JsonProperty("deleted_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant deletedAt,
+        @JsonProperty("expires_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant expiresAt,
         String url,
         @JsonProperty("user_id") String userId
 ) {}

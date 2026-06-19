@@ -18,22 +18,22 @@ public class PageRepository {
         this.jdbc = jdbc;
     }
 
-    public void save(String id, String title, String userId) {
+    public void save(String id, String title, String userId, Instant expiresAt) {
         jdbc.update(
-                "INSERT INTO pages (id, title, created_at, user_id) VALUES (?, ?, ?, ?)",
-                id, title, Timestamp.from(Instant.now()), userId
+                "INSERT INTO pages (id, title, created_at, expires_at, user_id) VALUES (?, ?, ?, ?, ?)",
+                id, title, Timestamp.from(Instant.now()), Timestamp.from(expiresAt), userId
         );
     }
 
     public List<Page> findAll(String baseUrl, String userId, boolean isAdmin) {
         if (isAdmin) {
             return jdbc.query(
-                    "SELECT id, title, created_at, deleted_at, user_id FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
+                    "SELECT id, title, created_at, deleted_at, expires_at, user_id FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC",
                     (rs, i) -> mapPage(rs, baseUrl)
             );
         }
         return jdbc.query(
-                "SELECT id, title, created_at, deleted_at, user_id FROM pages WHERE deleted_at IS NULL AND user_id = ? ORDER BY created_at DESC",
+                "SELECT id, title, created_at, deleted_at, expires_at, user_id FROM pages WHERE deleted_at IS NULL AND user_id = ? ORDER BY created_at DESC",
                 (rs, i) -> mapPage(rs, baseUrl),
                 userId
         );
@@ -41,7 +41,7 @@ public class PageRepository {
 
     public Optional<Page> findById(String id) {
         List<Page> pages = jdbc.query(
-                "SELECT id, title, created_at, deleted_at, user_id FROM pages WHERE id = ? AND deleted_at IS NULL",
+                "SELECT id, title, created_at, deleted_at, expires_at, user_id FROM pages WHERE id = ? AND deleted_at IS NULL",
                 (rs, i) -> mapPage(rs, null),
                 id);
         return pages.isEmpty() ? Optional.empty() : Optional.of(pages.get(0));
@@ -59,11 +59,18 @@ public class PageRepository {
         jdbc.update("DELETE FROM pages WHERE id = ?", id);
     }
 
-    public List<Page> findOlderThan(Instant cutoff) {
+    public List<Page> findExpired(Instant legacyCutoff) {
+        Instant now = Instant.now();
         return jdbc.query(
-                "SELECT id, title, created_at, deleted_at, user_id FROM pages WHERE deleted_at IS NULL AND created_at < ?",
+                """
+                SELECT id, title, created_at, deleted_at, expires_at, user_id FROM pages
+                WHERE deleted_at IS NULL
+                  AND (expires_at < ?
+                       OR (expires_at IS NULL AND created_at < ?))
+                """,
                 (rs, i) -> mapPage(rs, null),
-                Timestamp.from(cutoff)
+                Timestamp.from(now),
+                Timestamp.from(legacyCutoff)
         );
     }
 
@@ -104,6 +111,7 @@ public class PageRepository {
                 rs.getString("title"),
                 toInstant(rs.getTimestamp("created_at")),
                 toInstant(rs.getTimestamp("deleted_at")),
+                toInstant(rs.getTimestamp("expires_at")),
                 url,
                 rs.getString("user_id")
         );

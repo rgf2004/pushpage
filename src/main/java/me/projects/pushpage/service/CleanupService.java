@@ -35,7 +35,7 @@ public class CleanupService {
     @Scheduled(cron = "${app.cleanup.schedule:0 0 * * * *}")
     public void runCleanup() {
         Instant cutoff = Instant.now().minus(retentionDays, ChronoUnit.DAYS);
-        List<Page> candidates = pageRepository.findOlderThan(cutoff);
+        List<Page> candidates = pageRepository.findExpired(cutoff);
 
         if (candidates.isEmpty()) {
             log.info("Cleanup: no pages older than {} days found", retentionDays);
