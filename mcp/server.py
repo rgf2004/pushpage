@@ -47,8 +47,10 @@ def _client() -> httpx.Client:
 def publish_page(html: str, title: str | None = None) -> dict:
     """Publish an HTML page and return its shareable URL.
 
-    Returns {url, id}. title is optional — when omitted it is extracted from
-    the HTML <title> tag, or falls back to 'Untitled'.
+    Returns {url, id, expires_at}. title is optional — when omitted it is
+    extracted from the HTML <title> tag, or falls back to 'Untitled'.
+    expires_at is an ISO-8601 timestamp indicating when the page will be
+    automatically deleted.
     """
     with _client() as client:
         payload = {"html": html}
@@ -60,7 +62,7 @@ def publish_page(html: str, title: str | None = None) -> dict:
         except httpx.HTTPStatusError as e:
             return {"error": "Failed to publish page", "status_code": e.response.status_code, "detail": e.response.text}
         data = r.json()
-        return {"url": data["url"], "id": data["id"]}
+        return {"url": data["url"], "id": data["id"], "expires_at": data["expires_at"]}
 
 
 @mcp.tool()

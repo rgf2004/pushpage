@@ -114,7 +114,7 @@ class PageServiceTest {
 
         pageService.publish(new PublishRequest(html, null));
 
-        verify(pageRepository).save(anyString(), eq("From HTML"), anyString());
+        verify(pageRepository).save(anyString(), eq("From HTML"), anyString(), any());
     }
 
     @Test
@@ -123,14 +123,14 @@ class PageServiceTest {
 
         pageService.publish(new PublishRequest(html, "   "));
 
-        verify(pageRepository).save(anyString(), eq("From HTML"), anyString());
+        verify(pageRepository).save(anyString(), eq("From HTML"), anyString(), any());
     }
 
     @Test
     void publishPage_whenTitleNullAndNoTitleTag_usesUntitled() {
         pageService.publish(new PublishRequest("<h1>Hello</h1>", null));
 
-        verify(pageRepository).save(anyString(), eq("Untitled"), anyString());
+        verify(pageRepository).save(anyString(), eq("Untitled"), anyString(), any());
     }
 
     @Test
@@ -139,7 +139,7 @@ class PageServiceTest {
 
         pageService.publish(new PublishRequest(html, null));
 
-        verify(pageRepository).save(anyString(), eq("Untitled"), anyString());
+        verify(pageRepository).save(anyString(), eq("Untitled"), anyString(), any());
     }
 
     @Test
@@ -148,12 +148,12 @@ class PageServiceTest {
 
         pageService.publish(new PublishRequest(html, "Explicit Title"));
 
-        verify(pageRepository).save(anyString(), eq("Explicit Title"), anyString());
+        verify(pageRepository).save(anyString(), eq("Explicit Title"), anyString(), any());
     }
 
     @Test
     void deletePage_shouldRemoveFileAndDbRecord() throws Exception {
-        Page page = new Page("abc123", "Title", Instant.now(), null, null, ADMIN_USER.id());
+        Page page = new Page("abc123", "Title", Instant.now(), null, null, null, ADMIN_USER.id());
         when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
 
         Path file = tempDir.resolve("abc123.html");
@@ -162,7 +162,7 @@ class PageServiceTest {
         pageService.deletePage("abc123");
 
         assertThat(file).doesNotExist();
-        verify(pageRepository).deleteById("abc123");
+        verify(pageRepository).softDeleteById("abc123");
     }
 
     @Test
@@ -176,7 +176,7 @@ class PageServiceTest {
 
     @Test
     void deletePage_byNonOwner_shouldThrowForbidden() {
-        Page page = new Page("abc123", "Title", Instant.now(), null, null, "someone-else");
+        Page page = new Page("abc123", "Title", Instant.now(), null, null, null, "someone-else");
         when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
         when(authContext.getCurrentUser()).thenReturn(REGULAR_USER);
 
@@ -188,12 +188,12 @@ class PageServiceTest {
 
     @Test
     void deletePage_adminCanDeleteAnyPage() throws Exception {
-        Page page = new Page("abc123", "Title", Instant.now(), null, null, "someone-else");
+        Page page = new Page("abc123", "Title", Instant.now(), null, null, null, "someone-else");
         when(pageRepository.findById("abc123")).thenReturn(Optional.of(page));
 
         pageService.deletePage("abc123");
 
-        verify(pageRepository).deleteById("abc123");
+        verify(pageRepository).softDeleteById("abc123");
     }
 
     @Test
@@ -206,8 +206,8 @@ class PageServiceTest {
     @Test
     void listPages_shouldReturnAllPagesFromRepository() {
         List<Page> pages = List.of(
-                new Page("id1", "Page 1", Instant.parse("2024-01-02T00:00:00Z"), null, "http://localhost/id1.html", ADMIN_USER.id()),
-                new Page("id2", "Page 2", Instant.parse("2024-01-01T00:00:00Z"), null, "http://localhost/id2.html", ADMIN_USER.id())
+                new Page("id1", "Page 1", Instant.parse("2024-01-02T00:00:00Z"), null, null, "http://localhost/id1.html", ADMIN_USER.id()),
+                new Page("id2", "Page 2", Instant.parse("2024-01-01T00:00:00Z"), null, null, "http://localhost/id2.html", ADMIN_USER.id())
         );
         when(pageRepository.findAll(anyString(), anyString(), anyBoolean())).thenReturn(pages);
 

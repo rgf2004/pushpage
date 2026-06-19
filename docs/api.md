@@ -93,6 +93,7 @@ List published pages ordered by publish date descending. Regular users see only 
     "title": "My Report",
     "created_at": "2026-06-11T10:00:00Z",
     "deleted_at": null,
+    "expires_at": "2026-07-11T10:00:00Z",
     "url": "http://pushpage.homelab.local/pages/abc123.html",
     "user_id": "a1b2c3d4"
   }
@@ -105,6 +106,7 @@ List published pages ordered by publish date descending. Regular users see only 
 | `title` | Page title set at publish time |
 | `created_at` | ISO-8601 publish timestamp |
 | `deleted_at` | ISO-8601 soft-deletion timestamp, or `null` for live pages |
+| `expires_at` | ISO-8601 expiry timestamp (`created_at + retention_days`); `null` for legacy rows pre-dating this field |
 | `url` | Full public URL to the HTML file |
 | `user_id` | ID of the user who published the page |
 

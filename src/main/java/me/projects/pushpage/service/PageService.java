@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,6 +41,9 @@ public class PageService {
 
     @Value("${app.max-file-size}")
     private DataSize maxFileSize;
+
+    @Value("${app.cleanup.retention-days:30}")
+    private int retentionDays;
 
     private final PageRepository pageRepository;
     private final HealthService healthService;
@@ -81,11 +86,12 @@ public class PageService {
         }
 
         String userId = requireCurrentUser().id();
-        pageRepository.save(id, title, userId);
+        Instant expiresAt = Instant.now().plus(retentionDays, ChronoUnit.DAYS);
+        pageRepository.save(id, title, userId, expiresAt);
         healthService.invalidateCache();
 
         String url = baseUrl + "/" + id + ".html";
-        return new PublishResponse(url, id);
+        return new PublishResponse(url, id, expiresAt);
     }
 
     public UserSummary getCurrentUser() {
@@ -113,7 +119,7 @@ public class PageService {
             throw new RuntimeException("Failed to delete page file", e);
         }
 
-        pageRepository.deleteById(id);
+        pageRepository.softDeleteById(id);
         healthService.invalidateCache();
     }
 
