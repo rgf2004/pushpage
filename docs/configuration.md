@@ -25,22 +25,16 @@ app.guest.expiration-minutes=30
 
 Change this value and rebuild to adjust how long guest pages live.
 
-## Database Backend
+## Database Variables
 
-The active database backend is selected via the `SPRING_PROFILES_ACTIVE` environment variable.
-
-| Value | Backend |
-|-------|---------|
-| _(unset)_ | SQLite (default) |
-| `postgres` | PostgreSQL |
-
-Use `docker-compose.yml` for the SQLite default. Use `docker-compose.postgres.yml` for PostgreSQL — it starts a complete stack including the database container.
-
-### PostgreSQL Variables (`SPRING_PROFILES_ACTIVE=postgres`)
+pushpage uses PostgreSQL. The following variables configure the connection:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DB_HOST` | PostgreSQL hostname | `localhost` |
+| `DB_PORT` | PostgreSQL port | `5432` |
 | `DB_NAME` | Database name | `pushpage` |
 | `DB_USER` | Database username | `pushpage` |
 | `DB_PASSWORD` | Database password | `pushpage` |
+
+`docker-compose.yml` starts a co-located `postgres:17-alpine` container automatically. To point at an external PostgreSQL instance instead, override `DB_HOST` (and optionally `DB_PORT`) in your `.env`.

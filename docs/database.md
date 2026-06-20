@@ -1,6 +1,6 @@
 # Database
 
-pushpage uses a relational database for persistence. It supports **SQLite** (the default, no extra setup) and **PostgreSQL** (opt-in via `SPRING_PROFILES_ACTIVE=postgres`). Schema migrations are managed by Flyway and the migration scripts are compatible with both engines.
+pushpage uses **PostgreSQL** for persistence. Schema migrations are managed by Flyway.
 
 ## Schema
 
@@ -36,7 +36,7 @@ pushpage uses a relational database for persistence. It supports **SQLite** (the
 | `active` | INTEGER | no | `1` = active, `0` = deactivated (default: `1`) |
 | `admin` | INTEGER | no | `1` = admin, `0` = regular user (default: `0`) |
 
-`active` and `admin` are stored as `INTEGER` (not `BOOLEAN`) for SQLite compatibility. The application reads them with `getInt() != 0`.
+`active` and `admin` are stored as `INTEGER` (not `BOOLEAN`). The application reads them with `getInt() != 0`.
 
 **Indexes:**
 

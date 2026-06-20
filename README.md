@@ -189,15 +189,9 @@ For the full tool reference, alternative connection methods (including `mcp-remo
 
 ## Database
 
-pushpage defaults to **SQLite** — no extra setup required. The database file lives in the `data` Docker volume.
+pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres:17-alpine` container automatically — no extra setup required.
 
-To use **PostgreSQL** instead, start the stack with `docker-compose.postgres.yml`:
-
-```bash
-docker compose -f docker-compose.postgres.yml up -d
-```
-
-This brings up a complete stack including a co-located `postgres:17-alpine` container. To point at an external PostgreSQL instance instead, override the connection variables in your `.env`:
+To point at an external PostgreSQL instance instead, override the connection variables in your `.env`:
 
 ```env
 DB_HOST=your-postgres-host
@@ -210,10 +204,10 @@ See [`docs/configuration.md`](docs/configuration.md) for the full variable refer
 
 ## Contributing / Local Development
 
-To build from source and run locally (SQLite by default):
+To build from source and run locally:
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-To develop against PostgreSQL, uncomment the `postgres` service and the `SPRING_PROFILES_ACTIVE` environment variable in `docker-compose.dev.yml`.
+This starts a PostgreSQL container alongside the publisher (using tmpfs, so data is not persisted between restarts).
