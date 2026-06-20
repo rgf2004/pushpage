@@ -15,8 +15,8 @@ An HTML page publishing service for a homelab. AI agents POST HTML content and g
 
 ```
 push-page/
-├── docker-compose.yml          # prod — PostgreSQL, pulls images from Docker Hub
-├── docker-compose.dev.yml      # dev  — builds image from source (PostgreSQL)
+├── docker-compose.yml          # prod — pulls images from Docker Hub
+├── docker-compose.dev.yml      # dev  — builds image from source
 ├── .env                        # environment variables (see below)
 ├── publisher/
 │   └── Dockerfile              # multi-stage Maven build → JRE runtime
@@ -113,10 +113,10 @@ Shared visual styles live in `nginx/static/theme.css`, linked by both `index.htm
 ## Running
 
 ```bash
-# Prod — PostgreSQL (canonical)
+# Prod
 docker compose up -d
 
-# Dev — build from source (PostgreSQL)
+# Dev — build from source
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
