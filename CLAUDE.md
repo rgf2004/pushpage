@@ -113,10 +113,11 @@ Shared visual styles live in `nginx/static/theme.css`, linked by both `index.htm
 ## Running
 
 ```bash
-# Prod
+# Prod (create data dirs on first run)
+mkdir -p data/pages data/pgdata
 docker compose up -d
 
-# Dev — build from source
+# Dev — build from source (no persistent data)
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 

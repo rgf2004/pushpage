@@ -41,9 +41,10 @@ All other variables have sensible defaults. See [`docs/configuration.md`](docs/c
 
 ### Running
 
-Pull the pre-built images from Docker Hub and start the stack:
+Create the data directories, then pull the pre-built images and start the stack:
 
 ```bash
+mkdir -p data/pages data/pgdata
 docker compose up -d
 ```
 
