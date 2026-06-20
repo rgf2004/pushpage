@@ -55,10 +55,6 @@ public class PageRepository {
         return count != null && count > 0;
     }
 
-    public void deleteById(String id) {
-        jdbc.update("DELETE FROM pages WHERE id = ?", id);
-    }
-
     public List<Page> findExpired(Instant legacyCutoff) {
         Instant now = Instant.now();
         return jdbc.query(

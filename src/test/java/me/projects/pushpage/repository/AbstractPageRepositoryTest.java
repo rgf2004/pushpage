@@ -95,17 +95,6 @@ abstract class AbstractPageRepositoryTest {
         assertThat(repository.existsById("abc12345")).isFalse();
     }
 
-    // --- deleteById ---
-
-    @Test
-    void deleteById_shouldRemoveRow() {
-        repository.save("abc12345", "My Page", TEST_USER_ID, Instant.now().plus(30, ChronoUnit.DAYS));
-
-        repository.deleteById("abc12345");
-
-        assertThat(repository.existsById("abc12345")).isFalse();
-    }
-
     // --- findAll ---
 
     @Test
