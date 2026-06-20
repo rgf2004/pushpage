@@ -1,6 +1,6 @@
 # pushpage
 
-An HTML page publishing service. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
+An HTML page publishing service for AI agents. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
 
 ## Why this project exists
 
@@ -110,6 +110,8 @@ Response:
 ```
 
 Open the `url` in your browser — that's your published page.
+
+`POST /api/pages` also works without an API key — guest pages auto-expire after 30 minutes and are not tied to any account, ideal for quick one-off shares.
 
 ### 4. Create a dedicated user (optional)
 

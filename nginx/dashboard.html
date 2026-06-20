@@ -290,6 +290,23 @@
 
         .api-key-display.revealed { filter: none; }
 
+        /* ── Guest page highlight ────────────────────────────────────── */
+        .guest-badge {
+            display: inline-block;
+            background: rgba(234, 179, 8, .15);
+            border: 1px solid rgba(234, 179, 8, .4);
+            border-radius: 20px;
+            padding: 1px 8px;
+            font-size: .72rem;
+            font-weight: 500;
+            color: #ca8a04;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        tr.guest-row { background: rgba(234, 179, 8, .04); }
+        tr.guest-row:hover { background: rgba(234, 179, 8, .08); }
+
         /* ── Admin users table ────────────────────────────────────────── */
         .status-dot {
             display: inline-block;
@@ -739,16 +756,19 @@ function renderPageRows() {
     tbody.innerHTML = '';
 
     slice.forEach(p => {
+        const isGuest = p['user_id'] == null;
         const tr = document.createElement('tr');
         tr.id = 'page-row-' + p.id;
+        if (isGuest) tr.classList.add('guest-row');
+        const guestBadge = (isGuest && currentUser.isAdmin) ? '<span class="guest-badge">Guest</span>' : '';
         tr.innerHTML = `
             <td>
-                <div class="page-title">${esc(p.title || 'Untitled')}</div>
+                <div class="page-title">${esc(p.title || 'Untitled')}${guestBadge}</div>
                 <div class="page-id">${esc(p.id)}</div>
             </td>
             <td class="page-url"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a></td>
             <td class="date-cell">${fmtDate(p['created_at'])}</td>
-            <td class="date-cell">${fmtDate(p['deleted_at'])}</td>
+            <td class="date-cell">${fmtDate(p['expires_at'])}</td>
             <td><button class="btn btn-danger btn-sm" data-id="${esc(p.id)}" data-title="${esc(p.title || p.id)}">Delete</button></td>
         `;
         tbody.appendChild(tr);

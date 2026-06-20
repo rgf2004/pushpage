@@ -55,6 +55,8 @@ class PageServiceTest {
         ReflectionTestUtils.setField(pageService, "baseUrl", "http://localhost");
         ReflectionTestUtils.setField(pageService, "pagesDir", tempDir.toString());
         ReflectionTestUtils.setField(pageService, "maxFileSize", DataSize.ofMegabytes(1));
+        ReflectionTestUtils.setField(pageService, "retentionDays", 30);
+        ReflectionTestUtils.setField(pageService, "guestExpirationMinutes", 30);
         pageService.init();
         lenient().when(authContext.getCurrentUser()).thenReturn(ADMIN_USER);
     }
@@ -149,6 +151,23 @@ class PageServiceTest {
         pageService.publish(new PublishRequest(html, "Explicit Title"));
 
         verify(pageRepository).save(anyString(), eq("Explicit Title"), anyString(), any());
+    }
+
+    @Test
+    void publishPage_asGuest_savesWithNullUserIdAndShortExpiry() {
+        when(authContext.getCurrentUser()).thenReturn(null);
+
+        Instant before = Instant.now();
+        pageService.publish(new PublishRequest("<h1>Guest</h1>", "Guest Page"));
+        Instant after = Instant.now();
+
+        verify(pageRepository).save(
+                anyString(),
+                eq("Guest Page"),
+                isNull(),
+                argThat(exp -> !exp.isBefore(before.plusSeconds(29 * 60))
+                        && !exp.isAfter(after.plusSeconds(31 * 60)))
+        );
     }
 
     @Test
