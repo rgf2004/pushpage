@@ -5,7 +5,7 @@ An HTML page publishing service for a homelab. AI agents POST HTML content and g
 ## Stack
 
 - **Spring Boot 3.4** — publisher service (Java 25)
-- **SQLite** (default) / **PostgreSQL** (opt-in) — database, managed by Flyway
+- **PostgreSQL** — database, managed by Flyway
 - **Flyway** — database migrations (all schema changes must go through a versioned migration in `src/main/resources/db/migration/`)
 - **nginx** — static file serving + reverse proxy
 - **FastMCP** (Python) — cloud MCP server, runs by default alongside the main stack
@@ -15,9 +15,8 @@ An HTML page publishing service for a homelab. AI agents POST HTML content and g
 
 ```
 push-page/
-├── docker-compose.yml          # prod — SQLite, pulls images from Docker Hub
-├── docker-compose.postgres.yml # prod — PostgreSQL, pulls images from Docker Hub
-├── docker-compose.dev.yml      # dev  — builds image from source (SQLite by default)
+├── docker-compose.yml          # prod — pulls images from Docker Hub
+├── docker-compose.dev.yml      # dev  — builds image from source
 ├── .env                        # environment variables (see below)
 ├── publisher/
 │   └── Dockerfile              # multi-stage Maven build → JRE runtime
@@ -40,7 +39,7 @@ push-page/
     │   ├── PublishRequest.java
     │   └── PublishResponse.java
     ├── repository/
-    │   └── PageRepository.java     # JdbcTemplate (works with SQLite and PostgreSQL)
+    │   └── PageRepository.java     # JdbcTemplate
     └── service/
         └── PublishService.java     # business logic
 ```
@@ -59,7 +58,7 @@ For every change, evaluate whether **`skill/SKILL.md`** and **`nginx/llms.txt`**
 
 ## Database
 
-The service defaults to **SQLite** (no extra setup — the database file lives in the `data` Docker volume). To use **PostgreSQL** instead, set `SPRING_PROFILES_ACTIVE=postgres` and supply the connection variables below. Use `docker-compose.postgres.yml`, which starts a complete stack including a co-located `postgres:17-alpine` container.
+pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres:17-alpine` container automatically. Schema migrations are managed by Flyway.
 
 ## Environment Variables (`.env`)
 
@@ -71,7 +70,8 @@ The service defaults to **SQLite** (no extra setup — the database file lives i
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
 | `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
-| `DB_HOST` | PostgreSQL host (only with `SPRING_PROFILES_ACTIVE=postgres`) | `localhost` |
+| `DB_HOST` | PostgreSQL hostname | `localhost` |
+| `DB_PORT` | PostgreSQL port | `5432` |
 | `DB_NAME` | PostgreSQL database name | `pushpage` |
 | `DB_USER` | PostgreSQL username | `pushpage` |
 | `DB_PASSWORD` | PostgreSQL password | `changeme` |
@@ -113,13 +113,11 @@ Shared visual styles live in `nginx/static/theme.css`, linked by both `index.htm
 ## Running
 
 ```bash
-# Prod — SQLite (default)
+# Prod (create data dirs on first run)
+mkdir -p data/pages data/pgdata
 docker compose up -d
 
-# Prod — PostgreSQL
-docker compose -f docker-compose.postgres.yml up -d
-
-# Dev — build from source (SQLite by default; uncomment postgres section in docker-compose.dev.yml to use PostgreSQL)
+# Dev — build from source (no persistent data)
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 

@@ -5,9 +5,15 @@ services:
       APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1MB}
       MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-10MB}
+      DB_HOST: postgres
+      DB_NAME: ${DB_NAME:-pushpage}
+      DB_USER: ${DB_USER:-pushpage}
+      DB_PASSWORD: ${DB_PASSWORD:-pushpage}
     volumes:
-      - pages:/var/www/pages
-      - data:/data
+      - ./data/pages:/var/www/pages
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   nginx:
@@ -15,7 +21,7 @@ services:
     ports:
       - "${NGINX_PORT:-8080}:80"
     volumes:
-      - pages:/var/www/pages:ro
+      - ./data/pages:/var/www/pages:ro
     depends_on:
       - publisher
     restart: unless-stopped
@@ -28,6 +34,17 @@ services:
       - publisher
     restart: unless-stopped
 
-volumes:
-  pages:
-  data:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-pushpage}
+      POSTGRES_USER: ${DB_USER:-pushpage}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pushpage}
+    volumes:
+      - ./data/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pushpage} -d ${DB_NAME:-pushpage}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped

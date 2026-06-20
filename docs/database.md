@@ -1,6 +1,6 @@
 # Database
 
-pushpage uses a relational database for persistence. It supports **SQLite** (the default, no extra setup) and **PostgreSQL** (opt-in via `SPRING_PROFILES_ACTIVE=postgres`). Schema migrations are managed by Flyway and the migration scripts are compatible with both engines.
+pushpage uses **PostgreSQL** for persistence. Schema migrations are managed by Flyway.
 
 ## Schema
 
@@ -33,10 +33,8 @@ pushpage uses a relational database for persistence. It supports **SQLite** (the
 | `email` | TEXT | yes | Optional contact email |
 | `api_key_hash` | TEXT | no | SHA-256 hex digest of the raw API key |
 | `created_at` | TIMESTAMP | no | Timestamp of account creation |
-| `active` | INTEGER | no | `1` = active, `0` = deactivated (default: `1`) |
-| `admin` | INTEGER | no | `1` = admin, `0` = regular user (default: `0`) |
-
-`active` and `admin` are stored as `INTEGER` (not `BOOLEAN`) for SQLite compatibility. The application reads them with `getInt() != 0`.
+| `active` | BOOLEAN | no | `true` = active, `false` = deactivated (default: `true`) |
+| `admin` | BOOLEAN | no | `true` = admin, `false` = regular user (default: `false`) |
 
 **Indexes:**
 
@@ -58,3 +56,4 @@ Migration files follow the naming convention: `V{version}__{description}.sql`
 | `V2__add_deleted_at_and_index.sql` | Adds `deleted_at` to `pages`; adds `idx_pages_created_at` |
 | `V3__add_users_table.sql` | Creates `users` table; adds `user_id` FK column to `pages` |
 | `V4__add_expires_at_to_pages.sql` | Adds `expires_at` to `pages`; adds `idx_pages_expires_at` |
+| `V5__convert_active_admin_to_boolean.sql` | Converts `active` and `admin` columns in `users` from `INTEGER` to `BOOLEAN` |

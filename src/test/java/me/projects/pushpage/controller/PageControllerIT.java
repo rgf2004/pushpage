@@ -58,7 +58,7 @@ class PageControllerIT extends PostgresTestSupport {
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
         jdbc.update(
-                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 1)",
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, true)",
                 TEST_USER_ID, "testadmin", ApiKeyHasher.hash(TEST_API_KEY), Timestamp.from(Instant.now())
         );
     }
@@ -236,7 +236,7 @@ class PageControllerIT extends PostgresTestSupport {
     @Test
     void publish_asGuest_pageVisibleToAdminButNotRegularUser() throws Exception {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, false)",
                 "regularguest1", "regularguest", ApiKeyHasher.hash("regular-guest-key"), Timestamp.from(Instant.now())
         );
 
@@ -283,7 +283,7 @@ class PageControllerIT extends PostgresTestSupport {
     @Test
     void listPages_scopedToCurrentUser() throws Exception {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, false)",
                 "otheruser1", "otheruser", ApiKeyHasher.hash("other-api-key"), Timestamp.from(Instant.now())
         );
 
@@ -317,7 +317,7 @@ class PageControllerIT extends PostgresTestSupport {
     @Test
     void deletePage_byNonOwner_returns403() throws Exception {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, false)",
                 "otheruser2", "otheruser2", ApiKeyHasher.hash("other-api-key-2"), Timestamp.from(Instant.now())
         );
 
@@ -339,7 +339,7 @@ class PageControllerIT extends PostgresTestSupport {
     @Test
     void adminEndpoints_withNonAdminKey_return403() throws Exception {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, 1, 0)",
+                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, false)",
                 "regularuser1", "regularuser", ApiKeyHasher.hash("regular-api-key"), Timestamp.from(Instant.now())
         );
 

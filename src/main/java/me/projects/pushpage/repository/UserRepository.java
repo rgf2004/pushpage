@@ -24,8 +24,8 @@ public class UserRepository {
                 "INSERT INTO users (id, username, email, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 user.id(), user.username(), user.email(), user.apiKeyHash(),
                 Timestamp.from(user.createdAt()),
-                user.active() ? 1 : 0,
-                user.admin() ? 1 : 0
+                user.active(),
+                user.admin()
         );
     }
 
@@ -38,8 +38,8 @@ public class UserRepository {
                         rs.getString("email"),
                         rs.getString("api_key_hash"),
                         rs.getTimestamp("created_at").toInstant(),
-                        rs.getInt("active") != 0,
-                        rs.getInt("admin") != 0
+                        rs.getBoolean("active"),
+                        rs.getBoolean("admin")
                 ),
                 apiKeyHash
         );
@@ -54,8 +54,8 @@ public class UserRepository {
                         rs.getString("username"),
                         rs.getString("email"),
                         rs.getTimestamp("created_at").toInstant(),
-                        rs.getInt("active") != 0,
-                        rs.getInt("admin") != 0
+                        rs.getBoolean("active"),
+                        rs.getBoolean("admin")
                 )
         );
     }
@@ -69,7 +69,7 @@ public class UserRepository {
     }
 
     public boolean deactivateById(String id) {
-        int rows = jdbc.update("UPDATE users SET active = 0 WHERE id = ?", id);
+        int rows = jdbc.update("UPDATE users SET active = false WHERE id = ?", id);
         return rows > 0;
     }
 
