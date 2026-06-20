@@ -149,6 +149,54 @@ class PageControllerIT extends PostgresTestSupport {
     }
 
     @Test
+    void deletePage_rowRemainsInDatabaseWithDeletedAtSet() throws Exception {
+        String response = mockMvc.perform(post("/pages")
+                        .header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Soft delete me</h1>", "title": "Soft Delete Test"}
+                                """))
+                .andReturn().getResponse().getContentAsString();
+
+        String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+
+        mockMvc.perform(delete("/pages/" + id)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isNoContent());
+
+        Integer rowCount = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM pages WHERE id = ?", Integer.class, id);
+        assertThat(rowCount).isEqualTo(1);
+
+        String deletedAt = jdbc.queryForObject(
+                "SELECT deleted_at FROM pages WHERE id = ?", String.class, id);
+        assertThat(deletedAt).isNotNull();
+    }
+
+    @Test
+    void deletePage_pageNoLongerAppearsInList() throws Exception {
+        String response = mockMvc.perform(post("/pages")
+                        .header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>To be deleted</h1>", "title": "Deleted Page"}
+                                """))
+                .andReturn().getResponse().getContentAsString();
+
+        String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+
+        mockMvc.perform(delete("/pages/" + id)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/pages")
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[?(@.id == '" + id + "')]").doesNotExist());
+    }
+
+    @Test
     void deletePage_whenIdNotFound_returns404() throws Exception {
         mockMvc.perform(delete("/pages/nonexistent")
                         .header("X-Api-Key", TEST_API_KEY))
