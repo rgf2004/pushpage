@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>me.projects</groupId>
 	<artifactId>postpage</artifactId>
-	<version>0.7.0-SNAPSHOT</version>
+	<version>0.8.0-SNAPSHOT</version>
 	<name>postpage</name>
 	<description>Self-hosted HTML page publishing service</description>
 
