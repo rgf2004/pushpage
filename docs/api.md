@@ -63,7 +63,7 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
 
 ```json
 {
-  "url": "http://pushpage.homelab.local/pages/abc123.html",
+  "url": "https://pushpage.link/pages/abc123.html",
   "id": "abc123"
 }
 ```
@@ -94,7 +94,7 @@ List published pages ordered by publish date descending. Regular users see only 
     "created_at": "2026-06-11T10:00:00Z",
     "deleted_at": null,
     "expires_at": "2026-07-11T10:00:00Z",
-    "url": "http://pushpage.homelab.local/pages/abc123.html",
+    "url": "https://pushpage.link/pages/abc123.html",
     "user_id": "a1b2c3d4"
   }
 ]

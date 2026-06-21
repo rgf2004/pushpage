@@ -1,6 +1,6 @@
 # pushpage
 
-An HTML page publishing service for a homelab. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
+An HTML page publishing service for AI agents. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat. A managed public instance is available at https://pushpage.link; it can also be self-hosted.
 
 ## Stack
 
@@ -64,7 +64,7 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `APP_SERVER_URL` | Full public URL of the service | `http://pushpage.homelab.local` |
+| `APP_SERVER_URL` | Full public URL of the service | `https://pushpage.link` |
 | `NGINX_PORT` | Host port nginx binds to | `8080` |
 | `CLEANUP_RETENTION_DAYS` | Days to retain pages before auto-cleanup | `30` |
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |

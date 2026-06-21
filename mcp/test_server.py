@@ -33,11 +33,11 @@ class TestServerRegistration(unittest.TestCase):
             {"publish_page", "list_pages", "delete_page", "health"},
         )
 
-    def test_missing_pushpage_url_exits(self):
+    def test_missing_pushpage_url_defaults_to_public_instance(self):
         saved = os.environ.pop("PUSHPAGE_URL", None)
         sys.modules.pop("server", None)
-        with self.assertRaises(SystemExit):
-            importlib.import_module("server")
+        mod = importlib.import_module("server")
+        self.assertEqual(mod._url, "https://pushpage.link")
         if saved:
             os.environ["PUSHPAGE_URL"] = saved
 
