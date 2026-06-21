@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 
 import httpx
 import uvicorn
@@ -8,11 +7,7 @@ from fastmcp import FastMCP
 from fastmcp.server.dependencies import get_http_request
 from starlette.responses import Response
 
-_url = os.environ.get("PUSHPAGE_URL", "").rstrip("/")
-
-if not _url:
-    print("ERROR: missing required environment variable: PUSHPAGE_URL", file=sys.stderr)
-    sys.exit(1)
+_url = os.environ.get("PUSHPAGE_URL", "https://pushpage.link").rstrip("/")
 
 mcp = FastMCP(
     "pushpage",

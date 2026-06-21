@@ -25,9 +25,11 @@ The MCP handles authentication transparently — no key reading or header wiring
 
 ## Base URL
 
-```
-http://pushpage.homelab.local/api
-```
+Base URL resolution (pick the first that applies):
+1. If `APP_SERVER_URL` is configured in the environment → use it.
+2. Otherwise, use `https://pushpage.link` (the managed public instance).
+
+Concrete fallback used in all examples below: `https://pushpage.link`
 
 ## Authentication
 
@@ -55,7 +57,7 @@ Read the key, then POST to `/api/pages`:
 
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-curl -s -X POST http://pushpage.homelab.local/api/pages \
+curl -s -X POST https://pushpage.link/api/pages \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: $PUSHPAGE_API_KEY" \
   -d '{
@@ -68,7 +70,7 @@ curl -s -X POST http://pushpage.homelab.local/api/pages \
 Response:
 ```json
 {
-  "url": "http://pushpage.homelab.local/pages/abc123.html",
+  "url": "https://pushpage.link/pages/abc123.html",
   "id": "abc123"
 }
 ```
@@ -115,7 +117,7 @@ Since the content will be viewed in a browser, write clean, self-contained HTML.
 
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-curl -s http://pushpage.homelab.local/api/pages \
+curl -s https://pushpage.link/api/pages \
   -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
@@ -125,14 +127,14 @@ Returns an array of page objects with `id`, `title`, `created_at`, and `url`. Re
 
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-curl -s -X DELETE http://pushpage.homelab.local/api/pages/{id} \
+curl -s -X DELETE https://pushpage.link/api/pages/{id} \
   -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
 ### Health check (no auth required)
 
 ```bash
-curl -s http://pushpage.homelab.local/api/health
+curl -s https://pushpage.link/api/health
 ```
 
 ## Typical Flow
@@ -150,4 +152,4 @@ curl -s http://pushpage.homelab.local/api/health
 3. POST it to `/api/pages` with the key in `X-Api-Key` — no need to repeat the title in the request body
 4. Return only the `url` to the user — do not paste the HTML into chat
 
-If a connection error occurs (not a 401/403), mention that the pushpage service at `pushpage.homelab.local` may be down and suggest the user check their homelab.
+If a connection error occurs (not a 401/403), mention that the pushpage service may be down and suggest the user check their instance or visit `https://pushpage.link/api/health` to verify the public instance.

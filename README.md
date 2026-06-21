@@ -31,7 +31,7 @@ For the full API reference — page management, admin user endpoints, request/re
 ### Prerequisites
 
 - Docker and Docker Compose
-- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible. Set it to `http://localhost:8080` to get started quickly, or to a custom hostname (e.g. `http://pushpage.homelab.local`) if you have DNS set up for it:
+- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible. Set it to `http://localhost:8080` to get started quickly, or to a custom hostname if you have DNS set up for it. If you'd rather skip self-hosting, a managed public instance is available at **https://pushpage.link**.
 
 ```env
 APP_SERVER_URL=http://localhost:8080

@@ -4,11 +4,11 @@ pushpage is a service that accepts HTML and returns a shareable public URL. It i
 
 ## Base URL
 
-```
-{APP_SERVER_URL}/api
-```
+Base URL resolution (pick the first that applies):
+1. If `APP_SERVER_URL` is configured in the environment → use it.
+2. Otherwise, use `https://pushpage.link` (the managed public instance).
 
-Replace `{APP_SERVER_URL}` with the actual service URL (e.g. `http://pushpage.homelab.local`).
+Concrete fallback used in all examples below: `https://pushpage.link`
 
 ## Authentication
 
@@ -34,7 +34,7 @@ Pass the key in every request as `X-Api-Key: $PUSHPAGE_API_KEY`.
 
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-curl -s -X POST {APP_SERVER_URL}/api/pages \
+curl -s -X POST https://pushpage.link/api/pages \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: $PUSHPAGE_API_KEY" \
   -d '{
@@ -48,7 +48,7 @@ Response:
 
 ```json
 {
-  "url": "{APP_SERVER_URL}/pages/abc123.html",
+  "url": "https://pushpage.link/pages/abc123.html",
   "id": "abc123"
 }
 ```
@@ -60,7 +60,7 @@ Return the `url` to the user. That is the shareable link.
 ### List published pages
 
 ```bash
-curl -s {APP_SERVER_URL}/api/pages \
+curl -s https://pushpage.link/api/pages \
   -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
@@ -69,19 +69,19 @@ Returns an array of page objects with `id`, `title`, `created_at`, and `url`. Re
 ### Delete a page
 
 ```bash
-curl -s -X DELETE {APP_SERVER_URL}/api/pages/{id} \
+curl -s -X DELETE https://pushpage.link/api/pages/{id} \
   -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
 ### Health check (no auth required)
 
 ```bash
-curl -s {APP_SERVER_URL}/api/health
+curl -s https://pushpage.link/api/health
 ```
 
 ## MCP server
 
-A FastMCP server is available at `{APP_SERVER_URL}:8000/mcp` for clients that support the MCP protocol (streamable-http transport). It exposes `publish_page`, `list_pages`, `delete_page`, and `health` tools. If your client supports MCP, prefer it over the direct API — authentication is handled transparently by the server.
+A FastMCP server is available at `{APP_SERVER_URL}/mcp` (e.g. `https://pushpage.link/mcp`) for clients that support the MCP protocol (streamable-http transport). It exposes `publish_page`, `list_pages`, `delete_page`, and `health` tools. If your client supports MCP, prefer it over the direct API — authentication is handled transparently by the server.
 
 ## Writing good HTML for pushpage
 
