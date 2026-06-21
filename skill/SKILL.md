@@ -25,11 +25,7 @@ The MCP handles authentication transparently — no key reading or header wiring
 
 ## Base URL
 
-Base URL resolution (pick the first that applies):
-1. If `APP_SERVER_URL` is configured in the environment → use it.
-2. Otherwise, use `https://pushpage.link` (the managed public instance).
-
-Concrete fallback used in all examples below: `https://pushpage.link`
+Default: `https://pushpage.link`. For self-hosted deployments, use the value of `APP_SERVER_URL` instead. Authoritative resolution rules are in `llms.txt` (served at `{BASE_URL}/llms.txt`).
 
 ## Authentication
 
