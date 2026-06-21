@@ -31,7 +31,9 @@ Default: `https://pushpage.link`. For self-hosted deployments, use the value of 
 
 ## Authentication
 
-Most endpoints require an API key. Read it from the credentials file before making any request:
+**MCP:** no key handling needed — the MCP client passes the key transparently.
+
+**curl fallback only:** read the key from the credentials file before every request:
 
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
@@ -45,14 +47,20 @@ If the file is missing or empty, stop and tell the user:
 > ```
 > You can find your key in the pushpage startup logs, or ask an admin to create one for you via `POST /api/admin/users`.
 
-Pass the key in every request as `X-Api-Key: $PUSHPAGE_API_KEY`.
+Pass the key in every curl request as `X-Api-Key: $PUSHPAGE_API_KEY`.
 
 **Exception — guest publishing:** `POST /api/pages` accepts requests with **no API key**. Omit the `X-Api-Key` header entirely and the page is created as a guest page that auto-expires after 30 minutes. Use this for quick one-off shares when no credentials are available.
 
 ## Publishing Content (primary operation)
 
-Read the key, then POST to `/api/pages`:
+**MCP (preferred):**
+```
+publish_page(html="<html>...</html>")
+```
 
+`title` is optional — when omitted the server extracts it from the HTML `<title>` tag, falling back to `"Untitled"`. Pass it explicitly only to override what's in the HTML.
+
+**curl fallback:**
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
 curl -s -X POST https://pushpage.link/api/pages \
@@ -62,8 +70,6 @@ curl -s -X POST https://pushpage.link/api/pages \
     "html": "<html>...</html>"
   }'
 ```
-
-`title` is optional. When omitted or blank, the server extracts it from the HTML `<title>` tag; falls back to `"Untitled"`. Pass it explicitly only to override what's in the HTML.
 
 Response:
 ```json
@@ -113,6 +119,9 @@ Since the content will be viewed in a browser, write clean, self-contained HTML.
 
 ### List published pages
 
+**MCP (preferred):** `list_pages()`
+
+**curl fallback:**
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
 curl -s https://pushpage.link/api/pages \
@@ -123,14 +132,20 @@ Returns an array of page objects with `id`, `title`, `created_at`, and `url`. Re
 
 ### Delete a page
 
+**MCP (preferred):** `delete_page(id="abc123")`
+
+**curl fallback:**
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
 curl -s -X DELETE https://pushpage.link/api/pages/{id} \
   -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
-### Health check (no auth required)
+### Health check
 
+**MCP (preferred):** `health()`
+
+**curl fallback:**
 ```bash
 curl -s https://pushpage.link/api/health
 ```
