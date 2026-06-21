@@ -24,7 +24,7 @@ All endpoints are under `/api` (Spring Boot context path). Most require an API k
 | `POST` | `/api/pages` | User | Publish HTML, returns `{ url, id }` |
 | `GET` | `/api/health` | None | Health check |
 
-For the full API reference — page management, admin user endpoints, request/response schemas — see the Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
+For the full API reference — page management, admin user endpoints, request/response schemas — see the Swagger UI: `https://pushpage.link/api/swagger-ui/index.html`
 
 ## Deployment
 
@@ -51,12 +51,12 @@ docker compose up -d
 Verify the service is running:
 
 ```bash
-curl {APP_SERVER_URL}/api/health
+curl https://pushpage.link/api/health
 ```
 
-Or open the Swagger UI in a browser: `{APP_SERVER_URL}/api/swagger-ui/index.html`
+Or open the Swagger UI in a browser: `https://pushpage.link/api/swagger-ui/index.html`
 
-Or open the dashboard: `{APP_SERVER_URL}/dashboard`
+Or open the dashboard: `https://pushpage.link/dashboard`
 
 To stop the stack:
 
@@ -88,14 +88,14 @@ Copy that key — you'll use it in the next step.
 
 ### 2. Open the dashboard (optional)
 
-Navigate to `{APP_SERVER_URL}/dashboard` and enter your API key. The dashboard lets you browse and delete your pages, view account info, and (as admin) manage users — all without touching the API directly.
+Navigate to `https://pushpage.link/dashboard` (or your self-hosted equivalent) and enter your API key. The dashboard lets you browse and delete your pages, view account info, and (as admin) manage users — all without touching the API directly.
 
 ### 3. Publish your first page
 
 You can start publishing immediately with the admin key. No extra setup required.
 
 ```bash
-curl -X POST {APP_SERVER_URL}/api/pages \
+curl -X POST https://pushpage.link/api/pages \
   -H "X-Api-Key: pp_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"html": "<html><head><title>My Report</title></head><body><h1>Hello</h1><p>Some content here.</p></body></html>"}'
@@ -105,7 +105,7 @@ Response:
 
 ```json
 {
-  "url": "{APP_SERVER_URL}/pages/a1b2c3d4.html",
+  "url": "https://pushpage.link/pages/a1b2c3d4.html",
   "id": "a1b2c3d4"
 }
 ```
@@ -119,7 +119,7 @@ Open the `url` in your browser — that's your published page.
 The admin key is enough for a single-agent or personal setup. If you want to give a separate key to a different agent or user (so their pages are scoped independently), create a dedicated user:
 
 ```bash
-curl -X POST {APP_SERVER_URL}/api/admin/users \
+curl -X POST https://pushpage.link/api/admin/users \
   -H "X-Api-Key: pp_abc123..." \
   -H "Content-Type: application/json" \
   -d '{"username": "myagent", "email": "agent@example.com", "admin": false}'
@@ -152,7 +152,7 @@ See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage e
 
 ### llms.txt
 
-[`llms.txt`](llms.txt) is served at `{APP_SERVER_URL}/llms.txt` and follows the [llms.txt convention](https://llmstxt.org) — a plain-text file that describes what a service does and how to interact with it. An agent that discovers the pushpage instance via HTTP can read this file to understand the API, authentication, and typical usage flow without any prior configuration.
+[`llms.txt`](llms.txt) is served at `https://pushpage.link/llms.txt` (or `{APP_SERVER_URL}/llms.txt` for self-hosted instances) and follows the [llms.txt convention](https://llmstxt.org) — a plain-text file that describes what a service does and how to interact with it. An agent that discovers the pushpage instance via HTTP can read this file to understand the API, authentication, and typical usage flow without any prior configuration.
 
 ## MCP Server
 
@@ -164,7 +164,7 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 docker compose up -d
 ```
 
-Once running, the server is available at `{APP_SERVER_URL}/mcp`. Each client supplies their own pushpage API key via the `Authorization` header.
+Once running, the server is available at `https://pushpage.link/mcp` (or `{APP_SERVER_URL}/mcp` for self-hosted instances). Each client supplies their own pushpage API key via the `Authorization` header.
 
 **Claude Desktop `claude_desktop_config.json`:**
 ```json
