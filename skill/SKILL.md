@@ -27,6 +27,8 @@ The MCP handles authentication transparently — no key reading or header wiring
 
 Default: `https://pushpage.link`. For self-hosted deployments, use the value of `APP_SERVER_URL` instead. Authoritative resolution rules are in `llms.txt` (served at `{BASE_URL}/llms.txt`).
 
+**HTTPS required:** the public instance requires HTTPS — never use `http://pushpage.link`.
+
 ## Authentication
 
 Most endpoints require an API key. Read it from the credentials file before making any request:

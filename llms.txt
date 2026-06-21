@@ -10,6 +10,8 @@ Base URL resolution (pick the first that applies):
 
 Concrete fallback used in all examples below: `https://pushpage.link`
 
+**HTTPS required:** the public instance (`pushpage.link`) requires HTTPS. Never downgrade to `http://pushpage.link` — requests will fail. Self-hosted instances may use HTTP if that is how `APP_SERVER_URL` is configured.
+
 ## Authentication
 
 Most endpoints require an API key. Read it from the credentials file:
