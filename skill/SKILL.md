@@ -45,7 +45,7 @@ If the file is missing or empty, stop and tell the user:
 > ```bash
 > mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
 > ```
-> You can find your key in the pushpage startup logs, or ask an admin to create one for you via `POST /api/admin/users`.
+> To get an API key: sign up at `{BASE_URL}/dashboard`, log in, and use the **Generate / Rotate API Key** button on the Account tab. Or call `POST /api/auth/signup` then `POST /api/auth/login` to get a JWT, then `POST /api/me/tokens` to generate your key.
 
 Pass the key in every curl request as `X-Api-Key: $PUSHPAGE_API_KEY`.
 

@@ -100,7 +100,7 @@ public class PageService {
 
     public UserSummary getCurrentUser() {
         User u = requireCurrentUser();
-        return new UserSummary(u.id(), u.username(), u.email(), u.createdAt(), u.active(), u.admin());
+        return new UserSummary(u.id(), u.email(), u.createdAt(), u.active(), u.admin());
     }
 
     public List<Page> listPages() {

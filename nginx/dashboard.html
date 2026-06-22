@@ -12,8 +12,8 @@
            but the host element itself is in the main document and targetable. */
         bit-notification-bar-root { display: none !important; pointer-events: none !important; }
 
-        /* ── Login screen ─────────────────────────────────────────────── */
-        #login-screen {
+        /* ── Auth screens ─────────────────────────────────────────────── */
+        .auth-screen {
             flex: 1;
             display: flex;
             align-items: center;
@@ -21,7 +21,7 @@
             padding: 40px 24px;
         }
 
-        .login-box {
+        .auth-box {
             background: var(--bg-card);
             border: 1px solid var(--border-soft);
             border-radius: var(--radius-lg);
@@ -30,17 +30,32 @@
             max-width: 420px;
         }
 
-        .login-box h2 {
+        .auth-box h2 {
             font-size: 1.3rem;
             font-weight: 700;
             margin-bottom: 8px;
         }
 
-        .login-box p {
+        .auth-box p {
             font-size: .88rem;
             color: var(--text-muted);
             margin-bottom: 28px;
         }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            font-size: .85rem;
+            color: var(--text-muted);
+        }
+
+        .auth-switch a {
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .auth-switch a:hover { text-decoration: underline; }
 
         .field { margin-bottom: 16px; }
 
@@ -67,7 +82,13 @@
 
         .field input:focus { border-color: var(--accent); }
 
-        .login-error {
+        .field .hint {
+            font-size: .78rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .auth-error {
             background: rgba(218, 54, 51, .12);
             border: 1px solid var(--red-border);
             border-radius: var(--radius);
@@ -266,29 +287,38 @@
 
         .role-badge.admin { border-color: var(--accent); color: var(--accent); }
 
-        .api-key-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+        /* ── API key section in Account tab ──────────────────────────── */
+        .api-key-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-top: 8px;
         }
 
-        .api-key-display {
+        .api-key-section h3 {
+            font-size: .9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .api-key-section p {
+            font-size: .82rem;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .api-key-revealed {
+            background: var(--bg-input);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 12px 14px;
             font-family: var(--font-mono);
             font-size: .82rem;
             color: var(--accent-code);
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 8px 14px;
-            flex: 1;
-            min-width: 0;
             word-break: break-all;
-            filter: blur(4px);
-            transition: filter .2s;
+            margin-bottom: 10px;
         }
-
-        .api-key-display.revealed { filter: none; }
 
         /* ── Guest page highlight ────────────────────────────────────── */
         .guest-badge {
@@ -319,7 +349,9 @@
         .status-dot.active { background: var(--green-dot); }
         .status-dot.inactive { background: var(--text-dim); }
 
-        /* ── Create user modal ────────────────────────────────────────── */
+        .user-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        /* ── Modals ───────────────────────────────────────────────────── */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -417,7 +449,7 @@
             .tab-panel { padding: 24px 16px; }
             .tab-btn { padding: 10px 10px; font-size: .82rem; }
             thead th, td { padding: 10px 10px; }
-            .login-box { padding: 28px 20px; }
+            .auth-box { padding: 28px 20px; }
         }
     </style>
 </head>
@@ -432,16 +464,45 @@
 </header>
 
 <!-- ── Login screen ──────────────────────────────────────────────────── -->
-<div id="login-screen">
-    <div class="login-box">
+<div id="login-screen" class="auth-screen">
+    <div class="auth-box">
         <h2>Sign in</h2>
-        <p>Enter your pushpage API key to access the dashboard.</p>
-        <div id="login-error" class="login-error"></div>
+        <p>Enter your credentials to access the dashboard.</p>
+        <div id="login-error" class="auth-error"></div>
         <div class="field">
-            <label for="api-key-input">API Key</label>
-            <input type="password" id="api-key-input" placeholder="pp_…" autocomplete="off" spellcheck="false">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" autocomplete="email" spellcheck="false">
+        </div>
+        <div class="field">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" autocomplete="current-password">
         </div>
         <button class="btn btn-primary" id="login-btn" style="width:100%">Sign in</button>
+        <div class="auth-switch">
+            Don't have an account? <a id="go-signup">Sign up</a>
+        </div>
+    </div>
+</div>
+
+<!-- ── Sign-up screen ────────────────────────────────────────────────── -->
+<div id="signup-screen" class="auth-screen" style="display:none">
+    <div class="auth-box">
+        <h2>Create account</h2>
+        <p>Sign up to publish and manage pages.</p>
+        <div id="signup-error" class="auth-error"></div>
+        <div class="field">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" autocomplete="email">
+        </div>
+        <div class="field">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" autocomplete="new-password">
+            <div class="hint">Minimum 8 characters.</div>
+        </div>
+        <button class="btn btn-primary" id="signup-btn" style="width:100%">Create account</button>
+        <div class="auth-switch">
+            Already have an account? <a id="go-login">Sign in</a>
+        </div>
     </div>
 </div>
 
@@ -477,7 +538,7 @@
             <div class="pagination" id="pages-pagination"></div>
         </div>
         <div id="pages-empty" class="empty-state" style="display:none">
-            <p>No pages yet. Publish one via <code>POST /api/publish</code>.</p>
+            <p>No pages yet. Publish one via <code>POST /api/pages</code>.</p>
         </div>
     </div>
 
@@ -487,21 +548,24 @@
         <div class="card" style="max-width:560px">
             <div class="info-grid">
                 <div class="info-row">
-                    <span class="info-label">Username</span>
-                    <span class="info-value" id="acc-username">—</span>
+                    <span class="info-label">Email</span>
+                    <span class="info-value" id="acc-email">—</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Role</span>
                     <span class="info-value"><span class="role-badge" id="acc-role">—</span></span>
                 </div>
             </div>
-            <div class="info-row" style="margin-bottom:12px">
-                <span class="info-label" style="margin-bottom:8px;display:block">API Key</span>
-                <div class="api-key-row">
-                    <div class="api-key-display" id="acc-key">—</div>
-                    <button class="btn btn-secondary btn-sm" id="reveal-key-btn">Reveal</button>
-                    <button class="btn btn-secondary btn-sm" id="copy-key-btn">Copy</button>
+
+            <div class="api-key-section">
+                <h3>API Key</h3>
+                <p>Generate an API key for programmatic access. Rotating it invalidates the previous key immediately.</p>
+                <div id="acc-key-box" style="display:none">
+                    <div class="key-reveal-label">Your API key — copy it now, it won't be shown again</div>
+                    <div class="api-key-revealed" id="acc-key-value"></div>
+                    <button class="btn btn-secondary btn-sm" id="acc-copy-key-btn">Copy</button>
                 </div>
+                <button class="btn btn-secondary btn-sm" id="rotate-key-btn" style="margin-top:4px">Generate / Rotate API Key</button>
             </div>
         </div>
     </div>
@@ -510,7 +574,6 @@
     <div class="tab-panel" id="tab-admin">
         <div class="panel-header">
             <h2>Users</h2>
-            <button class="btn btn-primary btn-sm" id="create-user-btn">+ New user</button>
         </div>
         <div id="users-loading" class="loading-state">Loading…</div>
         <div id="users-table-wrap" style="display:none">
@@ -518,7 +581,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Username</th>
+                            <th>Email</th>
                             <th>Role</th>
                             <th>Status</th>
                             <th>Created</th>
@@ -550,40 +613,6 @@
     </div>
 </div>
 
-<!-- Create user -->
-<div class="modal-overlay" id="create-user-modal" style="display:none">
-    <div class="modal">
-        <h3 id="cu-modal-title">Create user</h3>
-        <div id="cu-form">
-            <div id="cu-error" class="login-error"></div>
-            <div class="field">
-                <label for="cu-username">Username</label>
-                <input type="text" id="cu-username" autocomplete="off">
-            </div>
-            <div class="field">
-                <label for="cu-role">Role</label>
-                <select id="cu-role" style="width:100%;background:var(--bg-input);border:1px solid var(--border-soft);border-radius:var(--radius);padding:9px 14px;font-size:.92rem;color:var(--text);font-family:inherit;outline:none">
-                    <option value="USER">User</option>
-                    <option value="ADMIN">Admin</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="cu-cancel">Cancel</button>
-                <button class="btn btn-primary" id="cu-submit">Create</button>
-            </div>
-        </div>
-        <div id="cu-key-reveal" style="display:none">
-            <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:4px">User created. Copy the API key now — it won't be shown again.</p>
-            <div class="key-reveal-label">API Key</div>
-            <div class="key-reveal-box" id="cu-key-value"></div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="cu-copy-key">Copy key</button>
-                <button class="btn btn-primary" id="cu-done">Done</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Confirm deactivate user -->
 <div class="modal-overlay" id="deactivate-modal" style="display:none">
     <div class="modal">
@@ -597,6 +626,19 @@
     </div>
 </div>
 
+<!-- Confirm promote user -->
+<div class="modal-overlay" id="promote-modal" style="display:none">
+    <div class="modal">
+        <h3>Promote to admin?</h3>
+        <p class="confirm-msg">This will grant admin role to:</p>
+        <p class="confirm-name" id="promote-username"></p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="promote-cancel">Cancel</button>
+            <button class="btn btn-primary" id="promote-confirm">Promote</button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -606,18 +648,23 @@
 const PAGE_SIZE = 20;
 
 // ── State ────────────────────────────────────────────────────────────────
-let apiKey = '';
+let jwt = '';
 let currentUser = null;
 let allPages = [];
 let pagesPage = 0;
 let pendingDeleteId = null;
 let pendingDeactivateId = null;
+let pendingPromoteId = null;
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function api(path, opts = {}) {
     return fetch('/api' + path, {
         ...opts,
-        headers: { 'X-Api-Key': apiKey, 'Content-Type': 'application/json', ...(opts.headers || {}) }
+        headers: {
+            'Authorization': 'Bearer ' + jwt,
+            'Content-Type': 'application/json',
+            ...(opts.headers || {})
+        }
     });
 }
 
@@ -638,29 +685,113 @@ function toast(msg, type = 'success') {
 function showModal(id) { document.getElementById(id).style.display = 'flex'; }
 function hideModal(id) { document.getElementById(id).style.display = 'none'; }
 
-// ── Login ────────────────────────────────────────────────────────────────
-document.getElementById('api-key-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') login();
+function showScreen(name) {
+    ['login-screen', 'signup-screen', 'dashboard-screen'].forEach(id => {
+        const el = document.getElementById(id);
+        if (id === name + '-screen' || id === name) {
+            el.style.display = id === 'dashboard-screen' ? 'flex' : 'flex';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+}
+
+// ── Screen navigation ─────────────────────────────────────────────────────
+document.getElementById('go-signup').addEventListener('click', () => {
+    document.getElementById('login-error').style.display = 'none';
+    showScreen('signup');
 });
-document.getElementById('login-btn').addEventListener('click', login);
+document.getElementById('go-login').addEventListener('click', () => {
+    document.getElementById('signup-error').style.display = 'none';
+    showScreen('login');
+});
 
-async function login() {
-    const key = document.getElementById('api-key-input').value.trim();
-    if (!key) return;
-    const errEl = document.getElementById('login-error');
+// ── Sign-up ──────────────────────────────────────────────────────────────
+document.getElementById('signup-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') signUp();
+});
+document.getElementById('signup-btn').addEventListener('click', signUp);
+
+async function signUp() {
+    const email    = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const errEl    = document.getElementById('signup-error');
     errEl.style.display = 'none';
-    document.getElementById('login-btn').textContent = 'Signing in…';
 
+    if (!email) { errEl.textContent = 'Email is required.'; errEl.style.display = 'block'; return; }
+    if (!password) { errEl.textContent = 'Password is required.'; errEl.style.display = 'block'; return; }
+
+    document.getElementById('signup-btn').textContent = 'Creating account…';
     try {
-        const r = await fetch('/api/pages', { headers: { 'X-Api-Key': key } });
-        if (r.status === 401 || r.status === 403) {
-            errEl.textContent = 'Invalid API key.';
+        const r = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        if (r.status === 409) {
+            errEl.textContent = 'Email already registered.';
+            errEl.style.display = 'block';
+        } else if (r.status === 400) {
+            const d = await r.json().catch(() => ({}));
+            errEl.textContent = d.message || 'Invalid email or password too short (minimum 8 characters).';
+            errEl.style.display = 'block';
+        } else if (r.status === 201) {
+            // Pre-fill login
+            document.getElementById('login-email').value = email;
+            document.getElementById('login-password').value = '';
+            toast('Account created — please sign in.');
+            showScreen('login');
+        } else {
+            errEl.textContent = 'Sign-up failed. Try again.';
+            errEl.style.display = 'block';
+        }
+    } catch {
+        errEl.textContent = 'Could not reach the server.';
+        errEl.style.display = 'block';
+    }
+    document.getElementById('signup-btn').textContent = 'Create account';
+}
+
+// ── Login ────────────────────────────────────────────────────────────────
+document.getElementById('login-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login-btn').addEventListener('click', doLogin);
+
+async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl    = document.getElementById('login-error');
+    errEl.style.display = 'none';
+
+    if (!email || !password) {
+        errEl.textContent = 'Please enter your email and password.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    document.getElementById('login-btn').textContent = 'Signing in…';
+    try {
+        const r = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        if (r.status === 401) {
+            errEl.textContent = 'Invalid credentials.';
             errEl.style.display = 'block';
             document.getElementById('login-btn').textContent = 'Sign in';
             return;
         }
-        apiKey = key;
-        sessionStorage.setItem('pp_key', key);
+        if (!r.ok) {
+            errEl.textContent = 'Login failed. Try again.';
+            errEl.style.display = 'block';
+            document.getElementById('login-btn').textContent = 'Sign in';
+            return;
+        }
+        const data = await r.json();
+        jwt = data.jwt;
+        sessionStorage.setItem('pp_jwt', jwt);
         await loadDashboard();
     } catch {
         errEl.textContent = 'Could not reach the server.';
@@ -671,31 +802,30 @@ async function login() {
 
 async function loadDashboard() {
     const [meR, pagesR] = await Promise.all([
-        fetch('/api/me', { headers: { 'X-Api-Key': apiKey } }),
-        fetch('/api/pages', { headers: { 'X-Api-Key': apiKey } }),
+        api('/me'),
+        api('/pages'),
     ]);
 
     const me = meR.ok ? await meR.json() : {};
     const pages = pagesR.ok ? await pagesR.json() : [];
 
-    const username = me.username || 'unknown';
-    const isAdmin = me.admin === true;
+    const email    = me.email || 'unknown';
+    const isAdmin  = me.admin === true;
 
-    currentUser = { username, isAdmin };
+    currentUser = { email, isAdmin };
     allPages = pages;
 
-    // Show dashboard
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('dashboard-screen').style.display = 'flex';
+    showScreen('dashboard');
     document.getElementById('dash-user-area').style.display = 'flex';
-    document.getElementById('hdr-username').textContent = username;
+    document.getElementById('hdr-username').textContent = email;
+    document.getElementById('login-btn').textContent = 'Sign in';
 
     // Account tab
-    document.getElementById('acc-username').textContent = username;
-    document.getElementById('acc-key').textContent = apiKey;
+    document.getElementById('acc-email').textContent = email;
+    document.getElementById('acc-key-box').style.display = 'none';
     const roleEl = document.getElementById('acc-role');
     roleEl.textContent = isAdmin ? 'admin' : 'user';
-    if (isAdmin) roleEl.classList.add('admin');
+    roleEl.className = 'role-badge' + (isAdmin ? ' admin' : '');
 
     // Admin tab
     if (isAdmin) {
@@ -708,21 +838,21 @@ async function loadDashboard() {
 
 // ── Logout ───────────────────────────────────────────────────────────────
 document.getElementById('logout-btn').addEventListener('click', () => {
-    ['confirm-modal', 'create-user-modal', 'deactivate-modal'].forEach(id => hideModal(id));
-    sessionStorage.removeItem('pp_key');
-    apiKey = '';
+    ['confirm-modal', 'deactivate-modal', 'promote-modal'].forEach(hideModal);
+    sessionStorage.removeItem('pp_jwt');
+    jwt = '';
     currentUser = null;
     allPages = [];
     pagesPage = 0;
     document.getElementById('dashboard-screen').style.display = 'none';
     document.getElementById('dash-user-area').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('api-key-input').value = '';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
     document.getElementById('login-btn').textContent = 'Sign in';
-    // Reset tabs
-    switchTab('pages');
+    document.getElementById('pages-heading').textContent = 'Your pages';
     document.getElementById('admin-tab-btn').style.display = 'none';
-    document.getElementById('acc-role').classList.remove('admin');
+    switchTab('pages');
+    showScreen('login');
 });
 
 // ── Tabs ─────────────────────────────────────────────────────────────────
@@ -829,17 +959,23 @@ document.getElementById('confirm-delete').addEventListener('click', async () => 
     }
 });
 
-// ── Account tab ───────────────────────────────────────────────────────────
-let keyRevealed = false;
-document.getElementById('reveal-key-btn').addEventListener('click', () => {
-    const el = document.getElementById('acc-key');
-    keyRevealed = !keyRevealed;
-    el.classList.toggle('revealed', keyRevealed);
-    document.getElementById('reveal-key-btn').textContent = keyRevealed ? 'Hide' : 'Reveal';
+// ── Account tab — API key rotation ────────────────────────────────────────
+document.getElementById('rotate-key-btn').addEventListener('click', async () => {
+    try {
+        const r = await api('/me/tokens', { method: 'POST' });
+        if (!r.ok) { toast('Failed to generate API key.', 'error'); return; }
+        const data = await r.json();
+        document.getElementById('acc-key-value').textContent = data.api_key;
+        document.getElementById('acc-key-box').style.display = 'block';
+        toast('New API key generated.');
+    } catch {
+        toast('Network error.', 'error');
+    }
 });
 
-document.getElementById('copy-key-btn').addEventListener('click', () => {
-    navigator.clipboard.writeText(apiKey).then(() => toast('API key copied.'));
+document.getElementById('acc-copy-key-btn').addEventListener('click', () => {
+    const key = document.getElementById('acc-key-value').textContent;
+    navigator.clipboard.writeText(key).then(() => toast('API key copied.'));
 });
 
 // ── Admin → Users tab ─────────────────────────────────────────────────────
@@ -862,18 +998,27 @@ async function loadUsers() {
         const tbody = document.getElementById('users-tbody');
         tbody.innerHTML = '';
         users.forEach(u => {
-            const tr = document.createElement('tr');
             const isActive = u.active !== false;
+            const isSelf   = u.email === currentUser.email;
+            const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="font-weight:500">${esc(u.username)}</td>
+                <td style="font-weight:500">${esc(u.email || '—')}</td>
                 <td><span class="role-badge ${u.admin ? 'admin' : ''}">${u.admin ? 'admin' : 'user'}</span></td>
                 <td><span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>${isActive ? 'Active' : 'Inactive'}</td>
                 <td class="date-cell">${fmtDate(u['created_at'])}</td>
-                <td>${isActive && !u.admin ? `<button class="btn btn-secondary btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.username)}">Deactivate</button>` : ''}</td>
+                <td>
+                    <div class="user-actions">
+                        ${isActive && !u.admin && !isSelf ? `<button class="btn btn-secondary btn-sm" data-promote="${esc(String(u.id))}" data-puname="${esc(u.email || u.id)}">Promote</button>` : ''}
+                        ${isActive && !isSelf ? `<button class="btn btn-secondary btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.email || u.id)}">Deactivate</button>` : ''}
+                    </div>
+                </td>
             `;
             tbody.appendChild(tr);
         });
 
+        tbody.querySelectorAll('[data-promote]').forEach(btn => {
+            btn.addEventListener('click', () => promptPromote(btn.dataset.promote, btn.dataset.puname));
+        });
         tbody.querySelectorAll('[data-uid]').forEach(btn => {
             btn.addEventListener('click', () => promptDeactivate(btn.dataset.uid, btn.dataset.uname));
         });
@@ -884,49 +1029,30 @@ async function loadUsers() {
     }
 }
 
-// ── Create user ───────────────────────────────────────────────────────────
-document.getElementById('create-user-btn').addEventListener('click', () => {
-    document.getElementById('cu-username').value = '';
-    document.getElementById('cu-role').value = 'USER';
-    document.getElementById('cu-error').style.display = 'none';
-    document.getElementById('cu-form').style.display = 'block';
-    document.getElementById('cu-key-reveal').style.display = 'none';
-    document.getElementById('cu-modal-title').textContent = 'Create user';
-    showModal('create-user-modal');
-});
+// ── Promote user ──────────────────────────────────────────────────────────
+function promptPromote(uid, uname) {
+    pendingPromoteId = uid;
+    document.getElementById('promote-username').textContent = uname;
+    showModal('promote-modal');
+}
 
-document.getElementById('cu-cancel').addEventListener('click', () => hideModal('create-user-modal'));
+document.getElementById('promote-cancel').addEventListener('click', () => hideModal('promote-modal'));
 
-document.getElementById('cu-submit').addEventListener('click', async () => {
-    const username = document.getElementById('cu-username').value.trim();
-    const role = document.getElementById('cu-role').value;
-    const errEl = document.getElementById('cu-error');
-    if (!username) { errEl.textContent = 'Username is required.'; errEl.style.display = 'block'; return; }
-
+document.getElementById('promote-confirm').addEventListener('click', async () => {
+    const uid = pendingPromoteId;
+    hideModal('promote-modal');
     try {
-        const r = await api('/admin/users', { method: 'POST', body: JSON.stringify({ username, admin: role === 'ADMIN' }) });
-        const data = await r.json();
-        if (!r.ok) {
-            errEl.textContent = data.message || 'Failed to create user.';
-            errEl.style.display = 'block';
-            return;
+        const r = await api('/admin/users/' + uid + '/promote', { method: 'PATCH' });
+        if (r.ok) {
+            toast('User promoted to admin.');
+            loadUsers();
+        } else {
+            toast('Failed to promote user.', 'error');
         }
-        document.getElementById('cu-form').style.display = 'none';
-        document.getElementById('cu-key-value').textContent = data.apiKey || data.api_key || '(not returned)';
-        document.getElementById('cu-key-reveal').style.display = 'block';
-        document.getElementById('cu-modal-title').textContent = 'User created';
-        loadUsers();
     } catch {
-        errEl.textContent = 'Network error.'; errEl.style.display = 'block';
+        toast('Network error.', 'error');
     }
 });
-
-document.getElementById('cu-copy-key').addEventListener('click', () => {
-    const key = document.getElementById('cu-key-value').textContent;
-    navigator.clipboard.writeText(key).then(() => toast('Key copied.'));
-});
-
-document.getElementById('cu-done').addEventListener('click', () => hideModal('create-user-modal'));
 
 // ── Deactivate user ───────────────────────────────────────────────────────
 function promptDeactivate(uid, uname) {
@@ -954,7 +1080,7 @@ document.getElementById('deactivate-confirm').addEventListener('click', async ()
 });
 
 // ── Close modals on overlay click ─────────────────────────────────────────
-['confirm-modal', 'create-user-modal', 'deactivate-modal'].forEach(id => {
+['confirm-modal', 'deactivate-modal', 'promote-modal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => {
         if (e.target === e.currentTarget) hideModal(id);
     });
@@ -967,15 +1093,15 @@ function esc(s) {
 
 // ── Auto-login from sessionStorage ───────────────────────────────────────
 (async () => {
-    const saved = sessionStorage.getItem('pp_key');
+    const saved = sessionStorage.getItem('pp_jwt');
     if (saved) {
-        apiKey = saved;
-        document.getElementById('api-key-input').value = saved;
+        jwt = saved;
         try {
             await loadDashboard();
         } catch {
-            sessionStorage.removeItem('pp_key');
-            apiKey = '';
+            sessionStorage.removeItem('pp_jwt');
+            jwt = '';
+            showScreen('login');
         }
     }
 })();

@@ -25,6 +25,13 @@ app.guest.expiration-minutes=30
 
 Change this value and rebuild to adjust how long guest pages live.
 
+## JWT Authentication
+
+| Variable / Property | Where | Description | Default |
+|---------------------|-------|-------------|---------|
+| `JWT_SECRET` | `.env` | **Required.** Secret used to sign JWTs (HS256). Must be at least 32 characters. The app fails fast at startup if this is missing or blank. | — |
+| `app.jwt.expiration-hours` | `application.properties` | How long issued JWTs remain valid. Override in `application.properties` if needed. | `24` |
+
 ## Database Variables
 
 pushpage uses PostgreSQL. The following variables configure the connection:

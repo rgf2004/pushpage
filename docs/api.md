@@ -4,30 +4,90 @@ All endpoints are served under the `/api` Spring Boot context path.
 
 ## Authentication
 
-All endpoints except `GET /api/health` require an API key.
+Most endpoints require authentication. Two credential types are accepted:
 
-Pass the key in one of two ways:
+| Method | Header | Notes |
+|--------|--------|-------|
+| API key | `X-Api-Key: pp_<key>` | Long-lived. Obtain via `POST /me/tokens`. |
+| API key as Bearer | `Authorization: Bearer pp_<key>` | Same key, alternate header. |
+| JWT Bearer | `Authorization: Bearer <jwt>` | Short-lived (24 h). Obtain via `POST /auth/login`. |
 
-| Method | Header |
-|--------|--------|
-| API Key | `X-Api-Key: <key>` |
-| Bearer token | `Authorization: Bearer <key>` |
+The filter distinguishes API keys from JWTs by prefix: tokens starting with `pp_` are treated as API keys; anything else is validated as a JWT.
 
-Missing or invalid keys return `401 Unauthorized`. Calling an admin endpoint without admin privileges returns `403 Forbidden`.
+Missing or invalid credentials return `401 Unauthorized`. Calling an admin endpoint without admin privileges returns `403 Forbidden`.
 
 ### Bootstrap
 
-On first run (no users in the database), the service generates an `admin` API key, stores its hash, and logs the raw key once:
+On first run (no users in the database), the service generates an `admin` user with a random password and API key, storing their hashes, and logs both once:
 
 ```
 ==============================================================
-No admin user found — bootstrap admin created.
-API Key: pp_abc123...
-Copy this key now. It will NOT appear again after restart.
+No users found — bootstrap admin created.
+Username : admin
+Password : <random>
+API Key  : pp_abc123...
+Copy these credentials now. They will NOT appear again.
 ==============================================================
 ```
 
-Restart after copying. The key is never logged again once a user exists.
+The admin can then log in via `POST /auth/login` (using username `admin`) or authenticate directly with the API key.
+
+---
+
+## Auth (public)
+
+### POST /api/auth/signup
+
+Create a new account. No authentication required.
+
+**Request body:**
+
+```json
+{ "email": "alice@example.com", "password": "s3cur3pass", "username": "alice" }
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | yes | Unique email address. |
+| `password` | string | yes | Minimum 8 characters. Stored as BCrypt hash. |
+| `username` | string | no | Derived from email local-part if omitted; short suffix appended if taken. |
+
+**Response:** `201 No Content`
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `400` | Invalid email format or password < 8 characters |
+| `409` | Email already registered |
+
+---
+
+### POST /api/auth/login
+
+Authenticate with email or username and password. Returns a short-lived JWT.
+
+**Request body:**
+
+```json
+{ "login": "alice@example.com", "password": "s3cur3pass" }
+```
+
+The `login` field accepts either an email address or a username (useful for the bootstrap `admin` account which has no email).
+
+**Response `200`:**
+
+```json
+{ "jwt": "eyJ..." }
+```
+
+The JWT is valid for 24 hours (configurable via `app.jwt.expiration-hours`).
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `401` | Invalid credentials, inactive account, or user has no password (pre-migration API-key-only accounts) |
 
 ---
 
@@ -37,7 +97,7 @@ Restart after copying. The key is never logged again once a user exists.
 
 Publish an HTML page and receive a shareable URL. If the content does not start with `<!DOCTYPE>`, it is automatically wrapped in a minimal HTML shell.
 
-**Auth:** any user
+**Auth:** optional (guest or authenticated)
 
 **Request body:**
 
@@ -51,7 +111,9 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `html` | string | yes | Full HTML content. Max size controlled by `MAX_FILE_SIZE`. |
-| `title` | string | no | Human-readable title. If omitted or blank, extracted from the HTML `<title>` tag; falls back to `"Untitled"`. An explicit value always takes precedence. |
+| `title` | string | no | Human-readable title. Extracted from the HTML `<title>` tag if omitted; falls back to `"Untitled"`. |
+
+Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after `CLEANUP_RETENTION_DAYS` (default 30 days).
 
 **Response headers:**
 
@@ -67,14 +129,6 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
   "id": "abc123"
 }
 ```
-
-**Error responses:**
-
-| Status | Reason |
-|--------|--------|
-| `401` | Missing or invalid API key |
-| `413` | Payload exceeds `MAX_FILE_SIZE` |
-| `500` | Failed to write file |
 
 ---
 
@@ -100,16 +154,6 @@ List published pages ordered by publish date descending. Regular users see only 
 ]
 ```
 
-| Field | Description |
-|-------|-------------|
-| `id` | 8-character page identifier |
-| `title` | Page title set at publish time |
-| `created_at` | ISO-8601 publish timestamp |
-| `deleted_at` | ISO-8601 soft-deletion timestamp, or `null` for live pages |
-| `expires_at` | ISO-8601 expiry timestamp (`created_at + retention_days`); `null` for legacy rows pre-dating this field |
-| `url` | Full public URL to the HTML file |
-| `user_id` | ID of the user who published the page |
-
 ---
 
 ### DELETE /api/pages/{id}
@@ -118,9 +162,7 @@ Delete a published page. Users may only delete their own pages; admins can delet
 
 **Auth:** any user (owner or admin)
 
-**Path parameter:** `id` — the page ID returned by `POST /api/pages`.
-
-**Response:** `204 No Content` on success.
+**Response:** `204 No Content`
 
 **Error responses:**
 
@@ -144,12 +186,26 @@ Return the profile of the currently authenticated user.
 ```json
 {
   "id": "a1b2c3d4",
-  "username": "myagent",
-  "email": "agent@example.com",
+  "username": "alice",
+  "email": "alice@example.com",
   "created_at": "2026-01-01T00:00:00Z",
   "active": true,
   "admin": false
 }
+```
+
+---
+
+### POST /api/me/tokens
+
+Generate or rotate the caller's API key. The previous key is invalidated immediately. The raw key is returned once — store it securely.
+
+**Auth:** any user (JWT or API key)
+
+**Response `200`:**
+
+```json
+{ "api_key": "pp_abc123..." }
 ```
 
 ---
@@ -169,7 +225,7 @@ Returns `200` when healthy, `503` when a critical subsystem is unavailable.
 ```json
 {
   "status": "UP",
-  "version": "0.4.0",
+  "version": "0.8.0",
   "uptimeSeconds": 3600,
   "livePages": 12,
   "deletedPages": 3,
@@ -184,69 +240,9 @@ Returns `200` when healthy, `503` when a critical subsystem is unavailable.
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `status` | `UP` or `DOWN` |
-| `version` | Application version |
-| `uptimeSeconds` | Seconds since the service started |
-| `livePages` | Number of currently published pages |
-| `deletedPages` | Number of pages deleted since startup |
-| `oldestPage` | ISO-8601 timestamp of the oldest live page (omitted if no pages) |
-| `newestPage` | ISO-8601 timestamp of the newest live page (omitted if no pages) |
-| `storage.usedBytes` | Total bytes used by published HTML files |
-| `storage.usedHuman` | Human-readable used storage |
-| `storage.freeBytes` | Available disk space in the pages volume |
-| `storage.freeHuman` | Human-readable free space |
-
-When `status` is `DOWN`, `storage` is omitted and `livePages`/`deletedPages` are `0`.
-
 ---
 
 ## Admin
-
-### POST /api/admin/users
-
-Create a new user. The returned `api_key` is shown only once.
-
-**Auth:** admin
-
-**Request body:**
-
-```json
-{
-  "username": "myagent",
-  "email": "agent@example.com",
-  "admin": false
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `username` | string | yes | Unique username |
-| `email` | string | no | Contact email address |
-| `admin` | boolean | no | Grant admin privileges (default: `false`) |
-
-**Response:** `201 Created`
-
-```json
-{
-  "id": "a1b2c3d4",
-  "username": "myagent",
-  "email": "agent@example.com",
-  "api_key": "pp_abc123...",
-  "created_at": "2026-01-01T00:00:00Z",
-  "admin": false
-}
-```
-
-**Error responses:**
-
-| Status | Reason |
-|--------|--------|
-| `400` | Username is blank |
-| `409` | Username already exists |
-
----
 
 ### GET /api/admin/users
 
@@ -260,8 +256,8 @@ List all users ordered by creation date.
 [
   {
     "id": "a1b2c3d4",
-    "username": "myagent",
-    "email": "agent@example.com",
+    "username": "alice",
+    "email": "alice@example.com",
     "created_at": "2026-01-01T00:00:00Z",
     "active": true,
     "admin": false
@@ -274,6 +270,18 @@ List all users ordered by creation date.
 ### PATCH /api/admin/users/{id}/deactivate
 
 Mark a user as inactive. Their pages are retained but they can no longer authenticate.
+
+**Auth:** admin
+
+**Path parameter:** `id` — 8-character user ID.
+
+**Response:** `204 No Content` on success, `404 Not Found` if the ID does not exist.
+
+---
+
+### PATCH /api/admin/users/{id}/promote
+
+Grant admin role to a user.
 
 **Auth:** admin
 

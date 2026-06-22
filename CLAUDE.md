@@ -70,17 +70,28 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
 | `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
+| `JWT_SECRET` | **Required.** Secret for signing JWTs (HS256, min 32 chars). App fails fast at startup if missing. | — |
 | `DB_HOST` | PostgreSQL hostname | `localhost` |
 | `DB_PORT` | PostgreSQL port | `5432` |
 | `DB_NAME` | PostgreSQL database name | `pushpage` |
 | `DB_USER` | PostgreSQL username | `pushpage` |
 | `DB_PASSWORD` | PostgreSQL password | `changeme` |
 
+`app.jwt.expiration-hours` (default `24`) is set in `application.properties` and does not need a `.env` entry. See `docs/configuration.md` for details.
+
 ## Authentication
 
-API key authentication is required for all endpoints except `/api/health`. Pass the key via `X-Api-Key: <key>` header or `Authorization: Bearer <key>`.
+Three credential types are accepted:
 
-On first run, if no users exist the service auto-creates an `admin` user, logs the generated API key prominently, and prompts you to copy it before restarting. After restart the key is no longer logged. API keys are stored as SHA-256 hashes in the database.
+| Method | Header |
+|--------|--------|
+| API key | `X-Api-Key: pp_<key>` |
+| API key as Bearer | `Authorization: Bearer pp_<key>` |
+| JWT Bearer | `Authorization: Bearer <jwt>` |
+
+JWTs are issued by `POST /api/auth/login` and are valid for 24 h. API keys are obtained via `POST /api/me/tokens` and are long-lived.
+
+On first run, if no users exist the service auto-creates an `admin` user with a random password **and** a random API key, logs both prominently, and never shows them again. API keys are stored as SHA-256 hashes; passwords as BCrypt hashes.
 
 ## API
 
@@ -88,25 +99,32 @@ All endpoints are under `/api` (Spring Boot context path).
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/pages` | User | Publish HTML, returns `{ url, id }`. `title` is optional — extracted from `<title>` tag when absent, falls back to `"Untitled"` |
-| `GET` | `/api/pages` | User | List pages scoped to caller (admin sees all) |
-| `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any) |
-| `GET` | `/api/me` | User | Returns the authenticated user's profile |
-| `GET` | `/api/health` | None | Health check |
-| `POST` | `/api/admin/users` | Admin | Create a user, response includes `api_key` |
-| `GET` | `/api/admin/users` | Admin | List all users (no API keys) |
-| `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user |
+| `POST` | `/api/auth/signup` | None | Create account (email + password). Returns `201 No Content`. |
+| `POST` | `/api/auth/login` | None | Login (email/username + password). Returns `{ jwt }`. |
+| `POST` | `/api/pages` | Optional | Publish HTML → `{ url, id }`. Guest pages expire in 30 min. |
+| `GET` | `/api/pages` | User | List pages scoped to caller (admin sees all). |
+| `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any). |
+| `GET` | `/api/me` | User | Authenticated user's profile. |
+| `POST` | `/api/me/tokens` | User | Generate / rotate API key → `{ api_key }`. Previous key is invalidated. |
+| `GET` | `/api/health` | None | Health check. |
+| `GET` | `/api/admin/users` | Admin | List all users. |
+| `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user. |
+| `PATCH` | `/api/admin/users/{id}/promote` | Admin | Grant admin role. |
 
 Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
 ## Dashboard
 
-A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.html`). It authenticates with an API key stored in `sessionStorage` and calls the REST endpoints, including `/api/me` to resolve the logged-in username on load.
+A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.html`). It authenticates via email/username + password → JWT (stored in `sessionStorage`) and calls the REST endpoints.
+
+**Screens:**
+- **Login** — email or username + password → JWT; link to sign-up
+- **Sign-up** — email, password, optional username → account created → redirect to login
 
 **Tabs:**
 - **Pages** — lists the caller's pages (admins see all), with delete and pagination
-- **Account** — displays username, role, and a reveal/copy widget for the API key
-- **Users** (admin only) — lists all users; create new user (shows generated key once); deactivate user
+- **Account** — displays username, email, role; Generate / Rotate API Key button (shows key once)
+- **Users** (admin only) — lists all users; Promote and Deactivate actions
 
 Shared visual styles live in `nginx/static/theme.css`, linked by both `index.html` and `dashboard.html`.
 
