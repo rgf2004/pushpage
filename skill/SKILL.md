@@ -59,7 +59,7 @@ publish_page(html="<html>...</html>")
 
 `title` is optional — when omitted the server extracts it from the HTML `<title>` tag, falling back to `"Untitled"`. Pass it explicitly only to override what's in the HTML.
 
-**curl fallback:**
+**curl fallback — JSON (when you have HTML as a string):**
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
 curl -s -X POST https://pushpage.link/api/pages \
@@ -70,7 +70,17 @@ curl -s -X POST https://pushpage.link/api/pages \
   }'
 ```
 
-Response:
+**curl fallback — file upload (when you have an `.html` file on disk):**
+```bash
+PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
+curl -s -X POST https://pushpage.link/api/pages/upload \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -F "file=@report.html"
+```
+
+The server extracts the title from the `<title>` tag, then falls back to the filename (without extension), then `"Untitled"`. No `Content-Type` header is needed — `-F` sets it automatically.
+
+Response (both variants):
 ```json
 {
   "url": "https://pushpage.link/pages/abc123.html",

@@ -12,8 +12,10 @@ import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
 import me.projects.pushpage.service.PageService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,7 +29,7 @@ public class PageController {
         this.pageService = pageService;
     }
 
-    @Operation(summary = "Publish an HTML page",
+    @Operation(summary = "Publish an HTML page (JSON)",
             description = "Saves the HTML as a static file and returns a public URL. " +
                     "If the content does not start with <!DOCTYPE>, it is automatically wrapped in a minimal HTML shell.")
     @ApiResponses({
@@ -41,6 +43,25 @@ public class PageController {
         return ResponseEntity.ok()
                 .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(pageService.getMaxFileSizeBytes()))
                 .body(pageService.publish(request));
+    }
+
+    @Operation(summary = "Publish an HTML page (file upload)",
+            description = "Accepts a multipart/form-data upload of an .html file. " +
+                    "Title is extracted from the <title> tag, then the filename, then falls back to 'Untitled'.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page published successfully",
+                    content = @Content(schema = @Schema(implementation = PublishResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Missing or empty file part", content = @Content),
+            @ApiResponse(responseCode = "413", description = "File exceeds the configured size limit", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Failed to write file", content = @Content)
+    })
+    @PostMapping(value = "/pages/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PublishResponse> publishFile(
+            @Parameter(description = "HTML file to publish")
+            @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok()
+                .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(pageService.getMaxFileSizeBytes()))
+                .body(pageService.publishFile(file));
     }
 
     @Operation(summary = "List all published pages",

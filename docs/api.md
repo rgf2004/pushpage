@@ -90,11 +90,28 @@ The JWT is valid for 24 hours (configurable via `app.jwt.expiration-hours`).
 
 ### POST /api/pages
 
-Publish an HTML page and receive a shareable URL. If the content does not start with `<!DOCTYPE>`, it is automatically wrapped in a minimal HTML shell.
+Publish an HTML page and receive a shareable URL. Two content types are accepted — use whichever fits your workflow.
 
 **Auth:** optional (guest or authenticated)
 
-**Request body:**
+Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after `CLEANUP_RETENTION_DAYS` (default 30 days).
+
+**Response headers (both variants):**
+
+| Header | Description |
+|--------|-------------|
+| `X-Max-File-Size` | The configured max file size limit in bytes |
+
+**Response body (both variants):**
+
+```json
+{
+  "url": "https://pushpage.link/pages/abc123.html",
+  "id": "abc123"
+}
+```
+
+#### Variant A — JSON (`Content-Type: application/json`)
 
 ```json
 {
@@ -108,22 +125,38 @@ Publish an HTML page and receive a shareable URL. If the content does not start 
 | `html` | string | yes | Full HTML content. Max size controlled by `MAX_FILE_SIZE`. |
 | `title` | string | no | Human-readable title. Extracted from the HTML `<title>` tag if omitted; falls back to `"Untitled"`. |
 
-Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after `CLEANUP_RETENTION_DAYS` (default 30 days).
-
-**Response headers:**
-
-| Header | Description |
-|--------|-------------|
-| `X-Max-File-Size` | The configured max file size limit in bytes |
-
-**Response body:**
-
-```json
-{
-  "url": "https://pushpage.link/pages/abc123.html",
-  "id": "abc123"
-}
+```bash
+curl -s -X POST https://pushpage.link/api/pages \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -d '{"html": "<html>...</html>"}'
 ```
+
+#### Variant B — File upload (`POST /api/pages/upload`)
+
+Upload an `.html` file directly via `multipart/form-data` — no JSON wrapping required.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | file part | yes | HTML file to publish. Max size controlled by `MAX_FILE_SIZE`. |
+
+Title resolution order:
+1. `<title>` tag in the HTML content
+2. Original filename without extension (`report.html` → `"report"`)
+3. `"Untitled"`
+
+```bash
+curl -s -X POST https://pushpage.link/api/pages/upload \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -F "file=@report.html"
+```
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `400` | Missing or empty `file` part (multipart) / blank `html` field (JSON) |
+| `413` | File exceeds the configured size limit |
 
 ---
 

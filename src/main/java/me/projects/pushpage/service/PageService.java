@@ -9,6 +9,8 @@ import me.projects.pushpage.repository.PageRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.annotation.PostConstruct;
@@ -71,18 +73,39 @@ public class PageService {
         if (request.html() == null || request.html().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML content is required");
         }
-        long sizeBytes = request.html().getBytes(StandardCharsets.UTF_8).length;
+        String title = (request.title() != null && !request.title().isBlank())
+                ? request.title() : extractTitle(request.html());
+        return publishHtml(request.html(), title);
+    }
+
+    public PublishResponse publishFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File part is required");
+        }
+        String html;
+        try {
+            html = new String(file.getBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read uploaded file");
+        }
+        String titleFromTag = extractTitle(html);
+        String filenameTitle = titleFromFilename(file.getOriginalFilename());
+        String title = !titleFromTag.equals("Untitled") ? titleFromTag
+                : (filenameTitle != null ? filenameTitle : "Untitled");
+        return publishHtml(html, title);
+    }
+
+    private PublishResponse publishHtml(String html, String title) {
+        long sizeBytes = html.getBytes(StandardCharsets.UTF_8).length;
         if (sizeBytes > maxFileSize.toBytes()) {
             throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE,
                     "Payload size %d bytes exceeds maximum allowed size of %d bytes".formatted(sizeBytes, maxFileSize.toBytes()));
         }
         String id = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-        String title = (request.title() != null && !request.title().isBlank())
-                ? request.title() : extractTitle(request.html());
-        String html = wrapIfNeeded(request.html(), title);
+        String wrappedHtml = wrapIfNeeded(html, title);
 
         try {
-            Files.writeString(Path.of(pagesDir, id + ".html"), html);
+            Files.writeString(Path.of(pagesDir, id + ".html"), wrappedHtml);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write page file", e);
         }
@@ -138,6 +161,11 @@ public class PageService {
     private String extractTitle(String html) {
         String candidate = Jsoup.parse(html).title().strip();
         return candidate.isBlank() ? "Untitled" : candidate;
+    }
+
+    private String titleFromFilename(String originalFilename) {
+        String base = StringUtils.stripFilenameExtension(originalFilename);
+        return (base != null && !base.isBlank()) ? base : null;
     }
 
     private String wrapIfNeeded(String html, String title) {

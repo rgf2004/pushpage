@@ -23,7 +23,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             "/health", "/swagger-ui", "/v3/api-docs", "/api-docs", "/auth/"
     );
     private static final String ADMIN_PATH_PREFIX = "/admin";
-    private static final Set<String> GUEST_ALLOWED = Set.of("POST /pages");
+    private static final Set<String> GUEST_ALLOWED = Set.of("POST /pages", "POST /pages/upload");
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
