@@ -561,9 +561,13 @@
                 <h3>API Key</h3>
                 <p>Generate an API key for programmatic access. Rotating it invalidates the previous key immediately.</p>
                 <div id="acc-key-box" style="display:none">
-                    <div class="key-reveal-label">Your API key — copy it now, it won't be shown again</div>
+                    <div class="key-reveal-label">Your API key</div>
                     <div class="api-key-revealed" id="acc-key-value"></div>
                     <button class="btn btn-secondary btn-sm" id="acc-copy-key-btn">Copy</button>
+                    <p style="margin-top:10px;font-size:.82rem;color:var(--text-muted)">
+                        Copy this key to a safe place now — it will not appear again.<br>
+                        If you lose it, you can always generate a new one here, but the old key will be invalidated immediately.
+                    </p>
                 </div>
                 <button class="btn btn-secondary btn-sm" id="rotate-key-btn" style="margin-top:4px">Generate / Rotate API Key</button>
             </div>
