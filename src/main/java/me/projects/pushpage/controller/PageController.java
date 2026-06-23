@@ -29,7 +29,7 @@ public class PageController {
         this.pageService = pageService;
     }
 
-    @Operation(summary = "Publish an HTML page (JSON)",
+    @Operation(summary = "Publish an HTML page (JSON)", operationId = "publishPageJson",
             description = "Saves the HTML as a static file and returns a public URL. " +
                     "If the content does not start with <!DOCTYPE>, it is automatically wrapped in a minimal HTML shell.")
     @ApiResponses({
@@ -38,14 +38,14 @@ public class PageController {
             @ApiResponse(responseCode = "413", description = "Payload exceeds the configured size limit", content = @Content),
             @ApiResponse(responseCode = "500", description = "Failed to write file", content = @Content)
     })
-    @PostMapping("/pages")
+    @PostMapping(value = "/pages", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PublishResponse> publish(@RequestBody PublishRequest request) {
         return ResponseEntity.ok()
                 .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(pageService.getMaxFileSizeBytes()))
                 .body(pageService.publish(request));
     }
 
-    @Operation(summary = "Publish an HTML page (file upload)",
+    @Operation(summary = "Publish an HTML page (file upload)", operationId = "publishPageFile",
             description = "Accepts a multipart/form-data upload of an .html file. " +
                     "Title is extracted from the <title> tag, then the filename, then falls back to 'Untitled'.")
     @ApiResponses({
@@ -55,7 +55,7 @@ public class PageController {
             @ApiResponse(responseCode = "413", description = "File exceeds the configured size limit", content = @Content),
             @ApiResponse(responseCode = "500", description = "Failed to write file", content = @Content)
     })
-    @PostMapping(value = "/pages/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/pages", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PublishResponse> publishFile(
             @Parameter(description = "HTML file to publish")
             @RequestParam("file") MultipartFile file) {

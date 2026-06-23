@@ -73,7 +73,7 @@ curl -s -X POST https://pushpage.link/api/pages \
 **curl fallback — file upload (when you have an `.html` file on disk):**
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-curl -s -X POST https://pushpage.link/api/pages/upload \
+curl -s -X POST https://pushpage.link/api/pages \
   -H "X-Api-Key: $PUSHPAGE_API_KEY" \
   -F "file=@report.html"
 ```

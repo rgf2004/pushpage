@@ -442,7 +442,7 @@ class PageControllerIT extends PostgresTestSupport {
                 "file", "report.html", "text/html",
                 "<html><head><title>My Report</title></head><body><h1>Hi</h1></body></html>".getBytes());
 
-        mockMvc.perform(multipart("/pages/upload").file(file)
+        mockMvc.perform(multipart("/pages").file(file)
                         .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").exists())
@@ -455,7 +455,7 @@ class PageControllerIT extends PostgresTestSupport {
                 "file", "report.html", "text/html",
                 "<!DOCTYPE html><html><head><title>Tag Title</title></head><body></body></html>".getBytes());
 
-        String response = mockMvc.perform(multipart("/pages/upload").file(file)
+        String response = mockMvc.perform(multipart("/pages").file(file)
                         .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -471,7 +471,7 @@ class PageControllerIT extends PostgresTestSupport {
                 "file", "my-page.html", "text/html",
                 "<html><body><h1>No title tag</h1></body></html>".getBytes());
 
-        String response = mockMvc.perform(multipart("/pages/upload").file(file)
+        String response = mockMvc.perform(multipart("/pages").file(file)
                         .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -487,7 +487,7 @@ class PageControllerIT extends PostgresTestSupport {
                 "file", "", "text/html",
                 "<html><body><h1>No title</h1></body></html>".getBytes());
 
-        String response = mockMvc.perform(multipart("/pages/upload").file(file)
+        String response = mockMvc.perform(multipart("/pages").file(file)
                         .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -502,14 +502,14 @@ class PageControllerIT extends PostgresTestSupport {
         byte[] oversized = new byte[2 * 1024 * 1024]; // 2 MB
         MockMultipartFile file = new MockMultipartFile("file", "big.html", "text/html", oversized);
 
-        mockMvc.perform(multipart("/pages/upload").file(file)
+        mockMvc.perform(multipart("/pages").file(file)
                         .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isPayloadTooLarge());
     }
 
     @Test
     void publishFile_missingFilePart_returns400() throws Exception {
-        mockMvc.perform(multipart("/pages/upload")
+        mockMvc.perform(multipart("/pages")
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isBadRequest());
@@ -521,7 +521,7 @@ class PageControllerIT extends PostgresTestSupport {
                 "file", "guest.html", "text/html",
                 "<html><body><h1>Guest</h1></body></html>".getBytes());
 
-        mockMvc.perform(multipart("/pages/upload").file(file))
+        mockMvc.perform(multipart("/pages").file(file))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").exists())
                 .andExpect(jsonPath("$.id").exists());
@@ -544,7 +544,7 @@ class PageControllerIT extends PostgresTestSupport {
                 "file", "check.html", "text/html",
                 "<html><body>hi</body></html>".getBytes());
 
-        mockMvc.perform(multipart("/pages/upload").file(file)
+        mockMvc.perform(multipart("/pages").file(file)
                         .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isOk())
                 .andExpect(header().exists("X-Max-File-Size"));

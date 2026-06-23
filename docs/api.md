@@ -132,9 +132,9 @@ curl -s -X POST https://pushpage.link/api/pages \
   -d '{"html": "<html>...</html>"}'
 ```
 
-#### Variant B — File upload (`POST /api/pages/upload`)
+#### Variant B — File upload (`Content-Type: multipart/form-data`)
 
-Upload an `.html` file directly via `multipart/form-data` — no JSON wrapping required.
+Upload an `.html` file directly — no JSON wrapping required.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -146,7 +146,7 @@ Title resolution order:
 3. `"Untitled"`
 
 ```bash
-curl -s -X POST https://pushpage.link/api/pages/upload \
+curl -s -X POST https://pushpage.link/api/pages \
   -H "X-Api-Key: $PUSHPAGE_API_KEY" \
   -F "file=@report.html"
 ```
