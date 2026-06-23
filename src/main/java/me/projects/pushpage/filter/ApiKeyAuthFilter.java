@@ -9,6 +9,7 @@ import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.UserRepository;
 import me.projects.pushpage.service.JwtService;
 import me.projects.pushpage.util.ApiKeyHasher;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Component
+@Order(1)
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private static final Set<String> PUBLIC_PATH_PREFIXES = Set.of(

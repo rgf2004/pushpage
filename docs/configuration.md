@@ -12,6 +12,7 @@ All variables are set in a `.env` file in the project root and passed to the con
 | `CLEANUP_SCHEDULE` | Cron expression controlling how often the cleanup job runs. | `0 0 * * * *` (hourly) |
 | `MAX_FILE_SIZE` | Max HTML payload the publisher accepts (app-level check). | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling. Should exceed `MAX_FILE_SIZE`. | `10MB` |
+| `RATE_LIMIT_RPM` | Max publish requests per minute per user (or per IP for guests). Admin users are exempt. `429 Too Many Requests` is returned when exceeded. | `10` |
 
 ## Guest Publishing
 

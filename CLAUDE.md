@@ -70,6 +70,7 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 | `CLEANUP_SCHEDULE` | Cron expression for the cleanup job | `0 0 * * * *` |
 | `MAX_FILE_SIZE` | Max HTML payload the service accepts (app-level check) | `1MB` |
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
+| `RATE_LIMIT_RPM` | Max publish requests per minute per user (or per IP for guests). Admin users are exempt. | `10` |
 | `JWT_SECRET` | **Required.** Secret for signing JWTs (HS256, min 32 chars). App fails fast at startup if missing. | — |
 | `DB_HOST` | PostgreSQL hostname | `localhost` |
 | `DB_PORT` | PostgreSQL port | `5432` |

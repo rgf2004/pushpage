@@ -20,6 +20,7 @@
 		<testcontainers.version>2.0.5</testcontainers.version>
 		<jsoup.version>1.22.2</jsoup.version>
 		<jjwt.version>0.12.6</jjwt.version>
+		<bucket4j.version>8.10.1</bucket4j.version>
 	</properties>
 
 	<dependencyManagement>
@@ -101,6 +102,12 @@
 			<artifactId>jjwt-jackson</artifactId>
 			<version>${jjwt.version}</version>
 			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j-core</artifactId>
+			<version>${bucket4j.version}</version>
 		</dependency>
 	</dependencies>
 
