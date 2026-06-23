@@ -31,6 +31,17 @@ Default: `https://pushpage.link`. For self-hosted deployments, use the value of 
 
 ## Authentication
 
+### Getting an API key
+
+Visit `{BASE_URL}/dashboard`, sign in, then click **Generate / Rotate API Key** on the Account tab. If you don't have an account yet, ask an admin to create one.
+
+Once you have the key, save it once:
+```bash
+mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
+```
+
+### Using the key
+
 **MCP:** no key handling needed — the MCP client passes the key transparently.
 
 **curl fallback only:** read the key from the credentials file before every request:
