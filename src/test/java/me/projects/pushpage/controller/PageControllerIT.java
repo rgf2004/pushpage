@@ -509,7 +509,8 @@ class PageControllerIT extends PostgresTestSupport {
 
     @Test
     void publishFile_missingFilePart_returns400() throws Exception {
-        mockMvc.perform(multipart("/pages")
+        mockMvc.perform(multipart("/pages/upload")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
                         .header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isBadRequest());
     }
