@@ -29,8 +29,28 @@ Change this value and rebuild to adjust how long guest pages live.
 
 | Variable / Property | Where | Description | Default |
 |---------------------|-------|-------------|---------|
-| `JWT_SECRET` | `.env` | **Required.** Secret used to sign JWTs (HS256). Must be at least 32 characters. The app fails fast at startup if this is missing or blank. | — |
+| `JWT_SECRET` | `.env` | **Required.** Secret used to sign JWTs (HS256). Must be at least 32 characters. The app fails fast at startup if this is missing or blank. See [Generating a strong secret](#generating-a-strong-secret) below. | — |
 | `app.jwt.expiration-hours` | `application.properties` | How long issued JWTs remain valid. Override in `application.properties` if needed. | `24` |
+
+### Generating a strong secret
+
+Generate a cryptographically random 256-bit (32-byte) secret and base64-encode it:
+
+```bash
+# OpenSSL (recommended)
+openssl rand -base64 32
+
+# Python
+python3 -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"
+```
+
+Copy the output into your `.env`:
+
+```
+JWT_SECRET=<output from above>
+```
+
+Never use a short, predictable, or human-typed string — the secret protects all authenticated sessions.
 
 ## Database Variables
 

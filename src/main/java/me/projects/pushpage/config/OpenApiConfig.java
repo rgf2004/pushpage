@@ -45,7 +45,7 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)
                                 .name(AppHeaders.X_API_KEY)
-                                .description("API key via X-Api-Key header, or as 'Authorization: Bearer pp_<key>'"))
+                                .description("API key via X-Api-Key header"))
                         .addSecuritySchemes(JWT_SCHEME, new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")

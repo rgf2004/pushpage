@@ -9,28 +9,25 @@ Most endpoints require authentication. Two credential types are accepted:
 | Method | Header | Notes |
 |--------|--------|-------|
 | API key | `X-Api-Key: pp_<key>` | Long-lived. Obtain via `POST /me/tokens`. |
-| API key as Bearer | `Authorization: Bearer pp_<key>` | Same key, alternate header. |
 | JWT Bearer | `Authorization: Bearer <jwt>` | Short-lived (24 h). Obtain via `POST /auth/login`. |
-
-The filter distinguishes API keys from JWTs by prefix: tokens starting with `pp_` are treated as API keys; anything else is validated as a JWT.
 
 Missing or invalid credentials return `401 Unauthorized`. Calling an admin endpoint without admin privileges returns `403 Forbidden`.
 
 ### Bootstrap
 
-On first run (no users in the database), the service generates an `admin` user with a random password and API key, storing their hashes, and logs both once:
+On first run (no users in the database), the service generates an admin account and logs both credentials once:
 
 ```
 ==============================================================
 No users found — bootstrap admin created.
-Username : admin
-Password : <random>
+Email    : admin@pushpage.link
+Password : <random alphanumeric>
 API Key  : pp_abc123...
 Copy these credentials now. They will NOT appear again.
 ==============================================================
 ```
 
-The admin can then log in via `POST /auth/login` (using username `admin`) or authenticate directly with the API key.
+The admin can log in via `POST /auth/login` or authenticate directly with the API key.
 
 ---
 
@@ -43,14 +40,13 @@ Create a new account. No authentication required.
 **Request body:**
 
 ```json
-{ "email": "alice@example.com", "password": "s3cur3pass", "username": "alice" }
+{ "email": "alice@example.com", "password": "s3cur3pass" }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `email` | string | yes | Unique email address. |
 | `password` | string | yes | Minimum 8 characters. Stored as BCrypt hash. |
-| `username` | string | no | Derived from email local-part if omitted; short suffix appended if taken. |
 
 **Response:** `201 No Content`
 
@@ -65,15 +61,13 @@ Create a new account. No authentication required.
 
 ### POST /api/auth/login
 
-Authenticate with email or username and password. Returns a short-lived JWT.
+Authenticate with email and password. Returns a short-lived JWT.
 
 **Request body:**
 
 ```json
-{ "login": "alice@example.com", "password": "s3cur3pass" }
+{ "email": "alice@example.com", "password": "s3cur3pass" }
 ```
-
-The `login` field accepts either an email address or a username (useful for the bootstrap `admin` account which has no email).
 
 **Response `200`:**
 
@@ -186,7 +180,6 @@ Return the profile of the currently authenticated user.
 ```json
 {
   "id": "a1b2c3d4",
-  "username": "alice",
   "email": "alice@example.com",
   "created_at": "2026-01-01T00:00:00Z",
   "active": true,
@@ -256,7 +249,6 @@ List all users ordered by creation date.
 [
   {
     "id": "a1b2c3d4",
-    "username": "alice",
     "email": "alice@example.com",
     "created_at": "2026-01-01T00:00:00Z",
     "active": true,

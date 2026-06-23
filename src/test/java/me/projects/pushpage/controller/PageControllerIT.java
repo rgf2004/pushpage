@@ -316,9 +316,9 @@ class PageControllerIT extends PostgresTestSupport {
     }
 
     @Test
-    void publish_withBearerToken_returns200() throws Exception {
+    void publish_withXApiKeyHeader_returns200() throws Exception {
         mockMvc.perform(post("/pages")
-                        .header("Authorization", "Bearer " + TEST_API_KEY)
+                        .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"html": "<h1>Hello</h1>", "title": "Test"}

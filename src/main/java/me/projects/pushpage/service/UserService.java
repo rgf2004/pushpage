@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -30,6 +31,8 @@ public class UserService implements ApplicationRunner {
             Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     private static final BCryptPasswordEncoder BCRYPT = new BCryptPasswordEncoder();
     private static final String ADMIN_EMAIL = "admin@pushpage.link";
+    private static final String ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
@@ -124,6 +127,10 @@ public class UserService implements ApplicationRunner {
     }
 
     private String generateRawPassword() {
-        return UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+        StringBuilder sb = new StringBuilder(20);
+        for (int i = 0; i < 20; i++) {
+            sb.append(ALPHANUMERIC.charAt(SECURE_RANDOM.nextInt(ALPHANUMERIC.length())));
+        }
+        return sb.toString();
     }
 }

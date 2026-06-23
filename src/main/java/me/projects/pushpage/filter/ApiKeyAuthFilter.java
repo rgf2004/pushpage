@@ -92,21 +92,13 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     }
 
     private String extractApiKey(HttpServletRequest request) {
-        String xApiKey = request.getHeader("X-Api-Key");
-        if (xApiKey != null) return xApiKey;
-        String bearer = request.getHeader("Authorization");
-        if (bearer != null && bearer.startsWith("Bearer ")) {
-            String token = bearer.substring(7);
-            if (token.startsWith("pp_")) return token;
-        }
-        return null;
+        return request.getHeader("X-Api-Key");
     }
 
     private String extractJwt(HttpServletRequest request) {
         String bearer = request.getHeader("Authorization");
         if (bearer != null && bearer.startsWith("Bearer ")) {
-            String token = bearer.substring(7);
-            if (!token.startsWith("pp_")) return token;
+            return bearer.substring(7);
         }
         return null;
     }
