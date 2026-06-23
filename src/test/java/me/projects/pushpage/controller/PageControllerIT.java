@@ -25,6 +25,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.mock.web.MockMultipartFile;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -431,6 +432,122 @@ class PageControllerIT extends PostgresTestSupport {
                                 {"html": "<h1>Alice's page</h1>", "title": "Alice"}
                                 """))
                 .andExpect(status().isOk());
+    }
+
+    // ── Multipart upload ────────────────────────────────────────────────────────
+
+    @Test
+    void publishFile_withValidHtmlFile_returns200WithUrlAndId() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "report.html", "text/html",
+                "<html><head><title>My Report</title></head><body><h1>Hi</h1></body></html>".getBytes());
+
+        mockMvc.perform(multipart("/pages").file(file)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").exists())
+                .andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
+    void publishFile_titleExtractedFromHtmlTag() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "report.html", "text/html",
+                "<!DOCTYPE html><html><head><title>Tag Title</title></head><body></body></html>".getBytes());
+
+        String response = mockMvc.perform(multipart("/pages").file(file)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+        String title = jdbc.queryForObject("SELECT title FROM pages WHERE id = ?", String.class, id);
+        assertThat(title).isEqualTo("Tag Title");
+    }
+
+    @Test
+    void publishFile_titleFallsBackToFilename() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "my-page.html", "text/html",
+                "<html><body><h1>No title tag</h1></body></html>".getBytes());
+
+        String response = mockMvc.perform(multipart("/pages").file(file)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+        String title = jdbc.queryForObject("SELECT title FROM pages WHERE id = ?", String.class, id);
+        assertThat(title).isEqualTo("my-page");
+    }
+
+    @Test
+    void publishFile_titleFallsBackToUntitled_whenNoTagAndNoFilename() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "", "text/html",
+                "<html><body><h1>No title</h1></body></html>".getBytes());
+
+        String response = mockMvc.perform(multipart("/pages").file(file)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
+        String title = jdbc.queryForObject("SELECT title FROM pages WHERE id = ?", String.class, id);
+        assertThat(title).isEqualTo("Untitled");
+    }
+
+    @Test
+    void publishFile_oversizedFile_returns413() throws Exception {
+        byte[] oversized = new byte[2 * 1024 * 1024]; // 2 MB
+        MockMultipartFile file = new MockMultipartFile("file", "big.html", "text/html", oversized);
+
+        mockMvc.perform(multipart("/pages").file(file)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isPayloadTooLarge());
+    }
+
+    @Test
+    void publishFile_missingFilePart_returns400() throws Exception {
+        mockMvc.perform(multipart("/pages")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void publishFile_asGuest_returns200() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "guest.html", "text/html",
+                "<html><body><h1>Guest</h1></body></html>".getBytes());
+
+        mockMvc.perform(multipart("/pages").file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").exists())
+                .andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
+    void publishFile_jsonVariantStillWorks() throws Exception {
+        mockMvc.perform(post("/pages")
+                        .header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Still works</h1>", "title": "JSON"}
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void publishFile_returnsXMaxFileSizeHeader() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "check.html", "text/html",
+                "<html><body>hi</body></html>".getBytes());
+
+        mockMvc.perform(multipart("/pages").file(file)
+                        .header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("X-Max-File-Size"));
     }
 
     @Test
