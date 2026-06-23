@@ -9,6 +9,8 @@ services:
       DB_NAME: ${DB_NAME:-pushpage}
       DB_USER: ${DB_USER:-pushpage}
       DB_PASSWORD: ${DB_PASSWORD:-pushpage}
+    volumes:
+      - pages_data:/var/www/pages
     depends_on:
       postgres:
         condition: service_healthy
@@ -20,6 +22,8 @@ services:
       dockerfile: nginx/Dockerfile
     ports:
       - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - pages_data:/var/www/pages:ro
     depends_on:
       - publisher
     restart: unless-stopped
@@ -47,3 +51,6 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+
+volumes:
+  pages_data:
