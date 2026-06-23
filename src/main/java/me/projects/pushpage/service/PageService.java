@@ -5,7 +5,6 @@ import me.projects.pushpage.model.Page;
 import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
 import me.projects.pushpage.model.User;
-import me.projects.pushpage.model.UserSummary;
 import me.projects.pushpage.repository.PageRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -96,11 +95,6 @@ public class PageService {
 
         String url = baseUrl + "/" + id + ".html";
         return new PublishResponse(url, id, expiresAt);
-    }
-
-    public UserSummary getCurrentUser() {
-        User u = requireCurrentUser();
-        return new UserSummary(u.id(), u.email(), u.createdAt(), u.active(), u.admin());
     }
 
     public List<Page> listPages() {

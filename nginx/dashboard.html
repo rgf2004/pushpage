@@ -800,17 +800,19 @@ async function doLogin() {
     }
 }
 
+function parseJwtClaims(token) {
+    try {
+        return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    } catch { return {}; }
+}
+
 async function loadDashboard() {
-    const [meR, pagesR] = await Promise.all([
-        api('/me'),
-        api('/pages'),
-    ]);
+    const claims  = parseJwtClaims(jwt);
+    const email   = claims.email || 'unknown';
+    const isAdmin = claims.admin === true;
 
-    const me = meR.ok ? await meR.json() : {};
-    const pages = pagesR.ok ? await pagesR.json() : [];
-
-    const email    = me.email || 'unknown';
-    const isAdmin  = me.admin === true;
+    const pagesR = await api('/pages');
+    const pages  = pagesR.ok ? await pagesR.json() : [];
 
     currentUser = { email, isAdmin };
     allPages = pages;

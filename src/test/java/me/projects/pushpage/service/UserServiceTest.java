@@ -141,15 +141,17 @@ class UserServiceTest {
     }
 
     @Test
-    void login_withInactiveUser_throwsUnauthorized() {
+    void login_withInactiveUser_throwsUnauthorizedWithDeactivatedMessage() {
         String hash = BCRYPT.encode("pass");
         User user = new User("id1", "alice@example.com", "pp_key", hash, Instant.now(), false, false);
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.login(new LoginRequest("alice@example.com", "pass")))
                 .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.UNAUTHORIZED));
+                .satisfies(ex -> {
+                    assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+                    assertThat(((ResponseStatusException) ex).getReason()).isEqualTo("Account is deactivated");
+                });
     }
 
     @Test

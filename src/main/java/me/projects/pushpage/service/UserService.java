@@ -88,7 +88,7 @@ public class UserService implements ApplicationRunner {
         User user = userRepository.findByEmail(request.email().trim())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
         if (!user.active()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account is deactivated");
         }
         if (user.passwordHash() == null || !BCRYPT.matches(request.password(), user.passwordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");

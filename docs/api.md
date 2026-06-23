@@ -81,7 +81,8 @@ The JWT is valid for 24 hours (configurable via `app.jwt.expiration-hours`).
 
 | Status | Reason |
 |--------|--------|
-| `401` | Invalid credentials, inactive account, or user has no password (pre-migration API-key-only accounts) |
+| `401` | Invalid credentials or user has no password (pre-migration API-key-only accounts) |
+| `401` | Account is deactivated |
 
 ---
 
@@ -168,26 +169,6 @@ Delete a published page. Users may only delete their own pages; admins can delet
 ---
 
 ## User
-
-### GET /api/me
-
-Return the profile of the currently authenticated user.
-
-**Auth:** any user
-
-**Response:**
-
-```json
-{
-  "id": "a1b2c3d4",
-  "email": "alice@example.com",
-  "created_at": "2026-01-01T00:00:00Z",
-  "active": true,
-  "admin": false
-}
-```
-
----
 
 ### POST /api/me/tokens
 

@@ -103,7 +103,6 @@ All endpoints are under `/api` (Spring Boot context path).
 | `POST` | `/api/pages` | Optional | Publish HTML → `{ url, id }`. Guest pages expire in 30 min. |
 | `GET` | `/api/pages` | User | List pages scoped to caller (admin sees all). |
 | `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any). |
-| `GET` | `/api/me` | User | Authenticated user's profile. |
 | `POST` | `/api/me/tokens` | User | Generate / rotate API key → `{ api_key }`. Previous key is invalidated. |
 | `GET` | `/api/health` | None | Health check. |
 | `GET` | `/api/admin/users` | Admin | List all users. |
