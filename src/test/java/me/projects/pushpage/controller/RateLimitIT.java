@@ -29,7 +29,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-@TestPropertySource(properties = "app.rate-limit.requests-per-minute=2")
+@TestPropertySource(properties = {
+        "app.rate-limit.user-requests-per-minute=2",
+        "app.rate-limit.guest-requests-per-minute=1"
+})
 class RateLimitIT extends PostgresTestSupport {
 
     static final String TEST_API_KEY = "pp_rl-test-api-key";
@@ -157,12 +160,35 @@ class RateLimitIT extends PostgresTestSupport {
                 {"html": "<h1>Guest</h1>", "title": "Guest"}
                 """;
 
-        // exhaust guest bucket (same IP in MockMvc = 127.0.0.1)
+        // guest limit is 1 RPM — first request passes, second is blocked
+        mockMvc.perform(post("/pages").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-RateLimit-Limit", "1"));
+        mockMvc.perform(post("/pages").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void publish_userAllowedMoreRequestsThanGuest() throws Exception {
+        String body = """
+                {"html": "<h1>Hello</h1>", "title": "Test"}
+                """;
+
+        // guest exhausts on 2nd request (limit=1)
         mockMvc.perform(post("/pages").contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/pages").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isTooManyRequests());
+
+        // authenticated user still has capacity (limit=2)
+        mockMvc.perform(post("/pages").header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk());
-        mockMvc.perform(post("/pages").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post("/pages").header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/pages").header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isTooManyRequests());
     }
 }

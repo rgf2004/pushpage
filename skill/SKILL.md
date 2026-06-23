@@ -180,7 +180,7 @@ If a connection error occurs (not a 401/403), mention that the pushpage service 
 
 `POST /api/pages` is rate-limited. Authenticated users are limited by user ID; guest requests are limited by IP. Admin users are exempt.
 
-- Default: **10 requests per minute**
+- Defaults: **10 requests per minute** for authenticated users, **5 per minute** for guests (by IP)
 - When exceeded: `429 Too Many Requests` with a `Retry-After` header (seconds to wait)
 - All publish responses include: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` (epoch seconds)
 

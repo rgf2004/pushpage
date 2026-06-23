@@ -43,17 +43,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
         User currentUser = authContext.getCurrentUser();
 
         if (currentUser != null && currentUser.admin()) {
-            addRateLimitHeaders(response, rateLimitService.getRequestsPerMinute(), rateLimitService.getRequestsPerMinute(), 0);
+            addRateLimitHeaders(response, rateLimitService.getUserRequestsPerMinute(), rateLimitService.getUserRequestsPerMinute(), 0);
             chain.doFilter(request, response);
             return;
         }
 
-        String key = currentUser != null
-                ? "user:" + currentUser.id()
-                : "ip:" + resolveClientIp(request);
+        boolean isGuest = currentUser == null;
+        String key = isGuest
+                ? "ip:" + resolveClientIp(request)
+                : "user:" + currentUser.id();
+        int limit = isGuest
+                ? rateLimitService.getGuestRequestsPerMinute()
+                : rateLimitService.getUserRequestsPerMinute();
 
-        ConsumptionProbe probe = rateLimitService.tryConsume(key);
-        int limit = rateLimitService.getRequestsPerMinute();
+        ConsumptionProbe probe = rateLimitService.tryConsume(key, limit);
         long remaining = probe.getRemainingTokens();
         long resetEpoch = Instant.now().plusNanos(probe.getNanosToWaitForRefill()).getEpochSecond();
 
