@@ -31,32 +31,20 @@ Default: `https://pushpage.link`. For self-hosted deployments, use the value of 
 
 ## Authentication
 
-### Getting an API key
-
-Visit `{BASE_URL}/dashboard`, sign in, then click **Generate / Rotate API Key** on the Account tab. If you don't have an account yet, ask an admin to create one.
-
-Once you have the key, save it once:
-```bash
-mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
-```
-
-### Using the key
-
 **MCP:** no key handling needed — the MCP client passes the key transparently.
 
-**curl fallback only:** read the key from the credentials file before every request:
+**curl fallback only:**
 
-```bash
-PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-```
-
-If the file is missing or empty, stop and tell the user:
-
-> Your pushpage API key is not configured. Run the following to save it:
-> ```bash
-> mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
-> ```
-> To get an API key, visit `{BASE_URL}/dashboard` and sign in, then use the **Generate / Rotate API Key** button on the Account tab. If you don't have an account yet, ask an admin.
+1. Check whether the credentials file exists and is non-empty:
+   ```bash
+   PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
+   ```
+2. If `PUSHPAGE_API_KEY` is empty, **ask the user to provide their API key** — do not attempt to navigate to the dashboard or log in on their behalf. Tell them:
+   > Please provide your pushpage API key. You can get one from the Account tab on the pushpage dashboard (`{BASE_URL}/dashboard`). If you don't have an account, ask an admin.
+3. Once the user supplies the key, save it and proceed:
+   ```bash
+   mkdir -p ~/.config/pushpage && echo "pp_the_key_here" > ~/.config/pushpage/credentials
+   ```
 
 Pass the key in every curl request as `X-Api-Key: $PUSHPAGE_API_KEY`.
 
