@@ -42,8 +42,8 @@ abstract class AbstractPageRepositoryTest {
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
         jdbc.update(
-                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, false)",
-                TEST_USER_ID, "testuser", "test-key-123", Timestamp.from(Instant.now())
+                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
+                TEST_USER_ID, "test-key-123", Timestamp.from(Instant.now())
         );
     }
 
@@ -111,8 +111,8 @@ abstract class AbstractPageRepositoryTest {
     @Test
     void findAll_userSeesOnlyOwnPages() {
         jdbc.update(
-                "INSERT INTO users (id, username, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, false)",
-                "otheruser1", "other", "other-key", Timestamp.from(Instant.now())
+                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
+                "otheruser1", "other-key", Timestamp.from(Instant.now())
         );
         repository.save("id1", "My page", TEST_USER_ID, Instant.now().plus(30, ChronoUnit.DAYS));
         repository.save("id2", "Other's page", "otheruser1", Instant.now().plus(30, ChronoUnit.DAYS));

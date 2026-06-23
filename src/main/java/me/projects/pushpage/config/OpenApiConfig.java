@@ -36,12 +36,13 @@ public class OpenApiConfig {
                         .description("Self-hosted HTML page publishing service. " +
                                 "Post HTML content and get a shareable URL back.")
                         .version(version))
-                .addSecurityItem(new SecurityRequirement().addList(API_KEY_SCHEME))
+                .addSecurityItem(new SecurityRequirement()
+                        .addList(API_KEY_SCHEME))
                 .components(new Components()
                         .addSecuritySchemes(API_KEY_SCHEME, new SecurityScheme()
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)
                                 .name(AppHeaders.X_API_KEY)
-                                .description("API key. Can also be passed as 'Authorization: Bearer <key>'")));
+                                .description("API key via X-Api-Key header")));
     }
 }

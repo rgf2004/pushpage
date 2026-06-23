@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import me.projects.pushpage.config.AuthContext;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.UserRepository;
+import me.projects.pushpage.service.JwtService;
 import me.projects.pushpage.util.ApiKeyHasher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,16 +20,18 @@ import java.util.Set;
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private static final Set<String> PUBLIC_PATH_PREFIXES = Set.of(
-            "/health", "/swagger-ui", "/v3/api-docs", "/api-docs"
+            "/health", "/swagger-ui", "/v3/api-docs", "/api-docs", "/auth/"
     );
     private static final String ADMIN_PATH_PREFIX = "/admin";
     private static final Set<String> GUEST_ALLOWED = Set.of("POST /pages");
 
     private final UserRepository userRepository;
+    private final JwtService jwtService;
     private final AuthContext authContext;
 
-    public ApiKeyAuthFilter(UserRepository userRepository, AuthContext authContext) {
+    public ApiKeyAuthFilter(UserRepository userRepository, JwtService jwtService, AuthContext authContext) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
         this.authContext = authContext;
     }
 
@@ -48,18 +51,26 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         }
 
         String apiKey = extractApiKey(request);
-        if (apiKey == null) {
+        String jwt = extractJwt(request);
+
+        if (apiKey == null && jwt == null) {
             if (GUEST_ALLOWED.contains(request.getMethod() + " " + path)) {
                 chain.doFilter(request, response);
                 return;
             }
-            sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "API key required");
+            sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Authentication required");
             return;
         }
 
-        Optional<User> user = userRepository.findByApiKeyHash(ApiKeyHasher.hash(apiKey));
+        Optional<User> user;
+        if (apiKey != null) {
+            user = userRepository.findByApiKeyHash(ApiKeyHasher.hash(apiKey));
+        } else {
+            user = jwtService.validateToken(jwt).flatMap(userRepository::findById);
+        }
+
         if (user.isEmpty() || !user.get().active()) {
-            sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid or inactive API key");
+            sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired credentials");
             return;
         }
 
@@ -81,11 +92,15 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     }
 
     private String extractApiKey(HttpServletRequest request) {
+        return request.getHeader("X-Api-Key");
+    }
+
+    private String extractJwt(HttpServletRequest request) {
         String bearer = request.getHeader("Authorization");
         if (bearer != null && bearer.startsWith("Bearer ")) {
             return bearer.substring(7);
         }
-        return request.getHeader("X-Api-Key");
+        return null;
     }
 
     private void sendError(HttpServletResponse response, int status, String message) throws IOException {

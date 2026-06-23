@@ -4,9 +4,9 @@ import java.time.Instant;
 
 public record User(
         String id,
-        String username,
         String email,
         String apiKeyHash,
+        String passwordHash,
         Instant createdAt,
         boolean active,
         boolean admin
