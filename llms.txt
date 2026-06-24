@@ -2,6 +2,14 @@
 
 pushpage is a service that accepts HTML and returns a shareable public URL. It is purpose-built for AI agents: instead of dumping HTML or long-form content into chat, an agent POSTs to pushpage and hands the user a clean, clickable link.
 
+## Constraints
+
+- **Pages are public.** Anyone with the URL can read the page. Never publish content that contains secrets, credentials, personal data, or anything the user has not explicitly chosen to share.
+- **Max payload:** 1 MB per request (app-level limit; the servlet ceiling is 10 MB but the app rejects above 1 MB).
+- **Rate limits:** authenticated users — 10 publishes/min; guests (no API key) — 5 publishes/min per IP. Admin users are exempt.
+- **Page retention:** guest pages auto-expire after 30 minutes. Authenticated pages persist for 30 days and are managed from the dashboard.
+- **Format:** HTML only. Pages are served directly in a browser — write clean, self-contained HTML (inline CSS, no local file references).
+
 ## Base URL
 
 Base URL resolution (pick the first that applies):
@@ -26,11 +34,25 @@ If the file is missing or empty, stop and tell the user:
 > ```bash
 > mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
 > ```
-> You can find your key in the pushpage startup logs, or ask an admin to create one via `POST /api/admin/users`.
+> You can find your key in the pushpage dashboard under Account → Generate API Key, or in the startup logs of a self-hosted instance.
 
-Pass the key in every request as `X-Api-Key: $PUSHPAGE_API_KEY`.
+Pass the key in every authenticated request as `X-Api-Key: $PUSHPAGE_API_KEY`.
 
 **Exception — guest publishing:** `POST /api/pages` accepts requests with no API key. The page is created as a guest page that auto-expires after 30 minutes. Use this for quick one-off shares when no credentials are available.
+
+**JWT alternative:** if you have the user's email and password, you can obtain a short-lived JWT (24 h) via `POST /api/auth/login` and pass it as `Authorization: Bearer <jwt>`. API keys are preferred for agent use — they are long-lived and do not require re-authentication.
+
+## New user setup
+
+If the user does not have an account yet, create one:
+
+```bash
+curl -s -X POST https://pushpage.link/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "choose-a-strong-password"}'
+```
+
+Returns `201 No Content` on success. The user can then log in at `https://pushpage.link/dashboard` to generate an API key.
 
 ## Primary operation — publish HTML
 
@@ -44,7 +66,7 @@ curl -s -X POST https://pushpage.link/api/pages \
   }'
 ```
 
-`title` is optional. When omitted or blank, the server extracts it from the HTML `<title>` tag; falls back to `"Untitled"`. Pass it explicitly to override what's in the HTML.
+`title` is optional. When omitted or blank, the server extracts it from the HTML `<title>` tag; falls back to `"Untitled"`. Pass it explicitly to override what is in the HTML.
 
 Response:
 
@@ -55,7 +77,15 @@ Response:
 }
 ```
 
-Return the `url` to the user. That is the shareable link.
+Return the `url` to the user. That is the shareable link. Do not paste the HTML into chat.
+
+**File upload variant** (multipart/form-data):
+
+```bash
+curl -s -X POST https://pushpage.link/api/pages \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -F "file=@report.html"
+```
 
 ## Secondary operations
 
@@ -75,6 +105,8 @@ curl -s -X DELETE https://pushpage.link/api/pages/{id} \
   -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
+To update an existing page, delete it and publish a new one — pushpage does not support in-place edits via the REST API (use the MCP `publish_page` tool, which replaces by title if you want consistent naming).
+
 ### Health check (no auth required)
 
 ```bash
@@ -83,21 +115,53 @@ curl -s https://pushpage.link/api/health
 
 ## MCP server
 
-A FastMCP server is available at `{APP_SERVER_URL}/mcp` (e.g. `https://pushpage.link/mcp`) for clients that support the MCP protocol (streamable-http transport). It exposes `publish_page`, `list_pages`, `delete_page`, and `health` tools. If your client supports MCP, prefer it over the direct API — authentication is handled transparently by the server.
+A FastMCP server is available at `https://pushpage.link/mcp` (streamable-http transport). It exposes `publish_page`, `list_pages`, `delete_page`, and `health` tools. If your client supports MCP, prefer it over the direct API — authentication is handled via the `X-Api-Key` header in the MCP config.
+
+### Claude Desktop config
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "pushpage": {
+      "type": "streamable-http",
+      "url": "https://pushpage.link/mcp",
+      "headers": {
+        "X-Api-Key": "<your-api-key>"
+      }
+    }
+  }
+}
+```
+
+Replace `<your-api-key>` with the key from `~/.config/pushpage/credentials`. Restart Claude Desktop after saving.
+
+### Other MCP clients
+
+Any client that supports streamable-http MCP servers can connect to `https://pushpage.link/mcp` with the `X-Api-Key` header. Consult your client's documentation for the exact config format.
 
 ## Writing good HTML for pushpage
 
-Pages are served directly in a browser, so write clean, self-contained HTML:
+Pages are served directly in a browser — write clean, self-contained HTML:
 
 - Use inline CSS — no external stylesheets
-- Add `<meta name="viewport" content="width=device-width, initial-scale=1">` for responsiveness
-- Include a `<title>` tag — it appears in the browser tab
+- Add `<meta name="viewport" content="width=device-width, initial-scale=1">` for mobile responsiveness
+- Include a `<title>` tag — it appears in the browser tab and is used as the page title in the dashboard
 - No references to local files; everything must be self-contained
 - Tailwind via CDN works well: `<script src="https://cdn.tailwindcss.com"></script>`
+- Charts: Chart.js CDN works well for data visualisations
 
 ## Typical agent flow
 
-1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing
-2. Build the full HTML for what the user asked for — include a `<title>` tag in the `<head>`
-3. POST to `/api/pages` with the key in `X-Api-Key` — title is extracted from the HTML automatically
-4. Extract the `url` from the response and return it to the user — do not paste the HTML into chat
+1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing.
+2. Build the full HTML for what the user asked for — include a `<title>` tag in the `<head>`.
+3. POST to `/api/pages` with the key in `X-Api-Key` — title is extracted from the HTML automatically.
+4. Extract the `url` from the response and return it to the user — do not paste the HTML into chat.
+
+## Do not
+
+- Do not publish pages that contain secrets, credentials, or private data — pages are publicly accessible to anyone with the link.
+- Do not create duplicate pages for the same content — delete the old one first if you need to republish.
+- Do not use `http://` with the managed instance — HTTPS only.
+- Do not exceed 1 MB of HTML in a single request — split into multiple pages if needed.
