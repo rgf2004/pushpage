@@ -679,7 +679,27 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
     // Line = array of [cssClass, text] segments. '' = default terminal colour.
     const SCENES = [
         {
-            // Scene 1: JSON variant with a fake API key
+            // Scene 1: AI agent — TSLA research via pushpage MCP
+            cmd: [
+                [['dim','$ '], ['hl','claude'], ['', ' '], ['str', '"Research TSLA stock price and share a report"']],
+            ],
+            resp: [
+                [],
+                [['key', '◆ '], ['hl', 'WebSearch'], ['dim', '("TSLA stock price today")']],
+                [['ok', '  ✓ '], ['hl', 'TSLA $248.73'], ['dim', '  ▲2.4%  ·  Jun 24 2026']],
+                [],
+                [['key', '◆ '], ['hl', 'mcp:pushpage'], ['dim', ' → '], ['hl', 'publish_page']],
+                [['ok', '  ✓ '], ['dim', 'published → '], ['str', 'https://pushpage.link/pages/a1b2c3d4.html']],
+                [],
+                [['dim', 'Your TSLA report is live:']],
+                [['str', 'https://pushpage.link/pages/a1b2c3d4.html']],
+            ],
+            netMs:      1800,  // longer pause to simulate agent thinking
+            respMs:     130,   // slightly slower stream for agent output
+            pauseAfter: 1000,  // 1 s gap before next scene
+        },
+        {
+            // Scene 2: curl JSON variant
             cmd: [
                 [['dim','$ '], ['hl','curl'], ['', ' -s -X POST https://pushpage.link/api/pages \\']],
                 [['', '  -H '], ['str', '"X-Api-Key: pp_c152****************************"'], ['', ' \\']],
@@ -697,7 +717,7 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
             ],
         },
         {
-            // Scene 2: multipart file upload variant
+            // Scene 3: curl multipart file upload variant
             cmd: [
                 [['dim','$ '], ['hl','curl'], ['', ' -s -X POST https://pushpage.link/api/pages \\']],
                 [['', '  -H '], ['str', '"X-Api-Key: pp_c152****************************"'], ['', ' \\']],
@@ -711,23 +731,6 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
                 [['', '  '], ['key', '"id"'],         ['', ': '], ['str', '"c4d5e6f7"'],                                  ['', ',']],
                 [['', '  '], ['key', '"expires_at"'], ['', ': '], ['str', '"2026-07-24T07:08:51Z"']],
                 [['', '}']],
-            ],
-        },
-        {
-            // Scene 3: AI agent using pushpage MCP to publish a research report
-            cmd: [
-                [['dim','$ '], ['hl','claude'], ['', ' '], ['str', '"Research TSLA stock price and share a report"']],
-            ],
-            resp: [
-                [],
-                [['key', '◆ '], ['hl', 'WebSearch'], ['dim', '("TSLA stock price today")']],
-                [['ok', '  ✓ '], ['hl', 'TSLA $248.73'], ['dim', '  ▲2.4%  ·  Jun 24 2026']],
-                [],
-                [['key', '◆ '], ['hl', 'mcp:pushpage'], ['dim', ' → '], ['hl', 'publish_page']],
-                [['ok', '  ✓ '], ['dim', 'published → '], ['str', 'https://pushpage.link/pages/a1b2c3d4.html']],
-                [],
-                [['dim', 'Your TSLA report is live:']],
-                [['str', 'https://pushpage.link/pages/a1b2c3d4.html']],
             ],
         },
     ];
@@ -755,7 +758,11 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
     const el = document.getElementById('hero-terminal');
     if (!el) return;
 
-    async function playScene({ cmd, resp }) {
+    async function playScene({ cmd, resp, netMs, respMs, pauseAfter }) {
+        const sceneNetMs    = netMs     ?? NET_MS;
+        const sceneRespMs   = respMs    ?? RESP_MS;
+        const scenePauseMs  = pauseAfter ?? 0;
+
         el.style.transition = '';
         el.style.opacity    = '1';
         el.textContent      = '';
@@ -783,24 +790,24 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
             }
         }
 
-        // Cursor blinks while "waiting for network"
+        // Cursor blinks while "waiting for response"
         el.innerHTML = done.map(renderLine).join('\n') + '<span class="cursor">▌</span>';
-        await sleep(NET_MS);
+        await sleep(sceneNetMs);
 
         // Response lines pop in
         let html = done.map(renderLine).join('\n');
         el.innerHTML = html;
         for (const line of resp) {
-            await sleep(RESP_MS);
+            await sleep(sceneRespMs);
             html += '\n' + renderLine(line);
             el.innerHTML = html;
         }
 
-        // Hold, then fade out
+        // Hold, then fade out, then optional inter-scene pause
         await sleep(HOLD_MS);
         el.style.transition = `opacity ${FADE_MS}ms ease`;
         el.style.opacity    = '0';
-        await sleep(FADE_MS + 80);
+        await sleep(FADE_MS + 80 + scenePauseMs);
     }
 
     // Cycle through scenes indefinitely
