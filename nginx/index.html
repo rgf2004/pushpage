@@ -93,7 +93,10 @@
             line-height: 1.8;
             white-space: pre;
             overflow-x: auto;
+        }
+        #hero-terminal .code-body {
             height: 310px; /* fixed — prevents layout shift during animation */
+            overflow-y: hidden;
         }
 
         /* Terminal syntax colours */
@@ -287,6 +290,8 @@
 
         .code-panel { display: none; }
         .code-panel.active { display: block; }
+        .examples-section .code-window { overflow: visible; }
+        .examples-section .code-body { min-height: 260px; overflow-y: visible; }
 
         /* ── Self-host callout ─────────────────────────────────────────── */
         .selfhost-box {
@@ -403,13 +408,16 @@
 
     <p class="hero-sub">
         A publishing service for AI agents and developers.
-        POST any HTML — get a shareable URL back in milliseconds. No browser needed.
+        POST any HTML and get a shareable URL back in milliseconds. No browser needed.
     </p>
 
     <div class="hero-actions">
         <a href="/dashboard" class="btn btn-primary btn-lg">Get started free</a>
         <a href="/docs" class="btn btn-secondary btn-lg">Read the docs →</a>
     </div>
+    <p style="margin-top:14px; font-size:.82rem; color:var(--text-muted)">
+        Building an agent? <a href="/llms.txt" style="color:var(--accent); text-decoration:none; font-weight:500">llms.txt</a> has everything it needs to get started.
+    </p>
 
     <div class="hero-code">
         <div class="code-window">
@@ -441,12 +449,12 @@
             <div class="step">
                 <div class="step-number">2</div>
                 <h3>POST your HTML</h3>
-                <p>Send a <code>POST /api/pages</code> request with your HTML content — as JSON or a raw file upload. Bare snippets are auto-wrapped in a clean shell.</p>
+                <p>Send a <code>POST /api/pages</code> request with your HTML content, as JSON or a raw file upload. Or add the MCP server to your agent config for one-step tool access.</p>
             </div>
             <div class="step">
                 <div class="step-number">3</div>
                 <h3>Share the URL</h3>
-                <p>The response includes a permanent shareable URL. Drop it in a message, an email, or any workflow — no additional hosting required.</p>
+                <p>The response includes a permanent shareable URL. Drop it in a message, an email, or any workflow with no additional hosting required.</p>
             </div>
         </div>
     </div>
@@ -457,18 +465,18 @@
     <div class="section-inner">
         <div class="section-label">Why pushpage</div>
         <h2 class="section-title">Everything you need,<br>nothing you don't</h2>
-        <p class="section-sub">Built for the moments when an AI agent or script produces rich output and needs a URL to link back to — not a file attachment.</p>
+        <p class="section-sub">Built for the moments when an AI agent or script produces rich output and needs a URL to link back to, not a file attachment.</p>
 
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-icon">⚡</div>
                 <h3>Instant publishing</h3>
-                <p>Pages are served directly by nginx. No build step, no processing delay — the URL is live the moment you get it back.</p>
+                <p>Pages are served directly by nginx. No build step, no processing delay. The URL is live the moment you get it back.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🤖</div>
                 <h3>Agent-ready</h3>
-                <p>REST API and MCP server included. Wire it into Claude, GPT, or any agent framework in minutes. Returns a URL the agent can pass downstream.</p>
+                <p>REST API and MCP server included. Wire it into Claude, GPT, OpenClaw, Hermes, or any agent framework in minutes. Returns a URL the agent can pass downstream.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🔒</div>
@@ -503,9 +511,9 @@
 
         <div class="tab-pills" role="tablist">
             <button class="tab-pill active" data-tab="curl">curl</button>
+            <button class="tab-pill" data-tab="mcp">MCP</button>
             <button class="tab-pill" data-tab="python">Python</button>
             <button class="tab-pill" data-tab="js">JavaScript</button>
-            <button class="tab-pill" data-tab="mcp">MCP (Claude)</button>
         </div>
 
         <div class="code-panel active" id="ex-curl">
@@ -593,11 +601,11 @@ console.log(url); <span class="dim">// https://pushpage.link/pages/abc123.html</
         <div class="selfhost-box">
             <div class="selfhost-text">
                 <h2>Prefer to self-host?</h2>
-                <p>pushpage is fully open source. Run your own instance on any server — you only need Docker Compose and a domain. Your data, your infrastructure, your rules.</p>
+                <p>pushpage is fully open source. Run your own instance on any server. You only need Docker Compose and a domain. Your data, your infrastructure, your rules.</p>
             </div>
             <div style="flex-shrink:0; display:flex; gap:12px; flex-wrap:wrap">
                 <a href="/docs#self-hosting" class="btn btn-primary">Self-hosting guide</a>
-                <a href="https://github.com/rgf2004/push-page" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
+                <a href="https://github.com/rgf2004/pushpage" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
             </div>
         </div>
     </div>
@@ -640,8 +648,9 @@ console.log(url); <span class="dim">// https://pushpage.link/pages/abc123.html</
             </div>
             <div class="footer-col">
                 <h4>Links</h4>
-                <a href="https://github.com/rgf2004/push-page" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">GitHub</a>
                 <a href="/mcp">MCP server</a>
+                <a href="/llms.txt">llms.txt</a>
                 <a href="/api/health">Health</a>
             </div>
         </div>
