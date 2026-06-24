@@ -175,3 +175,13 @@ curl -s https://pushpage.link/api/health
 4. Return only the `url` to the user — do not paste the HTML into chat
 
 If a connection error occurs (not a 401/403), mention that the pushpage service may be down and suggest the user check their instance or visit `https://pushpage.link/api/health` to verify the public instance.
+
+## Rate Limiting
+
+`POST /api/pages` is rate-limited. Authenticated users are limited by user ID; guest requests are limited by IP. Admin users are exempt.
+
+- Defaults: **10 requests per minute** for authenticated users, **5 per minute** for guests (by IP)
+- When exceeded: `429 Too Many Requests` with a `Retry-After` header (seconds to wait)
+- All publish responses include: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` (epoch seconds)
+
+If you receive a 429, read the `Retry-After` header and wait that many seconds before retrying.

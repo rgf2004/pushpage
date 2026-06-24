@@ -2,6 +2,7 @@ package me.projects.pushpage.controller;
 
 import me.projects.pushpage.PostgresTestSupport;
 import me.projects.pushpage.filter.ApiKeyAuthFilter;
+import me.projects.pushpage.filter.RateLimitFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -51,11 +52,14 @@ class PageControllerIT extends PostgresTestSupport {
     @Autowired
     ApiKeyAuthFilter apiKeyAuthFilter;
 
+    @Autowired
+    RateLimitFilter rateLimitFilter;
+
     MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).addFilters(apiKeyAuthFilter).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(wac).addFilters(apiKeyAuthFilter, rateLimitFilter).build();
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
         jdbc.update(
@@ -121,6 +125,20 @@ class PageControllerIT extends PostgresTestSupport {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(header().exists("X-Max-File-Size"));
+    }
+
+    @Test
+    void publishPage_returnsRateLimitHeaders() throws Exception {
+        mockMvc.perform(post("/pages")
+                        .header("X-Api-Key", TEST_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"html": "<h1>Hello</h1>", "title": "Test"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("X-RateLimit-Limit"))
+                .andExpect(header().exists("X-RateLimit-Remaining"))
+                .andExpect(header().exists("X-RateLimit-Reset"));
     }
 
     @Test
