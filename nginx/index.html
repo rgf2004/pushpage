@@ -667,37 +667,58 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
     const LINE_MS  = 110;  // pause between command lines
     const NET_MS   = 720;  // simulated network latency
     const RESP_MS  = 65;   // ms between each response line appearing
-    const HOLD_MS  = 3200; // hold on complete output before restarting
-    const FADE_MS  = 500;  // fade-out duration
+    const HOLD_MS  = 3000; // hold on complete output before next scene
+    const FADE_MS  = 450;  // fade-out duration
 
     const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const esc   = s  => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    // Escape text for innerHTML
-    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    // Each line is an array of [cssClass, text] segments. '' = no class (default colour).
-    const CMD = [
-        [['dim','$ '], ['hl','curl'], ['', ' -X POST https://pushpage.link/api/pages \\']],
-        [['', '  -H '], ['str', '"X-Api-Key: $PUSHPAGE_API_KEY"'], ['', ' \\']],
-        [['', '  -H '], ['str', '"Content-Type: application/json"'], ['', ' \\']],
-        [['', "  -d "], ['str', '\'{"html":"<h1>Q2 Report</h1>","title":"Q2 Report"}\'']],
+    // ── Scene definitions ─────────────────────────────────────────────────
+    // Each scene: { cmd: Line[], resp: Line[] }
+    // Line = array of [cssClass, text] segments. '' = default terminal colour.
+    const SCENES = [
+        {
+            // Scene 1: JSON variant with a fake API key
+            cmd: [
+                [['dim','$ '], ['hl','curl'], ['', ' -s -X POST https://pushpage.link/api/pages \\']],
+                [['', '  -H '], ['str', '"X-Api-Key: pp_4a7f3d8e-9b2c-1a6f-0e5d-7c3b2a1f4e8d"'], ['', ' \\']],
+                [['', '  -H '], ['str', '"Content-Type: application/json"'], ['', ' \\']],
+                [['', '  -d '], ['str', '\'{"html":"<h1>Q2 Report</h1>","title":"Q2 Report"}\'']],
+            ],
+            resp: [
+                [],
+                [['cmt', '# 200 OK']],
+                [['', '{']],
+                [['', '  '], ['key', '"url"'],        ['', ': '], ['str', '"https://pushpage.link/pages/8888b3e4.html"'], ['', ',']],
+                [['', '  '], ['key', '"id"'],         ['', ': '], ['str', '"8888b3e4"'],                                  ['', ',']],
+                [['', '  '], ['key', '"expires_at"'], ['', ': '], ['str', '"2026-07-24T07:08:44Z"']],
+                [['', '}']],
+            ],
+        },
+        {
+            // Scene 2: multipart file upload variant
+            cmd: [
+                [['dim','$ '], ['hl','curl'], ['', ' -s -X POST https://pushpage.link/api/pages \\']],
+                [['', '  -H '], ['str', '"X-Api-Key: pp_4a7f3d8e-9b2c-1a6f-0e5d-7c3b2a1f4e8d"'], ['', ' \\']],
+                [['', '  -F '], ['str', '"file=@report.html"']],
+            ],
+            resp: [
+                [],
+                [['cmt', '# 200 OK']],
+                [['', '{']],
+                [['', '  '], ['key', '"url"'],        ['', ': '], ['str', '"https://pushpage.link/pages/c4d5e6f7.html"'], ['', ',']],
+                [['', '  '], ['key', '"id"'],         ['', ': '], ['str', '"c4d5e6f7"'],                                  ['', ',']],
+                [['', '  '], ['key', '"expires_at"'], ['', ': '], ['str', '"2026-07-24T07:08:51Z"']],
+                [['', '}']],
+            ],
+        },
     ];
 
-    const RESP = [
-        [],
-        [['cmt', '# 200 OK — response']],
-        [['', '{']],
-        [['', '  '], ['key', '"url"'], ['', ': '], ['str', '"https://pushpage.link/pages/a1b2c3.html"'], ['', ',']],
-        [['', '  '], ['key', '"id"'],  ['', ': '], ['str', '"a1b2c3"']],
-        [['', '}']],
-    ];
-
-    // Render a fully complete line to HTML
+    // ── Rendering helpers ─────────────────────────────────────────────────
     function renderLine(segs) {
         return segs.map(([c, t]) => c ? `<span class="${c}">${esc(t)}</span>` : esc(t)).join('');
     }
 
-    // Render the first `n` characters of a line (for the typing effect)
     function renderPartial(segs, n) {
         let rem = n, out = '';
         for (const [c, t] of segs) {
@@ -716,55 +737,60 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
     const el = document.getElementById('hero-terminal');
     if (!el) return;
 
-    async function run() {
-        while (true) {
-            // Reset
-            el.style.transition = '';
-            el.style.opacity    = '1';
-            el.textContent      = '';
+    async function playScene({ cmd, resp }) {
+        el.style.transition = '';
+        el.style.opacity    = '1';
+        el.textContent      = '';
 
-            const done = []; // fully typed command lines
+        const done = [];
 
-            // ── Type command ─────────────────────────────────────────────
-            for (let li = 0; li < CMD.length; li++) {
-                const segs = CMD[li];
-                const total = lineLen(segs);
+        // Type each command line
+        for (let li = 0; li < cmd.length; li++) {
+            const segs  = cmd[li];
+            const total = lineLen(segs);
 
-                for (let ci = 1; ci <= total; ci++) {
-                    const prev = done.map(renderLine).join('\n');
-                    el.innerHTML = (prev ? prev + '\n' : '') +
-                                   renderPartial(segs, ci) +
-                                   '<span class="cursor">▌</span>';
-                    await sleep(CHAR_MS);
-                }
-
-                done.push(segs);
-
-                // Brief pause between lines (cursor hidden during gap)
-                if (li < CMD.length - 1) {
-                    el.innerHTML = done.map(renderLine).join('\n');
-                    await sleep(LINE_MS);
-                }
+            for (let ci = 1; ci <= total; ci++) {
+                const prev = done.map(renderLine).join('\n');
+                el.innerHTML = (prev ? prev + '\n' : '') +
+                               renderPartial(segs, ci) +
+                               '<span class="cursor">▌</span>';
+                await sleep(CHAR_MS);
             }
 
-            // ── Wait for "response" (cursor stays visible) ────────────────
-            el.innerHTML = done.map(renderLine).join('\n') + '<span class="cursor">▌</span>';
-            await sleep(NET_MS);
+            done.push(segs);
 
-            // ── Response lines pop in one by one ─────────────────────────
-            let html = done.map(renderLine).join('\n');
+            if (li < cmd.length - 1) {
+                el.innerHTML = done.map(renderLine).join('\n');
+                await sleep(LINE_MS);
+            }
+        }
+
+        // Cursor blinks while "waiting for network"
+        el.innerHTML = done.map(renderLine).join('\n') + '<span class="cursor">▌</span>';
+        await sleep(NET_MS);
+
+        // Response lines pop in
+        let html = done.map(renderLine).join('\n');
+        el.innerHTML = html;
+        for (const line of resp) {
+            await sleep(RESP_MS);
+            html += '\n' + renderLine(line);
             el.innerHTML = html;
-            for (const line of RESP) {
-                await sleep(RESP_MS);
-                html += '\n' + renderLine(line);
-                el.innerHTML = html;
-            }
+        }
 
-            // ── Hold, then fade out and restart ───────────────────────────
-            await sleep(HOLD_MS);
-            el.style.transition = `opacity ${FADE_MS}ms ease`;
-            el.style.opacity    = '0';
-            await sleep(FADE_MS + 80);
+        // Hold, then fade out
+        await sleep(HOLD_MS);
+        el.style.transition = `opacity ${FADE_MS}ms ease`;
+        el.style.opacity    = '0';
+        await sleep(FADE_MS + 80);
+    }
+
+    // Cycle through scenes indefinitely
+    async function run() {
+        let i = 0;
+        while (true) {
+            await playScene(SCENES[i % SCENES.length]);
+            i++;
         }
     }
 
