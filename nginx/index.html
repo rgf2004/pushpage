@@ -102,6 +102,7 @@
         .code-body .str  { color: #7dd3fc; }
         .code-body .key  { color: #a78bfa; }
         .code-body .cmt  { color: #475569; font-style: italic; }
+        .code-body .ok   { color: #4ade80; }
 
         /* Blinking block cursor */
         .cursor {
@@ -710,6 +711,23 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
                 [['', '  '], ['key', '"id"'],         ['', ': '], ['str', '"c4d5e6f7"'],                                  ['', ',']],
                 [['', '  '], ['key', '"expires_at"'], ['', ': '], ['str', '"2026-07-24T07:08:51Z"']],
                 [['', '}']],
+            ],
+        },
+        {
+            // Scene 3: AI agent using pushpage MCP to publish a research report
+            cmd: [
+                [['dim','$ '], ['hl','claude'], ['', ' '], ['str', '"Research TSLA stock price and share a report"']],
+            ],
+            resp: [
+                [],
+                [['key', '◆ '], ['hl', 'WebSearch'], ['dim', '("TSLA stock price today")']],
+                [['ok', '  ✓ '], ['hl', 'TSLA $248.73'], ['dim', '  ▲2.4%  ·  Jun 24 2026']],
+                [],
+                [['key', '◆ '], ['hl', 'mcp:pushpage'], ['dim', ' → '], ['hl', 'publish_page']],
+                [['ok', '  ✓ '], ['dim', 'published → '], ['str', 'https://pushpage.link/pages/a1b2c3d4.html']],
+                [],
+                [['dim', 'Your TSLA report is live:']],
+                [['str', 'https://pushpage.link/pages/a1b2c3d4.html']],
             ],
         },
     ];
