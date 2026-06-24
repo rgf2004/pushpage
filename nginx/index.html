@@ -3,120 +3,653 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>pushpage</title>
+    <title>pushpage — Publish HTML. Get a link.</title>
+    <meta name="description" content="A publishing service for AI agents and developers. POST any HTML and get a shareable URL back in milliseconds.">
     <link rel="stylesheet" href="/static/theme.css">
     <style>
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 60px 24px;
+        /* ── Hero ──────────────────────────────────────────────────────── */
+        .hero {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 96px 32px 80px;
             text-align: center;
         }
 
-        h1 {
-            font-size: clamp(2.4rem, 6vw, 4rem);
+        .hero-badge { margin-bottom: 28px; }
+
+        .hero h1 {
+            font-size: clamp(2.6rem, 6vw, 4.2rem);
             font-weight: 800;
-            line-height: 1.15;
-            letter-spacing: -.03em;
-            margin-bottom: 20px;
+            line-height: 1.1;
+            letter-spacing: -.04em;
+            color: var(--text);
+            margin-bottom: 22px;
         }
 
-        h1 em {
-            font-style: normal;
-            color: var(--accent);
-        }
+        .hero h1 .accent { color: var(--accent); }
 
-        .subtitle {
-            font-size: 1.1rem;
+        .hero-sub {
+            font-size: clamp(1rem, 2.5vw, 1.15rem);
             color: var(--text-muted);
-            max-width: 480px;
-            line-height: 1.6;
-            margin-bottom: 44px;
+            max-width: 520px;
+            margin: 0 auto 40px;
+            line-height: 1.65;
         }
 
-        .actions {
+        .hero-actions {
             display: flex;
             gap: 12px;
-            flex-wrap: wrap;
             justify-content: center;
-            margin-bottom: 72px;
+            flex-wrap: wrap;
+            margin-bottom: 64px;
         }
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            width: 100%;
-            max-width: 780px;
+        /* ── Hero code preview ─────────────────────────────────────────── */
+        .hero-code {
+            max-width: 640px;
+            margin: 0 auto;
+            text-align: left;
         }
 
-        .card-icon {
-            font-size: 1.5rem;
+        .code-window {
+            background: #0f172a;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,.08);
+        }
+
+        .code-toolbar {
+            background: #1e293b;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+
+        .code-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .code-dot.red    { background: #ef4444; }
+        .code-dot.yellow { background: #f59e0b; }
+        .code-dot.green  { background: #10b981; }
+
+        .code-label {
+            margin-left: 8px;
+            font-family: var(--font-mono);
+            font-size: .75rem;
+            color: #475569;
+        }
+
+        .code-body {
+            padding: 24px;
+            font-family: var(--font-mono);
+            font-size: .82rem;
+            color: #94a3b8;
+            line-height: 1.8;
+        }
+
+        /* ── Section wrapper ───────────────────────────────────────────── */
+        .section {
+            padding: 80px 32px;
+        }
+
+        .section-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-size: .78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--accent);
             margin-bottom: 12px;
         }
 
-        .snippet {
-            max-width: 600px;
-            width: 100%;
-            margin-bottom: 48px;
+        .section-title {
+            font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+            font-weight: 800;
+            letter-spacing: -.03em;
+            color: var(--text);
+            margin-bottom: 14px;
+            line-height: 1.2;
+        }
+
+        .section-sub {
+            font-size: 1rem;
+            color: var(--text-muted);
+            max-width: 520px;
+            line-height: 1.65;
+            margin-bottom: 52px;
+        }
+
+        /* ── How it works ──────────────────────────────────────────────── */
+        .how-section { background: var(--bg-card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+        }
+
+        .step {
+            padding: 40px 36px;
+            position: relative;
+        }
+
+        .step:not(:last-child) {
+            border-right: 1px solid var(--border);
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-bg);
+            border: 1px solid rgba(37,99,235,.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .8rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .step h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .step p {
+            font-size: .875rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .step code {
+            font-family: var(--font-mono);
+            font-size: .8rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 6px;
+            color: var(--accent-code);
+        }
+
+        /* ── Features grid ─────────────────────────────────────────────── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow .2s, border-color .2s;
+        }
+
+        .feature-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--border-soft);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-bg);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+
+        .feature-card h3 {
+            font-size: .95rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .feature-card p {
+            font-size: .85rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* ── Code examples section ─────────────────────────────────────── */
+        .examples-section { background: #0f172a; }
+
+        .examples-section .section-label { color: #7dd3fc; }
+        .examples-section .section-title { color: #f1f5f9; }
+        .examples-section .section-sub   { color: #64748b; }
+
+        .tab-pills {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,.05);
+            border-radius: var(--radius);
+            padding: 4px;
+            width: fit-content;
+        }
+
+        .tab-pill {
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: .82rem;
+            font-weight: 500;
+            color: #64748b;
+            cursor: pointer;
+            border: none;
+            background: none;
+            transition: background .15s, color .15s;
+        }
+
+        .tab-pill.active {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+
+        .code-panel { display: none; }
+        .code-panel.active { display: block; }
+
+        /* ── Self-host callout ─────────────────────────────────────────── */
+        .selfhost-box {
+            background: var(--accent-bg);
+            border: 1px solid rgba(37,99,235,.2);
+            border-radius: var(--radius-lg);
+            padding: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 32px;
+        }
+
+        .selfhost-text h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            margin-bottom: 8px;
+        }
+
+        .selfhost-text p {
+            color: var(--text-muted);
+            font-size: .9rem;
+            max-width: 440px;
+            line-height: 1.6;
+        }
+
+        /* ── CTA section ───────────────────────────────────────────────── */
+        .cta-section {
+            text-align: center;
+        }
+
+        .cta-box {
+            background: var(--text);
+            border-radius: 20px;
+            padding: 80px 40px;
+            color: white;
+        }
+
+        .cta-box h2 {
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 800;
+            letter-spacing: -.04em;
+            margin-bottom: 16px;
+            color: white;
+        }
+
+        .cta-box p {
+            color: #94a3b8;
+            font-size: 1rem;
+            margin-bottom: 36px;
+            max-width: 440px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.65;
+        }
+
+        .cta-box .btn-primary {
+            background: #2563eb;
+            font-size: 1rem;
+            padding: 14px 32px;
+        }
+
+        .cta-box .btn-secondary {
+            background: rgba(255,255,255,.08);
+            color: #94a3b8;
+            border-color: rgba(255,255,255,.12);
+            font-size: 1rem;
+            padding: 14px 32px;
+        }
+
+        .cta-box .btn-secondary:hover { background: rgba(255,255,255,.12); color: white; }
+
+        .cta-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* ── Responsive ────────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .hero { padding: 64px 24px 56px; }
+            .section { padding: 56px 24px; }
+            .steps { grid-template-columns: 1fr; }
+            .step:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
+            .selfhost-box { flex-direction: column; text-align: center; padding: 32px 24px; }
+            .selfhost-text p { max-width: 100%; }
+            .cta-box { padding: 56px 24px; border-radius: 16px; }
         }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="logo">push<span>page</span></div>
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link">Docs</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-ghost btn-sm">Sign in</a>
+            <a href="/dashboard" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+    </div>
 </header>
 
-<main>
-    <div class="badge">homelab · self-hosted</div>
+<!-- ── Hero ───────────────────────────────────────────────────────────── -->
+<section class="hero">
+    <div class="badge hero-badge">Open source · Self-hostable</div>
 
-    <h1>Post HTML.<br>Get a <em>URL</em>.</h1>
+    <h1>Publish HTML.<br>Get a <span class="accent">link</span>.</h1>
 
-    <p class="subtitle">
-        A lightweight publishing service for your homelab. Send HTML from any AI agent
-        or script and get a shareable link back — no browser needed.
+    <p class="hero-sub">
+        A publishing service for AI agents and developers.
+        POST any HTML — get a shareable URL back in milliseconds. No browser needed.
     </p>
 
-    <div class="snippet">
-        <span class="dim">POST</span> /api/publish
-        <span class="dim">&nbsp;·&nbsp;</span>
-        <span class="dim">{ "title":</span> <span class="str">"My Report"</span><span class="dim">, "html": "..." }</span>
+    <div class="hero-actions">
+        <a href="/dashboard" class="btn btn-primary btn-lg">Get started free</a>
+        <a href="/docs" class="btn btn-secondary btn-lg">Read the docs →</a>
     </div>
 
-    <div class="actions">
-        <a href="/dashboard" class="btn btn-primary">Dashboard</a>
-        <a href="/api/swagger-ui/index.html" class="btn btn-secondary">API docs</a>
-    </div>
-
-    <div class="cards">
-        <div class="card">
-            <div class="card-icon">📨</div>
-            <h3>POST to publish</h3>
-            <p>Send any HTML string via JSON. Bare snippets are auto-wrapped in a clean shell.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon">⚡️</div>
-            <h3>Instant URL</h3>
-            <p>Files are served directly by nginx. No build step, no delay.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon">🗄️</div>
-            <h3>Persistent</h3>
-            <p>Pages survive restarts. Metadata lives in SQLite, files in a named volume.</p>
-        </div>
-        <div class="card">
-            <div class="card-icon">🤖</div>
-            <h3>Agent-ready</h3>
-            <p>Designed to be called by AI agents. Get the URL back, send it anywhere.</p>
+    <div class="hero-code">
+        <div class="code-window">
+            <div class="code-toolbar">
+                <div class="code-dot red"></div>
+                <div class="code-dot yellow"></div>
+                <div class="code-dot green"></div>
+                <span class="code-label">terminal</span>
+            </div>
+            <div class="code-body">
+<span class="dim">$ </span><span class="hl">curl</span> -X POST https://pushpage.link/api/pages \<br>
+&nbsp; -H <span class="str">"X-Api-Key: $PUSHPAGE_API_KEY"</span> \<br>
+&nbsp; -H <span class="str">"Content-Type: application/json"</span> \<br>
+&nbsp; -d <span class="str">'{"html": "&lt;h1&gt;Hello!&lt;/h1&gt;", "title": "My Report"}'</span><br>
+<br>
+<span class="dim"># Response</span><br>
+{<br>
+&nbsp; <span class="key">"url"</span>: <span class="str">"https://pushpage.link/pages/abc123.html"</span>,<br>
+&nbsp; <span class="key">"id"</span>: <span class="str">"abc123"</span><br>
+}
+            </div>
         </div>
     </div>
-</main>
+</section>
 
-<footer>pushpage · homelab internal</footer>
+<!-- ── How it works ───────────────────────────────────────────────────── -->
+<section class="how-section section">
+    <div class="section-inner">
+        <div style="text-align:center; margin-bottom:52px">
+            <div class="section-label">Simple by design</div>
+            <h2 class="section-title">How it works</h2>
+            <p class="section-sub" style="margin:0 auto">Three steps, zero configuration on the client side.</p>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Sign up &amp; get an API key</h3>
+                <p>Create an account in the dashboard, then generate an API key under the Account tab. Your key looks like <code>pp_abc123…</code></p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>POST your HTML</h3>
+                <p>Send a <code>POST /api/pages</code> request with your HTML content — as JSON or a raw file upload. Bare snippets are auto-wrapped in a clean shell.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Share the URL</h3>
+                <p>The response includes a permanent shareable URL. Drop it in a message, an email, or any workflow — no additional hosting required.</p>
+            </div>
+        </div>
+    </div>
+</section>
 
+<!-- ── Features ───────────────────────────────────────────────────────── -->
+<section class="section">
+    <div class="section-inner">
+        <div class="section-label">Why pushpage</div>
+        <h2 class="section-title">Everything you need,<br>nothing you don't</h2>
+        <p class="section-sub">Built for the moments when an AI agent or script produces rich output and needs a URL to link back to — not a file attachment.</p>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Instant publishing</h3>
+                <p>Pages are served directly by nginx. No build step, no processing delay — the URL is live the moment you get it back.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>Agent-ready</h3>
+                <p>REST API and MCP server included. Wire it into Claude, GPT, or any agent framework in minutes. Returns a URL the agent can pass downstream.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Authenticated pages</h3>
+                <p>Logged-in pages persist for 30 days and are managed from your dashboard. Guest pages are ephemeral and expire after 30 minutes.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🗄️</div>
+                <h3>Persistent storage</h3>
+                <p>Pages survive restarts. Metadata lives in PostgreSQL, files in a named Docker volume. Built-in cleanup job removes expired pages automatically.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📁</div>
+                <h3>File uploads</h3>
+                <p>Prefer uploading a file? Send <code>multipart/form-data</code> instead of JSON. Perfect for piping reports from CI or scripts directly.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏠</div>
+                <h3>Self-hostable</h3>
+                <p>Fully open source. Run your own instance with a single <code>docker compose up</code>. Bring your own domain and keep your data on your hardware.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Code examples ──────────────────────────────────────────────────── -->
+<section class="section examples-section">
+    <div class="section-inner">
+        <div class="section-label">Integrations</div>
+        <h2 class="section-title">Works anywhere</h2>
+        <p class="section-sub">A standard HTTP call is all it takes. Use curl, any HTTP library, or the MCP server.</p>
+
+        <div class="tab-pills" role="tablist">
+            <button class="tab-pill active" data-tab="curl">curl</button>
+            <button class="tab-pill" data-tab="python">Python</button>
+            <button class="tab-pill" data-tab="js">JavaScript</button>
+            <button class="tab-pill" data-tab="mcp">MCP (Claude)</button>
+        </div>
+
+        <div class="code-panel active" id="ex-curl">
+            <div class="code-window">
+                <div class="code-body">
+<span class="dim"># JSON variant</span><br>
+<span class="hl">curl</span> -s -X POST https://pushpage.link/api/pages \<br>
+&nbsp; -H <span class="str">"X-Api-Key: $PUSHPAGE_API_KEY"</span> \<br>
+&nbsp; -H <span class="str">"Content-Type: application/json"</span> \<br>
+&nbsp; -d <span class="str">'{"html":"&lt;h1&gt;Report&lt;/h1&gt;&lt;p&gt;Done!&lt;/p&gt;","title":"My Report"}'</span><br>
+<br>
+<span class="dim"># File upload variant</span><br>
+<span class="hl">curl</span> -s -X POST https://pushpage.link/api/pages \<br>
+&nbsp; -H <span class="str">"X-Api-Key: $PUSHPAGE_API_KEY"</span> \<br>
+&nbsp; -F <span class="str">"file=@report.html"</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-panel" id="ex-python">
+            <div class="code-window">
+                <div class="code-body">
+<span class="key">import</span> <span class="hl">requests</span><br>
+<br>
+url = requests.post(<br>
+&nbsp; <span class="str">"https://pushpage.link/api/pages"</span>,<br>
+&nbsp; headers={<span class="str">"X-Api-Key"</span>: api_key},<br>
+&nbsp; json={<br>
+&nbsp; &nbsp; <span class="str">"html"</span>: <span class="str">"&lt;h1&gt;Report&lt;/h1&gt;"</span>,<br>
+&nbsp; &nbsp; <span class="str">"title"</span>: <span class="str">"My Report"</span>,<br>
+&nbsp; },<br>
+).json()[<span class="str">"url"</span>]<br>
+<br>
+<span class="hl">print</span>(url)  <span class="dim"># https://pushpage.link/pages/abc123.html</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-panel" id="ex-js">
+            <div class="code-window">
+                <div class="code-body">
+<span class="key">const</span> { url } = <span class="key">await</span> fetch(<span class="str">"https://pushpage.link/api/pages"</span>, {<br>
+&nbsp; method: <span class="str">"POST"</span>,<br>
+&nbsp; headers: {<br>
+&nbsp; &nbsp; <span class="str">"X-Api-Key"</span>: apiKey,<br>
+&nbsp; &nbsp; <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>,<br>
+&nbsp; },<br>
+&nbsp; body: JSON.stringify({<br>
+&nbsp; &nbsp; html: <span class="str">"&lt;h1&gt;Report&lt;/h1&gt;"</span>,<br>
+&nbsp; &nbsp; title: <span class="str">"My Report"</span>,<br>
+&nbsp; }),<br>
+}).then(r =&gt; r.json());<br>
+<br>
+console.log(url); <span class="dim">// https://pushpage.link/pages/abc123.html</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-panel" id="ex-mcp">
+            <div class="code-window">
+                <div class="code-body">
+<span class="dim"># Add pushpage to your Claude MCP config</span><br>
+{<br>
+&nbsp; <span class="key">"mcpServers"</span>: {<br>
+&nbsp; &nbsp; <span class="key">"pushpage"</span>: {<br>
+&nbsp; &nbsp; &nbsp; <span class="key">"type"</span>: <span class="str">"streamable-http"</span>,<br>
+&nbsp; &nbsp; &nbsp; <span class="key">"url"</span>: <span class="str">"https://pushpage.link/mcp"</span>,<br>
+&nbsp; &nbsp; &nbsp; <span class="key">"headers"</span>: {<br>
+&nbsp; &nbsp; &nbsp; &nbsp; <span class="key">"X-Api-Key"</span>: <span class="str">"&lt;your-api-key&gt;"</span><br>
+&nbsp; &nbsp; &nbsp; }<br>
+&nbsp; &nbsp; }<br>
+&nbsp; }<br>
+}<br>
+<br>
+<span class="dim"># Claude can now call publish_page, list_pages, delete_page</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Self-hosting callout ────────────────────────────────────────────── -->
+<section class="section">
+    <div class="section-inner">
+        <div class="selfhost-box">
+            <div class="selfhost-text">
+                <h2>Prefer to self-host?</h2>
+                <p>pushpage is fully open source. Run your own instance on any server — you only need Docker Compose and a domain. Your data, your infrastructure, your rules.</p>
+            </div>
+            <div style="flex-shrink:0; display:flex; gap:12px; flex-wrap:wrap">
+                <a href="/docs#self-hosting" class="btn btn-primary">Self-hosting guide</a>
+                <a href="https://github.com/rgf2004/push-page" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── CTA ─────────────────────────────────────────────────────────────── -->
+<section class="section cta-section">
+    <div class="section-inner">
+        <div class="cta-box">
+            <h2>Start publishing today</h2>
+            <p>Sign up for free and publish your first page in under a minute. No credit card required.</p>
+            <div class="cta-actions">
+                <a href="/dashboard" class="btn btn-primary">Create free account</a>
+                <a href="/docs" class="btn btn-secondary">Read the docs →</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────── -->
+<footer>
+    <div class="footer-inner">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">push<span>page</span></a>
+                <p>A lightweight HTML publishing service for AI agents and developers.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/api/swagger-ui/index.html">API reference</a>
+                <a href="/docs">Documentation</a>
+            </div>
+            <div class="footer-col">
+                <h4>Docs</h4>
+                <a href="/docs#quick-start">Quick start</a>
+                <a href="/docs#authentication">Authentication</a>
+                <a href="/docs#self-hosting">Self-hosting</a>
+                <a href="/docs#configuration">Configuration</a>
+            </div>
+            <div class="footer-col">
+                <h4>Links</h4>
+                <a href="https://github.com/rgf2004/push-page" target="_blank" rel="noopener">GitHub</a>
+                <a href="/mcp">MCP server</a>
+                <a href="/api/health">Health</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 pushpage &nbsp;·&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
+
+<script>
+document.querySelectorAll('.tab-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('ex-' + btn.dataset.tab).classList.add('active');
+    });
+});
+</script>
 </body>
 </html>

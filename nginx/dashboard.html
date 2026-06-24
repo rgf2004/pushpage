@@ -18,22 +18,24 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 40px 24px;
+            padding: 48px 24px;
         }
 
         .auth-box {
             background: var(--bg-card);
-            border: 1px solid var(--border-soft);
+            border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 40px;
             width: 100%;
             max-width: 420px;
+            box-shadow: var(--shadow-md);
         }
 
         .auth-box h2 {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 8px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            margin-bottom: 6px;
         }
 
         .auth-box p {
@@ -53,61 +55,24 @@
             color: var(--accent);
             cursor: pointer;
             text-decoration: none;
+            font-weight: 500;
         }
 
         .auth-switch a:hover { text-decoration: underline; }
 
-        .field { margin-bottom: 16px; }
-
-        .field label {
-            display: block;
-            font-size: .82rem;
-            font-weight: 500;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
-        .field input {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border-soft);
-            border-radius: var(--radius);
-            padding: 9px 14px;
-            font-size: .92rem;
-            color: var(--text);
-            font-family: inherit;
-            outline: none;
-            transition: border-color .15s;
-        }
-
-        .field input:focus { border-color: var(--accent); }
-
-        .field .hint {
-            font-size: .78rem;
-            color: var(--text-dim);
-            margin-top: 4px;
-        }
-
         .auth-error {
-            background: rgba(218, 54, 51, .12);
-            border: 1px solid var(--red-border);
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
             border-radius: var(--radius);
             padding: 9px 14px;
             font-size: .85rem;
-            color: var(--red-border);
+            color: var(--red);
             margin-bottom: 16px;
             display: none;
         }
 
         /* ── Dashboard shell ──────────────────────────────────────────── */
         #dashboard-screen { display: none; flex: 1; flex-direction: column; }
-
-        .dash-header-right {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
 
         .user-chip {
             font-size: .82rem;
@@ -122,6 +87,7 @@
             padding: 0 40px;
             display: flex;
             gap: 4px;
+            background: var(--bg-card);
         }
 
         .tab-btn {
@@ -131,7 +97,7 @@
             color: var(--text-muted);
             font-size: .9rem;
             font-weight: 500;
-            padding: 12px 16px;
+            padding: 14px 16px;
             cursor: pointer;
             transition: color .15s, border-color .15s;
             margin-bottom: -1px;
@@ -153,38 +119,9 @@
 
         .panel-header h2 {
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: -.02em;
         }
-
-        .table-wrap {
-            overflow-x: auto;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: .875rem;
-        }
-
-        thead th {
-            background: var(--bg-card);
-            color: var(--text-muted);
-            font-weight: 500;
-            font-size: .78rem;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-            padding: 10px 16px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-
-        tbody tr { border-bottom: 1px solid var(--border); }
-        tbody tr:last-child { border-bottom: none; }
-        tbody tr:hover { background: rgba(255,255,255,.03); }
-
-        td { padding: 12px 16px; vertical-align: middle; }
 
         .page-title {
             font-weight: 500;
@@ -194,8 +131,9 @@
 
         .page-id {
             font-family: var(--font-mono);
-            font-size: .78rem;
+            font-size: .75rem;
             color: var(--text-dim);
+            margin-top: 2px;
         }
 
         .page-url a {
@@ -210,7 +148,7 @@
 
         .empty-state {
             text-align: center;
-            padding: 60px 24px;
+            padding: 72px 24px;
             color: var(--text-muted);
         }
 
@@ -218,8 +156,9 @@
 
         .loading-state {
             text-align: center;
-            padding: 60px 24px;
+            padding: 72px 24px;
             color: var(--text-dim);
+            font-size: .9rem;
         }
 
         /* ── Pagination ───────────────────────────────────────────────── */
@@ -234,14 +173,18 @@
         }
 
         .pagination button {
-            background: var(--bg-input);
+            background: var(--bg-card);
             border: 1px solid var(--border-soft);
             border-radius: var(--radius);
             color: var(--text);
             padding: 5px 12px;
             font-size: .82rem;
             cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: background .15s;
         }
+
+        .pagination button:hover { background: var(--bg-input); }
 
         .pagination button:disabled {
             opacity: .4;
@@ -263,10 +206,10 @@
         }
 
         .info-label {
-            font-size: .75rem;
-            font-weight: 500;
+            font-size: .72rem;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: .05em;
+            letter-spacing: .06em;
             color: var(--text-dim);
         }
 
@@ -282,14 +225,15 @@
             border-radius: 20px;
             padding: 2px 12px;
             font-size: .78rem;
+            font-weight: 500;
             color: var(--text-muted);
         }
 
-        .role-badge.admin { border-color: var(--accent); color: var(--accent); }
+        .role-badge.admin { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
         /* ── API key section in Account tab ──────────────────────────── */
         .api-key-section {
-            background: var(--bg-card);
+            background: var(--bg-input);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 20px;
@@ -309,7 +253,7 @@
         }
 
         .api-key-revealed {
-            background: var(--bg-input);
+            background: var(--bg-card);
             border: 1px solid var(--accent);
             border-radius: var(--radius);
             padding: 12px 14px;
@@ -318,35 +262,36 @@
             color: var(--accent-code);
             word-break: break-all;
             margin-bottom: 10px;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.08);
         }
 
         /* ── Guest page highlight ────────────────────────────────────── */
         .guest-badge {
             display: inline-block;
-            background: rgba(234, 179, 8, .15);
-            border: 1px solid rgba(234, 179, 8, .4);
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
             border-radius: 20px;
             padding: 1px 8px;
             font-size: .72rem;
             font-weight: 500;
-            color: #ca8a04;
+            color: #92400e;
             margin-left: 6px;
             vertical-align: middle;
         }
 
-        tr.guest-row { background: rgba(234, 179, 8, .04); }
-        tr.guest-row:hover { background: rgba(234, 179, 8, .08); }
+        tr.guest-row { background: #fffbeb; }
+        tr.guest-row:hover { background: #fef3c7; }
 
         /* ── Admin users table ────────────────────────────────────────── */
         .status-dot {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             margin-right: 6px;
         }
 
-        .status-dot.active { background: var(--green-dot); }
+        .status-dot.active   { background: var(--green-dot); }
         .status-dot.inactive { background: var(--text-dim); }
 
         .user-actions { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -355,29 +300,31 @@
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,.65);
+            background: rgba(0,0,0,.4);
             display: flex;
             align-items: flex-start;
             justify-content: center;
             z-index: 100;
             padding: 24px;
             overflow-y: auto;
+            backdrop-filter: blur(2px);
         }
 
         .modal {
             background: var(--bg-card);
-            border: 1px solid var(--border-soft);
+            border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 32px;
             width: 100%;
             max-width: 440px;
             margin: auto;
+            box-shadow: var(--shadow-lg);
         }
 
         .modal h3 {
             font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
         }
 
         .modal-actions {
@@ -424,13 +371,12 @@
             position: fixed;
             bottom: 24px;
             right: 24px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-soft);
+            background: var(--text);
             border-radius: var(--radius);
             padding: 12px 20px;
             font-size: .875rem;
-            color: var(--text);
-            box-shadow: 0 4px 20px rgba(0,0,0,.4);
+            color: #f1f5f9;
+            box-shadow: var(--shadow-lg);
             transform: translateY(80px);
             opacity: 0;
             transition: transform .25s, opacity .25s;
@@ -439,15 +385,14 @@
         }
 
         #toast.show { transform: translateY(0); opacity: 1; }
-        #toast.success { border-color: var(--green-border); }
-        #toast.error   { border-color: var(--red-border); }
+        #toast.success { border-left: 3px solid var(--green-dot); }
+        #toast.error   { border-left: 3px solid #f87171; }
 
         /* ── Responsive ───────────────────────────────────────────────── */
         @media (max-width: 640px) {
-            header { padding: 16px 20px; }
             .tabs-bar { padding: 0 16px; }
             .tab-panel { padding: 24px 16px; }
-            .tab-btn { padding: 10px 10px; font-size: .82rem; }
+            .tab-btn { padding: 12px 10px; font-size: .82rem; }
             thead th, td { padding: 10px 10px; }
             .auth-box { padding: 28px 20px; }
         }
@@ -455,11 +400,20 @@
 </head>
 <body>
 
-<header>
-    <a href="/" class="logo">push<span>page</span></a>
-    <div id="dash-user-area" class="dash-header-right" style="display:none">
-        <span class="user-chip">logged in as <strong id="hdr-username"></strong></span>
-        <button class="btn btn-secondary btn-sm" id="logout-btn">Sign out</button>
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link">Docs</a>
+        </nav>
+        <div class="header-actions" id="dash-user-area" style="display:none">
+            <span class="user-chip">Signed in as <strong id="hdr-username"></strong></span>
+            <button class="btn btn-secondary btn-sm" id="logout-btn">Sign out</button>
+        </div>
+        <div class="header-actions" id="dash-guest-actions">
+            <a href="#" class="btn btn-ghost btn-sm" id="go-signup-hdr">Sign up</a>
+            <a href="#" class="btn btn-primary btn-sm" id="go-login-hdr">Sign in</a>
+        </div>
     </div>
 </header>
 
@@ -467,7 +421,7 @@
 <div id="login-screen" class="auth-screen">
     <div class="auth-box">
         <h2>Sign in</h2>
-        <p>Enter your credentials to access the dashboard.</p>
+        <p>Welcome back — enter your credentials to continue.</p>
         <div id="login-error" class="auth-error"></div>
         <div class="field">
             <label for="login-email">Email</label>
@@ -561,12 +515,11 @@
                 <h3>API Key</h3>
                 <p>Generate an API key for programmatic access. Rotating it invalidates the previous key immediately.</p>
                 <div id="acc-key-box" style="display:none">
-                    <div class="key-reveal-label">Your API key</div>
+                    <div class="key-reveal-label">Your API key — copy it now</div>
                     <div class="api-key-revealed" id="acc-key-value"></div>
-                    <button class="btn btn-secondary btn-sm" id="acc-copy-key-btn">Copy</button>
+                    <button class="btn btn-secondary btn-sm" id="acc-copy-key-btn">Copy key</button>
                     <p style="margin-top:10px;font-size:.82rem;color:var(--text-muted)">
-                        Copy this key to a safe place now — it will not appear again.<br>
-                        If you lose it, you can always generate a new one here, but the old key will be invalidated immediately.
+                        This key will not appear again. Generating a new key will invalidate this one.
                     </p>
                 </div>
                 <button class="btn btn-secondary btn-sm" id="rotate-key-btn" style="margin-top:4px">Generate / Rotate API Key</button>
@@ -646,8 +599,6 @@
 <!-- Toast -->
 <div id="toast"></div>
 
-<footer>pushpage · homelab internal</footer>
-
 <script>
 const PAGE_SIZE = 20;
 
@@ -692,12 +643,14 @@ function hideModal(id) { document.getElementById(id).style.display = 'none'; }
 function showScreen(name) {
     ['login-screen', 'signup-screen', 'dashboard-screen'].forEach(id => {
         const el = document.getElementById(id);
-        if (id === name + '-screen' || id === name) {
-            el.style.display = id === 'dashboard-screen' ? 'flex' : 'flex';
-        } else {
-            el.style.display = 'none';
-        }
+        el.style.display = (id === name + '-screen' || id === name) ? 'flex' : 'none';
     });
+}
+
+// ── Header guest/user state ───────────────────────────────────────────────
+function setHeaderAuth(isLoggedIn) {
+    document.getElementById('dash-user-area').style.display    = isLoggedIn ? 'flex' : 'none';
+    document.getElementById('dash-guest-actions').style.display = isLoggedIn ? 'none' : 'flex';
 }
 
 // ── Screen navigation ─────────────────────────────────────────────────────
@@ -707,6 +660,14 @@ document.getElementById('go-signup').addEventListener('click', () => {
 });
 document.getElementById('go-login').addEventListener('click', () => {
     document.getElementById('signup-error').style.display = 'none';
+    showScreen('login');
+});
+document.getElementById('go-signup-hdr').addEventListener('click', e => {
+    e.preventDefault();
+    showScreen('signup');
+});
+document.getElementById('go-login-hdr').addEventListener('click', e => {
+    e.preventDefault();
     showScreen('login');
 });
 
@@ -740,7 +701,6 @@ async function signUp() {
             errEl.textContent = d.message || 'Invalid email or password too short (minimum 8 characters).';
             errEl.style.display = 'block';
         } else if (r.status === 201) {
-            // Pre-fill login
             document.getElementById('login-email').value = email;
             document.getElementById('login-password').value = '';
             toast('Account created — please sign in.');
@@ -824,7 +784,7 @@ async function loadDashboard() {
     allPages = pages;
 
     showScreen('dashboard');
-    document.getElementById('dash-user-area').style.display = 'flex';
+    setHeaderAuth(true);
     document.getElementById('hdr-username').textContent = email;
     document.getElementById('login-btn').textContent = 'Sign in';
 
@@ -853,13 +813,10 @@ document.getElementById('logout-btn').addEventListener('click', () => {
     allPages = [];
     pagesPage = 0;
     document.getElementById('dashboard-screen').style.display = 'none';
-    document.getElementById('dash-user-area').style.display = 'none';
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-password').value = '';
-    document.getElementById('login-btn').textContent = 'Sign in';
     document.getElementById('pages-heading').textContent = 'Your pages';
     document.getElementById('admin-tab-btn').style.display = 'none';
     switchTab('pages');
+    setHeaderAuth(false);
     showScreen('login');
 });
 
@@ -1017,7 +974,7 @@ async function loadUsers() {
                 <td>
                     <div class="user-actions">
                         ${isActive && !u.admin && !isSelf ? `<button class="btn btn-secondary btn-sm" data-promote="${esc(String(u.id))}" data-puname="${esc(u.email || u.id)}">Promote</button>` : ''}
-                        ${isActive && !isSelf ? `<button class="btn btn-secondary btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.email || u.id)}">Deactivate</button>` : ''}
+                        ${isActive && !isSelf ? `<button class="btn btn-danger btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.email || u.id)}">Deactivate</button>` : ''}
                     </div>
                 </td>
             `;
@@ -1109,8 +1066,11 @@ function esc(s) {
         } catch {
             sessionStorage.removeItem('pp_jwt');
             jwt = '';
+            setHeaderAuth(false);
             showScreen('login');
         }
+    } else {
+        setHeaderAuth(false);
     }
 })();
 </script>
