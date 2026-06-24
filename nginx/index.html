@@ -681,7 +681,7 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
             // Scene 1: JSON variant with a fake API key
             cmd: [
                 [['dim','$ '], ['hl','curl'], ['', ' -s -X POST https://pushpage.link/api/pages \\']],
-                [['', '  -H '], ['str', '"X-Api-Key: pp_4a7f3d8e-9b2c-1a6f-0e5d-7c3b2a1f4e8d"'], ['', ' \\']],
+                [['', '  -H '], ['str', '"X-Api-Key: pp_c15236c81a6c447390963b2e6d2ac158"'], ['', ' \\']],
                 [['', '  -H '], ['str', '"Content-Type: application/json"'], ['', ' \\']],
                 [['', '  -d '], ['str', '\'{"html":"<h1>Q2 Report</h1>","title":"Q2 Report"}\'']],
             ],
@@ -699,7 +699,7 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
             // Scene 2: multipart file upload variant
             cmd: [
                 [['dim','$ '], ['hl','curl'], ['', ' -s -X POST https://pushpage.link/api/pages \\']],
-                [['', '  -H '], ['str', '"X-Api-Key: pp_4a7f3d8e-9b2c-1a6f-0e5d-7c3b2a1f4e8d"'], ['', ' \\']],
+                [['', '  -H '], ['str', '"X-Api-Key: pp_c15236c81a6c447390963b2e6d2ac158"'], ['', ' \\']],
                 [['', '  -F '], ['str', '"file=@report.html"']],
             ],
             resp: [
