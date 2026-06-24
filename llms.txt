@@ -40,8 +40,6 @@ Pass the key in every authenticated request as `X-Api-Key: $PUSHPAGE_API_KEY`.
 
 **Exception — guest publishing:** `POST /api/pages` accepts requests with no API key. The page is created as a guest page that auto-expires after 30 minutes. Use this for quick one-off shares when no credentials are available.
 
-**JWT alternative:** if you have the user's email and password, you can obtain a short-lived JWT (24 h) via `POST /api/auth/login` and pass it as `Authorization: Bearer <jwt>`. API keys are preferred for agent use — they are long-lived and do not require re-authentication.
-
 ## New user setup
 
 If the user does not have an account yet, create one:
