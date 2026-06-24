@@ -91,7 +91,26 @@
             font-size: .82rem;
             color: #94a3b8;
             line-height: 1.8;
+            white-space: pre;
+            overflow-x: auto;
+            min-height: 168px;
         }
+
+        /* Terminal syntax colours */
+        .code-body .dim  { color: #475569; }
+        .code-body .hl   { color: #f1f5f9; }
+        .code-body .str  { color: #7dd3fc; }
+        .code-body .key  { color: #a78bfa; }
+        .code-body .cmt  { color: #475569; font-style: italic; }
+
+        /* Blinking block cursor */
+        .cursor {
+            display: inline-block;
+            color: #7dd3fc;
+            animation: cur-blink .75s step-end infinite;
+            font-style: normal;
+        }
+        @keyframes cur-blink { 50% { opacity: 0; } }
 
         /* ── Section wrapper ───────────────────────────────────────────── */
         .section {
@@ -399,18 +418,7 @@
                 <div class="code-dot green"></div>
                 <span class="code-label">terminal</span>
             </div>
-            <div class="code-body">
-<span class="dim">$ </span><span class="hl">curl</span> -X POST https://pushpage.link/api/pages \<br>
-&nbsp; -H <span class="str">"X-Api-Key: $PUSHPAGE_API_KEY"</span> \<br>
-&nbsp; -H <span class="str">"Content-Type: application/json"</span> \<br>
-&nbsp; -d <span class="str">'{"html": "&lt;h1&gt;Hello!&lt;/h1&gt;", "title": "My Report"}'</span><br>
-<br>
-<span class="dim"># Response</span><br>
-{<br>
-&nbsp; <span class="key">"url"</span>: <span class="str">"https://pushpage.link/pages/abc123.html"</span>,<br>
-&nbsp; <span class="key">"id"</span>: <span class="str">"abc123"</span><br>
-}
-            </div>
+            <div class="code-body" id="hero-terminal"></div>
         </div>
     </div>
 </section>
@@ -643,6 +651,7 @@ console.log(url); <span class="dim">// https://pushpage.link/pages/abc123.html</
 </footer>
 
 <script>
+// ── Code example tab switcher ─────────────────────────────────────────────
 document.querySelectorAll('.tab-pill').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
@@ -651,6 +660,116 @@ document.querySelectorAll('.tab-pill').forEach(btn => {
         document.getElementById('ex-' + btn.dataset.tab).classList.add('active');
     });
 });
+
+// ── Hero terminal animation ───────────────────────────────────────────────
+(function () {
+    const CHAR_MS  = 30;   // ms per character typed
+    const LINE_MS  = 110;  // pause between command lines
+    const NET_MS   = 720;  // simulated network latency
+    const RESP_MS  = 65;   // ms between each response line appearing
+    const HOLD_MS  = 3200; // hold on complete output before restarting
+    const FADE_MS  = 500;  // fade-out duration
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // Escape text for innerHTML
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Each line is an array of [cssClass, text] segments. '' = no class (default colour).
+    const CMD = [
+        [['dim','$ '], ['hl','curl'], ['', ' -X POST https://pushpage.link/api/pages \\']],
+        [['', '  -H '], ['str', '"X-Api-Key: $PUSHPAGE_API_KEY"'], ['', ' \\']],
+        [['', '  -H '], ['str', '"Content-Type: application/json"'], ['', ' \\']],
+        [['', "  -d "], ['str', '\'{"html":"<h1>Q2 Report</h1>","title":"Q2 Report"}\'']],
+    ];
+
+    const RESP = [
+        [],
+        [['cmt', '# 200 OK — response']],
+        [['', '{']],
+        [['', '  '], ['key', '"url"'], ['', ': '], ['str', '"https://pushpage.link/pages/a1b2c3.html"'], ['', ',']],
+        [['', '  '], ['key', '"id"'],  ['', ': '], ['str', '"a1b2c3"']],
+        [['', '}']],
+    ];
+
+    // Render a fully complete line to HTML
+    function renderLine(segs) {
+        return segs.map(([c, t]) => c ? `<span class="${c}">${esc(t)}</span>` : esc(t)).join('');
+    }
+
+    // Render the first `n` characters of a line (for the typing effect)
+    function renderPartial(segs, n) {
+        let rem = n, out = '';
+        for (const [c, t] of segs) {
+            if (rem <= 0) break;
+            const chunk = t.slice(0, rem);
+            out += c ? `<span class="${c}">${esc(chunk)}</span>` : esc(chunk);
+            rem -= t.length;
+        }
+        return out;
+    }
+
+    function lineLen(segs) {
+        return segs.reduce((s, [, t]) => s + t.length, 0);
+    }
+
+    const el = document.getElementById('hero-terminal');
+    if (!el) return;
+
+    async function run() {
+        while (true) {
+            // Reset
+            el.style.transition = '';
+            el.style.opacity    = '1';
+            el.textContent      = '';
+
+            const done = []; // fully typed command lines
+
+            // ── Type command ─────────────────────────────────────────────
+            for (let li = 0; li < CMD.length; li++) {
+                const segs = CMD[li];
+                const total = lineLen(segs);
+
+                for (let ci = 1; ci <= total; ci++) {
+                    const prev = done.map(renderLine).join('\n');
+                    el.innerHTML = (prev ? prev + '\n' : '') +
+                                   renderPartial(segs, ci) +
+                                   '<span class="cursor">▌</span>';
+                    await sleep(CHAR_MS);
+                }
+
+                done.push(segs);
+
+                // Brief pause between lines (cursor hidden during gap)
+                if (li < CMD.length - 1) {
+                    el.innerHTML = done.map(renderLine).join('\n');
+                    await sleep(LINE_MS);
+                }
+            }
+
+            // ── Wait for "response" (cursor stays visible) ────────────────
+            el.innerHTML = done.map(renderLine).join('\n') + '<span class="cursor">▌</span>';
+            await sleep(NET_MS);
+
+            // ── Response lines pop in one by one ─────────────────────────
+            let html = done.map(renderLine).join('\n');
+            el.innerHTML = html;
+            for (const line of RESP) {
+                await sleep(RESP_MS);
+                html += '\n' + renderLine(line);
+                el.innerHTML = html;
+            }
+
+            // ── Hold, then fade out and restart ───────────────────────────
+            await sleep(HOLD_MS);
+            el.style.transition = `opacity ${FADE_MS}ms ease`;
+            el.style.opacity    = '0';
+            await sleep(FADE_MS + 80);
+        }
+    }
+
+    run();
+}());
 </script>
 </body>
 </html>
