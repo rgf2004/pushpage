@@ -7,3 +7,4 @@ COPY nginx/404.html /usr/share/nginx/html/404.html
 COPY nginx/static/ /usr/share/nginx/html/static/
 COPY nginx/terms.html /usr/share/nginx/html/terms.html
 COPY llms.txt /usr/share/nginx/html/llms.txt
+COPY nginx/robots.txt /usr/share/nginx/html/robots.txt
