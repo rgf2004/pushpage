@@ -61,6 +61,20 @@
 
         .auth-switch a:hover { text-decoration: underline; }
 
+        .terms-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            font-size: .83rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            cursor: pointer;
+            line-height: 1.5;
+        }
+        .terms-check input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; accent-color: var(--accent); }
+        .terms-check a { color: var(--accent); text-decoration: none; }
+        .terms-check a:hover { text-decoration: underline; }
+
         .auth-error {
             background: #fef2f2;
             border: 1px solid #fca5a5;
@@ -454,6 +468,10 @@
             <input type="password" id="signup-password" autocomplete="new-password">
             <div class="hint">Minimum 8 characters.</div>
         </div>
+        <label class="terms-check">
+            <input type="checkbox" id="signup-terms">
+            I agree to the <a href="/terms" target="_blank">Terms of Use</a>
+        </label>
         <button class="btn btn-primary" id="signup-btn" style="width:100%">Create account</button>
         <div class="auth-switch">
             Already have an account? <a id="go-login">Sign in</a>
@@ -657,6 +675,7 @@ function setHeaderAuth(isLoggedIn) {
 // ── Screen navigation ─────────────────────────────────────────────────────
 document.getElementById('go-signup').addEventListener('click', () => {
     document.getElementById('login-error').style.display = 'none';
+    document.getElementById('signup-terms').checked = false;
     showScreen('signup');
 });
 document.getElementById('go-login').addEventListener('click', () => {
@@ -665,6 +684,7 @@ document.getElementById('go-login').addEventListener('click', () => {
 });
 document.getElementById('go-signup-hdr').addEventListener('click', e => {
     e.preventDefault();
+    document.getElementById('signup-terms').checked = false;
     showScreen('signup');
 });
 document.getElementById('go-login-hdr').addEventListener('click', e => {
@@ -686,6 +706,7 @@ async function signUp() {
 
     if (!email) { errEl.textContent = 'Email is required.'; errEl.style.display = 'block'; return; }
     if (!password) { errEl.textContent = 'Password is required.'; errEl.style.display = 'block'; return; }
+    if (!document.getElementById('signup-terms').checked) { errEl.textContent = 'You must agree to the Terms of Use to create an account.'; errEl.style.display = 'block'; return; }
 
     document.getElementById('signup-btn').textContent = 'Creating account…';
     try {
