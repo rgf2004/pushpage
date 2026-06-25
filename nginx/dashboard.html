@@ -97,12 +97,22 @@
         .user-chip strong { color: var(--text); }
 
         /* ── Tabs ─────────────────────────────────────────────────────── */
+        .dash-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 32px;
+            box-sizing: border-box;
+        }
+
         .tabs-bar {
             border-bottom: 1px solid var(--border);
-            padding: 0 40px;
+            background: var(--bg-card);
+        }
+
+        .tabs-bar .dash-inner {
             display: flex;
             gap: 4px;
-            background: var(--bg-card);
         }
 
         .tab-btn {
@@ -121,8 +131,9 @@
         .tab-btn:hover { color: var(--text); }
         .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-        .tab-panel { display: none; flex: 1; padding: 36px 40px; }
+        .tab-panel { display: none; flex: 1; }
         .tab-panel.active { display: block; }
+        .tab-panel .dash-inner { padding-top: 36px; padding-bottom: 36px; }
 
         /* ── Pages table ──────────────────────────────────────────────── */
         .panel-header {
@@ -405,8 +416,8 @@
 
         /* ── Responsive ───────────────────────────────────────────────── */
         @media (max-width: 640px) {
-            .tabs-bar { padding: 0 16px; }
-            .tab-panel { padding: 24px 16px; }
+            .dash-inner { padding: 0 16px; }
+            .tab-panel .dash-inner { padding-top: 24px; padding-bottom: 24px; }
             .tab-btn { padding: 12px 10px; font-size: .82rem; }
             thead th, td { padding: 10px 10px; }
             .auth-box { padding: 28px 20px; }
@@ -482,13 +493,16 @@
 <!-- ── Dashboard ─────────────────────────────────────────────────────── -->
 <div id="dashboard-screen">
     <nav class="tabs-bar">
-        <button class="tab-btn active" data-tab="pages">Pages</button>
-        <button class="tab-btn" data-tab="account">Account</button>
-        <button class="tab-btn" data-tab="admin" id="admin-tab-btn" style="display:none">Users</button>
+        <div class="dash-inner">
+            <button class="tab-btn active" data-tab="pages">Pages</button>
+            <button class="tab-btn" data-tab="account">Account</button>
+            <button class="tab-btn" data-tab="admin" id="admin-tab-btn" style="display:none">Users</button>
+        </div>
     </nav>
 
     <!-- Pages tab -->
     <div class="tab-panel active" id="tab-pages">
+      <div class="dash-inner">
         <div class="panel-header">
             <h2 id="pages-heading">Your pages</h2>
         </div>
@@ -513,10 +527,12 @@
         <div id="pages-empty" class="empty-state" style="display:none">
             <p>No pages yet. Publish one via <code>POST /api/pages</code>.</p>
         </div>
+      </div>
     </div>
 
     <!-- Account tab -->
     <div class="tab-panel" id="tab-account">
+      <div class="dash-inner">
         <div class="panel-header"><h2>Account</h2></div>
         <div class="card" style="max-width:560px">
             <div class="info-grid">
@@ -544,10 +560,12 @@
                 <button class="btn btn-secondary btn-sm" id="rotate-key-btn" style="margin-top:4px">Generate / Rotate API Key</button>
             </div>
         </div>
+      </div>
     </div>
 
     <!-- Admin → Users tab -->
     <div class="tab-panel" id="tab-admin">
+      <div class="dash-inner">
         <div class="panel-header">
             <h2>Users</h2>
         </div>
@@ -571,6 +589,7 @@
         <div id="users-empty" class="empty-state" style="display:none">
             <p>No users found.</p>
         </div>
+      </div>
     </div>
 </div>
 
@@ -1096,5 +1115,40 @@ function esc(s) {
     }
 })();
 </script>
+
+<footer>
+    <div class="footer-inner">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">push<span>page</span></a>
+                <p>A lightweight HTML publishing service for AI agents and developers.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/api/swagger-ui/index.html">API reference</a>
+                <a href="/docs">Documentation</a>
+            </div>
+            <div class="footer-col">
+                <h4>Docs</h4>
+                <a href="/docs#quick-start">Quick start</a>
+                <a href="/docs#authentication">Authentication</a>
+                <a href="/docs#self-hosting">Self-hosting</a>
+                <a href="/docs#configuration">Configuration</a>
+            </div>
+            <div class="footer-col">
+                <h4>Links</h4>
+                <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">GitHub</a>
+                <a href="/mcp">MCP server</a>
+                <a href="/llms.txt">llms.txt</a>
+                <a href="/terms">Terms of Use</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 pushpage &nbsp;·&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
+
 </body>
 </html>
