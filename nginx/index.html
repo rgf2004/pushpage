@@ -18,22 +18,6 @@
 
         .hero-badge { margin-bottom: 28px; }
 
-        .agent-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 32px;
-            background: var(--accent-bg);
-            border: 1px solid rgba(37,99,235,.25);
-            border-radius: 20px;
-            padding: 6px 16px;
-            font-size: .82rem;
-            font-weight: 500;
-            color: var(--accent);
-            text-decoration: none;
-            transition: background .15s, border-color .15s;
-        }
-        .agent-pill:hover { background: rgba(37,99,235,.12); border-color: rgba(37,99,235,.4); }
 
         .hero h1 {
             font-size: clamp(2.6rem, 6vw, 4.2rem);
@@ -443,7 +427,9 @@
             <div class="code-body" id="hero-terminal"></div>
         </div>
     </div>
-    <a href="/llms.txt" class="agent-pill">🤖 Building an agent? &nbsp;<strong>llms.txt</strong> →</a>
+    <p style="margin-top:32px; font-size:.82rem; color:var(--text-muted)">
+        Building an agent? <a href="/llms.txt" style="color:var(--accent); text-decoration:none; font-weight:500">llms.txt</a> has everything it needs to get started.
+    </p>
 </section>
 
 <!-- ── How it works ───────────────────────────────────────────────────── -->
