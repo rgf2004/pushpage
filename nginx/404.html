@@ -4,36 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Page not found · pushpage</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/theme.css">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #0d1117;
-            color: #e6edf3;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            padding: 24px 40px;
-            border-bottom: 1px solid #21262d;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #58a6ff;
-            letter-spacing: -.01em;
-            text-decoration: none;
-        }
-
-        .logo span { color: #e6edf3; }
-
         main {
             flex: 1;
             display: flex;
@@ -44,72 +17,65 @@
             text-align: center;
         }
 
-        .code {
-            font-size: clamp(4rem, 12vw, 7rem);
+        .error-code {
+            font-size: clamp(5rem, 15vw, 9rem);
             font-weight: 800;
             line-height: 1;
-            letter-spacing: -.04em;
-            color: #21262d;
+            letter-spacing: -.06em;
+            color: var(--border-soft);
             margin-bottom: 24px;
+            user-select: none;
         }
 
-        h1 {
-            font-size: 1.5rem;
+        .error-title {
+            font-size: 1.4rem;
             font-weight: 700;
-            margin-bottom: 16px;
+            letter-spacing: -.02em;
+            margin-bottom: 12px;
         }
 
-        .description {
-            font-size: 1rem;
-            color: #8b949e;
-            max-width: 440px;
-            line-height: 1.6;
-            margin-bottom: 40px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
-            border-radius: 6px;
+        .error-desc {
             font-size: .95rem;
-            font-weight: 500;
-            text-decoration: none;
-            transition: opacity .15s;
-            background: #21262d;
-            color: #e6edf3;
-            border: 1px solid #30363d;
-        }
-
-        .btn:hover { opacity: .82; }
-
-        footer {
-            padding: 20px 40px;
-            border-top: 1px solid #21262d;
-            text-align: center;
-            font-size: .8rem;
-            color: #484f58;
+            color: var(--text-muted);
+            max-width: 400px;
+            line-height: 1.65;
+            margin-bottom: 36px;
         }
     </style>
 </head>
 <body>
 
-<header>
-    <a href="/" class="logo">push<span>page</span></a>
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link">Docs</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-ghost btn-sm">Sign in</a>
+            <a href="/dashboard" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+    </div>
 </header>
 
 <main>
-    <div class="code">404</div>
-    <h1>Page not found</h1>
-    <p class="description">
+    <div class="error-code">404</div>
+    <h1 class="error-title">Page not found</h1>
+    <p class="error-desc">
         The page you're looking for doesn't exist. It may have expired,
         been deleted, or the link may be incorrect.
     </p>
-    <a href="/" class="btn">← Back to home</a>
+    <a href="/" class="btn btn-secondary">← Back to home</a>
 </main>
 
-<footer>pushpage · homelab internal</footer>
+<footer>
+    <div class="footer-inner">
+        <div class="footer-bottom" style="border:none;padding:0">
+            &copy; 2026 pushpage &nbsp;·&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
 
 </body>
 </html>

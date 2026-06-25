@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>pushpage — Documentation</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="Full documentation for pushpage: quick start, authentication, API reference, and self-hosting guide.">
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        /* ── Layout ────────────────────────────────────────────────────── */
+        .docs-layout {
+            flex: 1;
+            display: flex;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 32px;
+            gap: 48px;
+            align-items: flex-start;
+        }
+
+        /* ── Sidebar ───────────────────────────────────────────────────── */
+        .docs-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 88px;
+            padding: 32px 0;
+            max-height: calc(100vh - 88px);
+            overflow-y: auto;
+        }
+
+        .sidebar-group { margin-bottom: 24px; }
+
+        .sidebar-group-title {
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-dim);
+            padding: 0 8px;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-link {
+            display: block;
+            font-size: .85rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 5px 8px;
+            border-radius: 6px;
+            transition: color .15s, background .15s;
+            line-height: 1.4;
+        }
+
+        .sidebar-link:hover { color: var(--text); background: var(--bg-input); }
+        .sidebar-link.active { color: var(--accent); background: var(--accent-bg); font-weight: 500; }
+
+        /* ── Content ───────────────────────────────────────────────────── */
+        .docs-content {
+            flex: 1;
+            min-width: 0;
+            padding: 40px 0 80px;
+        }
+
+        .docs-section {
+            margin-bottom: 72px;
+            scroll-margin-top: 88px;
+        }
+
+        .docs-section h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -.03em;
+            color: var(--text);
+            margin-bottom: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .docs-section h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 28px 0 10px;
+        }
+
+        .docs-section h4 {
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin: 20px 0 8px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            font-size: .75rem;
+        }
+
+        .docs-section p {
+            font-size: .925rem;
+            color: var(--text-muted);
+            line-height: 1.75;
+            margin-bottom: 14px;
+        }
+
+        .docs-section ul, .docs-section ol {
+            padding-left: 20px;
+            margin-bottom: 14px;
+        }
+
+        .docs-section li {
+            font-size: .925rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 4px;
+        }
+
+        .docs-section a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .docs-section a:hover { text-decoration: underline; }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: .82em;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 6px;
+            color: var(--accent-code);
+        }
+
+        pre {
+            background: #0f172a;
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            font-size: .82rem;
+            color: #94a3b8;
+            line-height: 1.8;
+        }
+
+        .token-dim    { color: #475569; }
+        .token-str    { color: #7dd3fc; }
+        .token-key    { color: #a78bfa; }
+        .token-val    { color: #86efac; }
+        .token-hl     { color: #f1f5f9; }
+        .token-cmt    { color: #475569; font-style: italic; }
+        .token-orange { color: #fb923c; }
+
+        /* ── Callout boxes ─────────────────────────────────────────────── */
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-bg);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: .88rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .callout.warn {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .callout.danger {
+            border-color: var(--red);
+            background: #fef2f2;
+        }
+
+        .callout strong { color: var(--text); }
+
+        /* ── Tables ────────────────────────────────────────────────────── */
+        .docs-table-wrap {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+        }
+
+        .docs-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .855rem;
+        }
+
+        .docs-table th {
+            background: var(--bg-input);
+            font-size: .75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-muted);
+            padding: 9px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .docs-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            vertical-align: top;
+        }
+
+        .docs-table tr:last-child td { border-bottom: none; }
+        .docs-table td:first-child { font-family: var(--font-mono); font-size: .8rem; color: var(--accent-code); white-space: nowrap; }
+
+        /* ── Method badges ─────────────────────────────────────────────── */
+        .endpoint {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 24px 0 12px;
+            padding: 14px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+        }
+
+        .method {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: .75rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 5px;
+            flex-shrink: 0;
+        }
+
+        .method.post   { background: #dcfce7; color: #15803d; }
+        .method.get    { background: #dbeafe; color: #1d4ed8; }
+        .method.delete { background: #fee2e2; color: #b91c1c; }
+        .method.patch  { background: #fef3c7; color: #b45309; }
+
+        .endpoint-path {
+            font-family: var(--font-mono);
+            font-size: .88rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .endpoint-auth {
+            margin-left: auto;
+            font-size: .75rem;
+            color: var(--text-dim);
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2px 10px;
+        }
+
+        /* ── Steps ─────────────────────────────────────────────────────── */
+        .step-list {
+            list-style: none;
+            padding: 0;
+            counter-reset: step;
+            margin-bottom: 20px;
+        }
+
+        .step-list li {
+            counter-increment: step;
+            padding-left: 44px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .step-list li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+
+        .step-list li strong { display: block; font-size: .925rem; color: var(--text); margin-bottom: 4px; }
+        .step-list li span   { font-size: .875rem; color: var(--text-muted); line-height: 1.6; }
+
+        /* ── Mobile ────────────────────────────────────────────────────── */
+        .mobile-toc {
+            display: none;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mobile-toc-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .88rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .mobile-toc-menu {
+            margin-top: 12px;
+            display: none;
+        }
+
+        .mobile-toc-menu.open { display: block; }
+
+        @media (max-width: 768px) {
+            .docs-sidebar { display: none; }
+            .docs-layout { padding: 0 20px; gap: 0; }
+            .mobile-toc { display: block; }
+            .docs-content { padding: 24px 0 60px; }
+            .docs-section h2 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link active">Docs</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-ghost btn-sm">Sign in</a>
+            <a href="/dashboard" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+    </div>
+</header>
+
+<!-- Mobile TOC toggle -->
+<div class="mobile-toc">
+    <button class="mobile-toc-toggle" id="toc-toggle">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        On this page
+    </button>
+    <nav class="mobile-toc-menu" id="toc-menu">
+        <a href="#quick-start"      class="sidebar-link">Quick start</a>
+        <a href="#authentication"   class="sidebar-link">Authentication</a>
+        <a href="#publishing"       class="sidebar-link">Publishing pages</a>
+        <a href="#rate-limits"      class="sidebar-link">Rate limits</a>
+        <a href="#api-reference"    class="sidebar-link">API reference</a>
+        <a href="#self-hosting"     class="sidebar-link">Self-hosting</a>
+        <a href="#configuration"    class="sidebar-link">Configuration</a>
+        <a href="#mcp"              class="sidebar-link">MCP server</a>
+    </nav>
+</div>
+
+<div class="docs-layout">
+
+    <!-- ── Sidebar ───────────────────────────────────────────────────── -->
+    <aside class="docs-sidebar">
+        <div class="sidebar-group">
+            <div class="sidebar-group-title">Getting started</div>
+            <a href="#quick-start"    class="sidebar-link">Quick start</a>
+            <a href="#authentication" class="sidebar-link">Authentication</a>
+        </div>
+        <div class="sidebar-group">
+            <div class="sidebar-group-title">Using pushpage</div>
+            <a href="#publishing"  class="sidebar-link">Publishing pages</a>
+            <a href="#rate-limits" class="sidebar-link">Rate limits</a>
+            <a href="#dashboard"   class="sidebar-link">Dashboard</a>
+        </div>
+        <div class="sidebar-group">
+            <div class="sidebar-group-title">API reference</div>
+            <a href="#api-auth"    class="sidebar-link">Auth</a>
+            <a href="#api-pages"   class="sidebar-link">Pages</a>
+            <a href="#api-account" class="sidebar-link">Account</a>
+            <a href="#api-admin"   class="sidebar-link">Admin</a>
+            <a href="#api-health"  class="sidebar-link">Health</a>
+        </div>
+        <div class="sidebar-group">
+            <div class="sidebar-group-title">Self-hosting</div>
+            <a href="#self-hosting"  class="sidebar-link">Self-hosting</a>
+            <a href="#configuration" class="sidebar-link">Configuration</a>
+            <a href="#mcp"           class="sidebar-link">MCP server</a>
+        </div>
+    </aside>
+
+    <!-- ── Content ───────────────────────────────────────────────────── -->
+    <main class="docs-content">
+
+        <!-- Quick start -->
+        <section class="docs-section" id="quick-start">
+            <h2>Quick start</h2>
+            <p>Get from zero to a published page in under two minutes.</p>
+
+            <ol class="step-list">
+                <li>
+                    <strong>Create an account</strong>
+                    <span>Go to <a href="/dashboard">/dashboard</a>, click <em>Sign up</em>, and enter your email and password.</span>
+                </li>
+                <li>
+                    <strong>Generate an API key</strong>
+                    <span>After signing in, open the <strong>Account</strong> tab and click <strong>Generate / Rotate API Key</strong>. Copy the key — it is shown only once.</span>
+                </li>
+                <li>
+                    <strong>Publish your first page</strong>
+                    <span>Send a POST request with your HTML content:</span>
+                </li>
+            </ol>
+
+<pre><code><span class="token-hl">curl</span> -s -X POST https://pushpage.link/api/pages \
+  -H <span class="token-str">"X-Api-Key: pp_your_key_here"</span> \
+  -H <span class="token-str">"Content-Type: application/json"</span> \
+  -d <span class="token-str">'{"html": "&lt;h1&gt;Hello, pushpage!&lt;/h1&gt;", "title": "My First Page"}'</span>
+
+<span class="token-cmt"># Response</span>
+{
+  <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/pages/abc123.html"</span>,
+  <span class="token-key">"id"</span>: <span class="token-str">"abc123"</span>
+}</code></pre>
+
+            <p>Open the URL in your browser — your page is live. That's it.</p>
+
+            <div class="callout">
+                <strong>Guest publishing:</strong> You can call <code>POST /api/pages</code> without any credentials. Guest pages expire after 30 minutes and are not listed in any dashboard.
+            </div>
+        </section>
+
+        <!-- Authentication -->
+        <section class="docs-section" id="authentication">
+            <h2>Authentication</h2>
+            <p>Two credential types are accepted interchangeably on all protected endpoints.</p>
+
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <thead><tr><th>Method</th><th>Header</th><th>Notes</th></tr></thead>
+                    <tbody>
+                        <tr><td>API key</td><td><code>X-Api-Key: pp_&lt;key&gt;</code></td><td>Long-lived. Ideal for scripts, CI, and agents. Obtain via <code>POST /api/me/tokens</code>.</td></tr>
+                        <tr><td>JWT Bearer</td><td><code>Authorization: Bearer &lt;jwt&gt;</code></td><td>Short-lived (24 h). Issued by <code>POST /api/auth/login</code>. Used by the dashboard.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>API keys</h3>
+            <p>API keys begin with <code>pp_</code> and are long-lived — they don't expire unless you rotate them. Only one active key per user exists at a time. Rotating a key invalidates the previous one immediately.</p>
+            <p>Generate or rotate your API key:</p>
+
+<pre><code><span class="token-hl">curl</span> -s -X POST https://pushpage.link/api/me/tokens \
+  -H <span class="token-str">"Authorization: Bearer &lt;your-jwt&gt;"</span>
+
+<span class="token-cmt"># Response</span>
+{ <span class="token-key">"api_key"</span>: <span class="token-str">"pp_abc123..."</span> }</code></pre>
+
+            <div class="callout warn">
+                <strong>Store your key securely.</strong> The raw key is shown exactly once — it is stored only as a SHA-256 hash. If you lose it, rotate to generate a new one.
+            </div>
+
+            <h3>JWT tokens</h3>
+            <p>JWTs are short-lived (24 h by default) and are the credential used by the browser dashboard. They are issued by logging in with email and password.</p>
+
+<pre><code><span class="token-hl">curl</span> -s -X POST https://pushpage.link/api/auth/login \
+  -H <span class="token-str">"Content-Type: application/json"</span> \
+  -d <span class="token-str">'{"email":"alice@example.com","password":"s3cur3pass"}'</span>
+
+<span class="token-cmt"># Response</span>
+{ <span class="token-key">"jwt"</span>: <span class="token-str">"eyJ..."</span> }</code></pre>
+
+            <h3>Admin bootstrap</h3>
+            <p>On first startup with an empty database, pushpage automatically creates an admin account and logs the credentials once to stdout:</p>
+
+<pre><code><span class="token-cmt">==============================================================
+No users found — bootstrap admin created.
+Email    : admin@pushpage.link
+Password : &lt;random alphanumeric&gt;
+API Key  : pp_abc123...
+Copy these credentials now. They will NOT appear again.
+==============================================================</span></code></pre>
+        </section>
+
+        <!-- Publishing -->
+        <section class="docs-section" id="publishing">
+            <h2>Publishing pages</h2>
+            <p><code>POST /api/pages</code> is the core endpoint. It accepts two content types:</p>
+
+            <h3>JSON (application/json)</h3>
+            <p>Send an object with an <code>html</code> field and an optional <code>title</code>.</p>
+
+<pre><code><span class="token-hl">curl</span> -s -X POST https://pushpage.link/api/pages \
+  -H <span class="token-str">"X-Api-Key: $PUSHPAGE_API_KEY"</span> \
+  -H <span class="token-str">"Content-Type: application/json"</span> \
+  -d <span class="token-str">'{"html":"&lt;h1&gt;Report&lt;/h1&gt;&lt;p&gt;Content here&lt;/p&gt;","title":"Q2 Report"}'</span></code></pre>
+
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>html</td><td>string</td><td>Yes</td><td>Full HTML content. Max size controlled by <code>MAX_FILE_SIZE</code> (default 1 MB).</td></tr>
+                        <tr><td>title</td><td>string</td><td>No</td><td>Human-readable title. Extracted from the HTML <code>&lt;title&gt;</code> tag if omitted; falls back to <code>"Untitled"</code>.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>File upload (multipart/form-data)</h3>
+            <p>Upload an <code>.html</code> file directly — no JSON wrapping required. Useful for piping report files from CI or scripts.</p>
+
+<pre><code><span class="token-hl">curl</span> -s -X POST https://pushpage.link/api/pages \
+  -H <span class="token-str">"X-Api-Key: $PUSHPAGE_API_KEY"</span> \
+  -F <span class="token-str">"file=@report.html"</span></code></pre>
+
+            <p>Title resolution order for file uploads:</p>
+            <ol>
+                <li><code>&lt;title&gt;</code> tag in the HTML content</li>
+                <li>Original filename without extension (<code>report.html</code> → <code>"report"</code>)</li>
+                <li><code>"Untitled"</code></li>
+            </ol>
+
+            <h3>Guest publishing</h3>
+            <p>You can call <code>POST /api/pages</code> without any credentials. Guest pages:</p>
+            <ul>
+                <li>Expire automatically after <strong>30 minutes</strong></li>
+                <li>Are not tied to any account</li>
+                <li>Do not appear in any user's dashboard</li>
+                <li>Are subject to a lower rate limit (5 requests/minute per IP)</li>
+            </ul>
+
+            <div class="callout">
+                <strong>Tip:</strong> Guest publishing is great for one-off sharing during development, but API-key authenticated pages last 30 days and are tracked in your dashboard.
+            </div>
+        </section>
+
+        <!-- Rate limits -->
+        <section class="docs-section" id="rate-limits">
+            <h2>Rate limits</h2>
+            <p>Rate limiting applies to <code>POST /api/pages</code> only. All other endpoints are not rate-limited.</p>
+
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <thead><tr><th>User type</th><th>Limit</th><th>Scope</th></tr></thead>
+                    <tbody>
+                        <tr><td>Guest (unauthenticated)</td><td>5 requests/minute</td><td>Per source IP</td></tr>
+                        <tr><td>Authenticated user</td><td>10 requests/minute</td><td>Per user account</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>When the limit is exceeded, the API returns <code>429 Too Many Requests</code>. The limits are configurable via environment variables <code>RATE_LIMIT_GUEST_RPM</code> and <code>RATE_LIMIT_USER_RPM</code>.</p>
+        </section>
+
+        <!-- Dashboard -->
+        <section class="docs-section" id="dashboard">
+            <h2>Dashboard</h2>
+            <p>The browser dashboard is available at <a href="/dashboard">/dashboard</a>. It provides a UI for managing your pages and account without writing any code.</p>
+
+            <h3>Pages tab</h3>
+            <p>Lists all pages you've published, with their URL, creation date, and expiry date. You can delete individual pages.</p>
+
+            <h3>Account tab</h3>
+            <p>Displays your email and role. You can generate or rotate your API key here. The key is shown once — copy it before closing the dialog.</p>
+
+            <h3>Users tab (admin only)</h3>
+            <p>Lists all registered users. Admins can promote users to admin or deactivate accounts. Deactivated users retain their pages but can no longer authenticate.</p>
+        </section>
+
+        <!-- API Reference -->
+        <section class="docs-section" id="api-reference">
+            <h2>API reference</h2>
+            <p>All endpoints are under <code>/api</code>. The interactive Swagger UI is at <a href="/api/swagger-ui/index.html">/api/swagger-ui/index.html</a>.</p>
+        </section>
+
+        <section class="docs-section" id="api-auth">
+            <h3>Auth</h3>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/api/auth/signup</span>
+                <span class="endpoint-auth">Public</span>
+            </div>
+            <p>Create a new account.</p>
+
+<pre><code><span class="token-cmt"># Request</span>
+{ <span class="token-key">"email"</span>: <span class="token-str">"alice@example.com"</span>, <span class="token-key">"password"</span>: <span class="token-str">"s3cur3pass"</span> }
+
+<span class="token-cmt"># Response: 201 No Content</span>
+<span class="token-cmt"># Error: 400 (invalid email / password too short), 409 (email taken)</span></code></pre>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/api/auth/login</span>
+                <span class="endpoint-auth">Public</span>
+            </div>
+            <p>Authenticate and receive a JWT valid for 24 hours.</p>
+
+<pre><code><span class="token-cmt"># Request</span>
+{ <span class="token-key">"email"</span>: <span class="token-str">"alice@example.com"</span>, <span class="token-key">"password"</span>: <span class="token-str">"s3cur3pass"</span> }
+
+<span class="token-cmt"># Response: 200</span>
+{ <span class="token-key">"jwt"</span>: <span class="token-str">"eyJ..."</span> }
+<span class="token-cmt"># Error: 401 (invalid credentials or deactivated account)</span></code></pre>
+        </section>
+
+        <section class="docs-section" id="api-pages">
+            <h3>Pages</h3>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/api/pages</span>
+                <span class="endpoint-auth">Optional auth</span>
+            </div>
+            <p>Publish an HTML page. Accepts <code>application/json</code> or <code>multipart/form-data</code>. Returns the page URL and ID.</p>
+
+<pre><code><span class="token-cmt"># Response: 200</span>
+{ <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/pages/abc123.html"</span>, <span class="token-key">"id"</span>: <span class="token-str">"abc123"</span> }
+
+<span class="token-cmt"># Error: 400 (missing/empty HTML), 413 (payload too large), 429 (rate limit)</span></code></pre>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api/pages</span>
+                <span class="endpoint-auth">User</span>
+            </div>
+            <p>List your pages ordered by creation date descending. Admins see all pages.</p>
+
+<pre><code><span class="token-cmt"># Response: 200 — array of page objects</span>
+[{
+  <span class="token-key">"id"</span>: <span class="token-str">"abc123"</span>,
+  <span class="token-key">"title"</span>: <span class="token-str">"My Report"</span>,
+  <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/pages/abc123.html"</span>,
+  <span class="token-key">"created_at"</span>: <span class="token-str">"2026-06-24T10:00:00Z"</span>,
+  <span class="token-key">"expires_at"</span>: <span class="token-str">"2026-07-24T10:00:00Z"</span>,
+  <span class="token-key">"user_id"</span>: <span class="token-str">"a1b2c3d4"</span>
+}]</code></pre>
+
+            <div class="endpoint">
+                <span class="method delete">DELETE</span>
+                <span class="endpoint-path">/api/pages/{id}</span>
+                <span class="endpoint-auth">User</span>
+            </div>
+            <p>Delete a page by ID. Users can only delete their own pages; admins can delete any page.</p>
+
+<pre><code><span class="token-cmt"># Response: 204 No Content</span>
+<span class="token-cmt"># Error: 403 (not your page), 404 (not found)</span></code></pre>
+        </section>
+
+        <section class="docs-section" id="api-account">
+            <h3>Account</h3>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/api/me/tokens</span>
+                <span class="endpoint-auth">User</span>
+            </div>
+            <p>Generate or rotate your API key. The previous key is invalidated immediately. Returns the raw key once.</p>
+
+<pre><code><span class="token-cmt"># Response: 200</span>
+{ <span class="token-key">"api_key"</span>: <span class="token-str">"pp_abc123..."</span> }</code></pre>
+        </section>
+
+        <section class="docs-section" id="api-admin">
+            <h3>Admin</h3>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api/admin/users</span>
+                <span class="endpoint-auth">Admin</span>
+            </div>
+            <p>List all registered users ordered by creation date.</p>
+
+            <div class="endpoint">
+                <span class="method patch">PATCH</span>
+                <span class="endpoint-path">/api/admin/users/{id}/deactivate</span>
+                <span class="endpoint-auth">Admin</span>
+            </div>
+            <p>Deactivate a user. Their pages are retained but they can no longer authenticate.</p>
+
+            <div class="endpoint">
+                <span class="method patch">PATCH</span>
+                <span class="endpoint-path">/api/admin/users/{id}/promote</span>
+                <span class="endpoint-auth">Admin</span>
+            </div>
+            <p>Grant admin role to a user.</p>
+        </section>
+
+        <section class="docs-section" id="api-health">
+            <h3>Health</h3>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api/health</span>
+                <span class="endpoint-auth">Public</span>
+            </div>
+            <p>Returns service health and live statistics (cached for 30 seconds). Returns <code>200</code> when healthy, <code>503</code> when a critical subsystem is unavailable.</p>
+
+<pre><code>{
+  <span class="token-key">"status"</span>: <span class="token-str">"UP"</span>,
+  <span class="token-key">"version"</span>: <span class="token-str">"0.8.0"</span>,
+  <span class="token-key">"uptimeSeconds"</span>: <span class="token-val">3600</span>,
+  <span class="token-key">"livePages"</span>: <span class="token-val">12</span>,
+  <span class="token-key">"storage"</span>: {
+    <span class="token-key">"usedHuman"</span>: <span class="token-str">"200 KB"</span>,
+    <span class="token-key">"freeHuman"</span>: <span class="token-str">"10.0 GB"</span>
+  }
+}</code></pre>
+        </section>
+
+        <!-- Self-hosting -->
+        <section class="docs-section" id="self-hosting">
+            <h2>Self-hosting</h2>
+            <p>pushpage is designed to be self-hosted. The entire stack — app, database, and nginx — runs as Docker containers orchestrated by Docker Compose.</p>
+
+            <h3>Requirements</h3>
+            <ul>
+                <li>Docker &amp; Docker Compose v2</li>
+                <li>A domain or subdomain pointed at your server</li>
+                <li>A reverse proxy (nginx, Caddy, Traefik) for TLS termination — or use pushpage behind Cloudflare</li>
+            </ul>
+
+            <h3>First-time setup</h3>
+
+<pre><code><span class="token-cmt"># 1. Clone the repository</span>
+<span class="token-hl">git</span> clone https://github.com/rgf2004/push-page.git
+<span class="token-hl">cd</span> push-page
+
+<span class="token-cmt"># 2. Create required data directories</span>
+<span class="token-hl">mkdir</span> -p data/pages data/pgdata
+
+<span class="token-cmt"># 3. Create your .env file (see Configuration section)</span>
+<span class="token-hl">cp</span> .env.example .env
+<span class="token-hl">nano</span> .env   <span class="token-cmt"># set APP_SERVER_URL, JWT_SECRET, etc.</span>
+
+<span class="token-cmt"># 4. Start the stack</span>
+<span class="token-hl">docker</span> compose up -d</code></pre>
+
+            <p>On first start, pushpage automatically creates an admin account and logs the credentials to stdout. Run <code>docker compose logs publisher</code> to see them.</p>
+
+            <h3>Development (build from source)</h3>
+
+<pre><code><span class="token-hl">docker</span> compose -f docker-compose.dev.yml up -d --build</code></pre>
+
+            <p>The dev compose file builds the image from source (no persistent data volumes).</p>
+
+            <h3>Upgrading</h3>
+
+<pre><code><span class="token-hl">docker</span> compose pull
+<span class="token-hl">docker</span> compose up -d</code></pre>
+
+            <p>Flyway manages database migrations automatically on startup — no manual schema changes needed.</p>
+        </section>
+
+        <!-- Configuration -->
+        <section class="docs-section" id="configuration">
+            <h2>Configuration</h2>
+            <p>All configuration is via environment variables in a <code>.env</code> file in the project root. Docker Compose passes them to the containers automatically.</p>
+
+            <h3>Required</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <thead><tr><th>Variable</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>JWT_SECRET</td><td>Secret for signing JWTs (HS256, min 32 chars). Generate with: <code>openssl rand -base64 32</code></td></tr>
+                        <tr><td>APP_SERVER_URL</td><td>Full public URL of your instance, e.g. <code>https://pushpage.example.com</code>. Used to build page URLs in responses.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>All variables</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>NGINX_PORT</td><td>8080</td><td>Host port nginx binds to.</td></tr>
+                        <tr><td>CLEANUP_RETENTION_DAYS</td><td>30</td><td>Days to keep authenticated pages before auto-cleanup.</td></tr>
+                        <tr><td>CLEANUP_SCHEDULE</td><td><code>0 0 * * * *</code></td><td>Cron expression for the cleanup job (Spring cron format — 6 fields).</td></tr>
+                        <tr><td>MAX_FILE_SIZE</td><td>1MB</td><td>Max HTML payload accepted (app-level).</td></tr>
+                        <tr><td>MAX_REQUEST_SIZE</td><td>10MB</td><td>Servlet-level request ceiling. Should exceed MAX_FILE_SIZE.</td></tr>
+                        <tr><td>RATE_LIMIT_USER_RPM</td><td>10</td><td>Max publish requests per minute for authenticated users.</td></tr>
+                        <tr><td>RATE_LIMIT_GUEST_RPM</td><td>5</td><td>Max publish requests per minute per IP for guests.</td></tr>
+                        <tr><td>DB_HOST</td><td>postgres</td><td>PostgreSQL hostname.</td></tr>
+                        <tr><td>DB_PORT</td><td>5432</td><td>PostgreSQL port.</td></tr>
+                        <tr><td>DB_NAME</td><td>pushpage</td><td>PostgreSQL database name.</td></tr>
+                        <tr><td>DB_USER</td><td>pushpage</td><td>PostgreSQL username.</td></tr>
+                        <tr><td>DB_PASSWORD</td><td>changeme</td><td>PostgreSQL password.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="callout warn">
+                <strong>Security:</strong> Always set a strong, random <code>JWT_SECRET</code> in production. Never use the default DB password.
+            </div>
+
+            <h3>Generating a JWT secret</h3>
+
+<pre><code><span class="token-cmt"># OpenSSL (recommended)</span>
+<span class="token-hl">openssl</span> rand -base64 32
+
+<span class="token-cmt"># Python</span>
+<span class="token-hl">python3</span> -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"</code></pre>
+        </section>
+
+        <!-- MCP -->
+        <section class="docs-section" id="mcp">
+            <h2>MCP server</h2>
+            <p>pushpage ships a <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> server that lets AI assistants like Claude publish and manage pages directly — without shell access or custom tool definitions.</p>
+
+            <h3>Connecting Claude</h3>
+            <p>Add pushpage to your Claude MCP configuration (<code>~/.claude/mcp.json</code> or via Claude Desktop settings):</p>
+
+<pre><code>{
+  <span class="token-key">"mcpServers"</span>: {
+    <span class="token-key">"pushpage"</span>: {
+      <span class="token-key">"type"</span>: <span class="token-str">"streamable-http"</span>,
+      <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/mcp"</span>,
+      <span class="token-key">"headers"</span>: {
+        <span class="token-key">"X-Api-Key"</span>: <span class="token-str">"&lt;your-api-key&gt;"</span>
+      }
+    }
+  }
+}</code></pre>
+
+            <p>If your client does not support the streamable-http transport natively, use <code>mcp-remote</code> as a bridge:</p>
+
+<pre><code>{
+  <span class="token-key">"mcpServers"</span>: {
+    <span class="token-key">"pushpage"</span>: {
+      <span class="token-key">"command"</span>: <span class="token-str">"npx"</span>,
+      <span class="token-key">"args"</span>: [
+        <span class="token-str">"mcp-remote"</span>,
+        <span class="token-str">"https://pushpage.link/mcp"</span>,
+        <span class="token-str">"--header"</span>,
+        <span class="token-str">"X-Api-Key:&lt;your-api-key&gt;"</span>
+      ]
+    }
+  }
+}</code></pre>
+
+            <h3>Available tools</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <thead><tr><th>Tool</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>publish_page</td><td>Publish HTML content and return the URL.</td></tr>
+                        <tr><td>list_pages</td><td>List your published pages.</td></tr>
+                        <tr><td>delete_page</td><td>Delete a page by ID.</td></tr>
+                        <tr><td>health</td><td>Check service health and stats.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>Once connected, Claude can call these tools naturally. For example: <em>"Publish this HTML report and give me the link"</em> — Claude will call <code>publish_page</code> and return the URL inline.</p>
+
+            <div class="callout">
+                <strong>Self-hosted MCP:</strong> If you're running your own instance, point the <code>url</code> at your own domain: <code>https://your-domain.com/mcp</code>.
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<footer>
+    <div class="footer-inner">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">push<span>page</span></a>
+                <p>A lightweight HTML publishing service for AI agents and developers.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/api/swagger-ui/index.html">API reference</a>
+                <a href="/docs">Documentation</a>
+            </div>
+            <div class="footer-col">
+                <h4>Docs</h4>
+                <a href="/docs#quick-start">Quick start</a>
+                <a href="/docs#authentication">Authentication</a>
+                <a href="/docs#self-hosting">Self-hosting</a>
+                <a href="/docs#configuration">Configuration</a>
+            </div>
+            <div class="footer-col">
+                <h4>Links</h4>
+                <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">GitHub</a>
+                <a href="/mcp">MCP server</a>
+                <a href="/llms.txt">llms.txt</a>
+                <a href="/terms">Terms of Use</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 pushpage &nbsp;·&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
+
+<script>
+// Mobile TOC toggle
+document.getElementById('toc-toggle').addEventListener('click', () => {
+    document.getElementById('toc-menu').classList.toggle('open');
+});
+
+// Sidebar active state on scroll
+const sections = document.querySelectorAll('.docs-section[id]');
+const links    = document.querySelectorAll('.docs-sidebar .sidebar-link');
+
+const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+        if (e.isIntersecting) {
+            links.forEach(l => l.classList.remove('active'));
+            const active = document.querySelector(`.docs-sidebar a[href="#${e.target.id}"]`);
+            if (active) active.classList.add('active');
+        }
+    });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
