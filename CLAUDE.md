@@ -18,12 +18,20 @@ push-page/
 ├── docker-compose.yml          # prod — pulls images from Docker Hub
 ├── docker-compose.dev.yml      # dev  — builds image from source
 ├── .env                        # environment variables (see below)
+├── llms.txt                    # agent-facing integration guide (served at /llms.txt)
 ├── publisher/
 │   └── Dockerfile              # multi-stage Maven build → JRE runtime
 ├── nginx/
-│   ├── Dockerfile              # custom nginx image (bakes in config + landing page)
+│   ├── Dockerfile              # custom nginx image (bakes in config + all static pages)
 │   ├── default.conf            # nginx routing config
-│   └── index.html              # landing page
+│   ├── index.html              # landing page (/)
+│   ├── dashboard.html          # browser dashboard (/dashboard)
+│   ├── docs.html               # documentation page (/docs)
+│   ├── terms.html              # Terms of Use page (/terms)
+│   ├── 404.html                # custom 404 error page
+│   └── static/
+│       ├── theme.css           # shared visual styles (header, footer, buttons, badges)
+│       └── favicon.svg         # "pp" wordmark favicon
 ├── mcp/
 │   ├── server.py               # FastMCP server (streamable-http transport)
 │   ├── Dockerfile              # Python image for the MCP service
@@ -43,6 +51,15 @@ push-page/
     └── service/
         └── PublishService.java     # business logic
 ```
+
+### Adding a new nginx page
+
+Every new static page requires **three** changes:
+1. Create `nginx/<name>.html`
+2. Add `COPY nginx/<name>.html /usr/share/nginx/html/<name>.html` to `nginx/Dockerfile`
+3. Add a `location = /<name>` block to `nginx/default.conf` pointing to the file
+
+Shared visual styles (`theme.css`) are already linked from all pages — new pages should link to `/static/theme.css` and follow the same header/footer pattern as `docs.html`.
 
 ## Git Workflow
 
@@ -119,14 +136,25 @@ A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.h
 
 **Screens:**
 - **Login** — email + password → JWT; link to sign-up
-- **Sign-up** — email + password → account created → redirect to login
+- **Sign-up** — email + password + Terms of Use checkbox (required) → account created → redirect to login. The checkbox links to `/terms`.
 
 **Tabs:**
-- **Pages** — lists the caller's pages (admins see all), with delete and pagination
+- **Pages** — lists the caller's pages, with delete and pagination
 - **Account** — displays email, role; Generate / Rotate API Key button (shows key once)
 - **Users** (admin only) — lists all users; Promote and Deactivate actions
 
-Shared visual styles live in `nginx/static/theme.css`, linked by both `index.html` and `dashboard.html`.
+Shared visual styles live in `nginx/static/theme.css`, linked by all nginx-served HTML pages.
+
+## Planned features
+
+These are specced and tracked in GitHub issues. Do not implement them without reading the linked issue first — the design details matter.
+
+| Feature | Issue | Summary |
+|---------|-------|---------|
+| **Protected pages** | [#60](https://github.com/rgf2004/pushpage/issues/60) | `POST /api/pages` accepts optional `"protected": true`. Service generates a random token embedded in the returned URL (`?token=...`). nginx `auth_request` validates the token on every page load via an internal Spring Boot endpoint. Requires a new Flyway migration adding a nullable `token` column to `pages`. |
+| **In-place updates** | [#59](https://github.com/rgf2004/pushpage/issues/59) | `PUT /api/pages/{id}` replaces the HTML content and re-extracts the title. The page ID and URL do not change. Owner or admin only. Returns the updated page object. |
+
+When implementing either feature, update the API table above, `docs/api.md`, `CLAUDE.md`, `README.md`, `llms.txt`, and `skill/SKILL.md` in the same PR.
 
 ## Running
 
