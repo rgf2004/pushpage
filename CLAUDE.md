@@ -145,17 +145,6 @@ A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.h
 
 Shared visual styles live in `nginx/static/theme.css`, linked by all nginx-served HTML pages.
 
-## Planned features
-
-These are specced and tracked in GitHub issues. Do not implement them without reading the linked issue first — the design details matter.
-
-| Feature | Issue | Summary |
-|---------|-------|---------|
-| **Protected pages** | [#60](https://github.com/rgf2004/pushpage/issues/60) | `POST /api/pages` accepts optional `"protected": true`. Service generates a random token embedded in the returned URL (`?token=...`). nginx `auth_request` validates the token on every page load via an internal Spring Boot endpoint. Requires a new Flyway migration adding a nullable `token` column to `pages`. |
-| **In-place updates** | [#59](https://github.com/rgf2004/pushpage/issues/59) | `PUT /api/pages/{id}` replaces the HTML content and re-extracts the title. The page ID and URL do not change. Owner or admin only. Returns the updated page object. |
-
-When implementing either feature, update the API table above, `docs/api.md`, `CLAUDE.md`, `README.md`, `llms.txt`, and `skill/SKILL.md` in the same PR.
-
 ## Running
 
 ```bash
