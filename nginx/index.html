@@ -247,6 +247,21 @@
             font-weight: 700;
             margin-bottom: 8px;
             color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-soon {
+            font-size: .65rem;
+            font-weight: 600;
+            letter-spacing: .04em;
+            color: #7c3aed;
+            background: #ede9fe;
+            border: 1px solid #c4b5fd;
+            border-radius: 20px;
+            padding: 2px 8px;
+            white-space: nowrap;
         }
 
         .feature-card p {
@@ -497,6 +512,11 @@
                 <div class="feature-icon">🏠</div>
                 <h3>Self-hostable</h3>
                 <p>Fully open source. Run your own instance with a single <code>docker compose up</code>. Bring your own domain and keep your data on your hardware.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔐</div>
+                <h3>Protected pages <span class="badge-soon">Coming soon</span></h3>
+                <p>Publish with <code>"protected": true</code> and get back a secret-token URL. Only people with the full link can view the page — everyone else gets a 403.</p>
             </div>
         </div>
     </div>
