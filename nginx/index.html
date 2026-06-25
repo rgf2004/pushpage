@@ -39,10 +39,12 @@
     <style>
         /* ── Hero ──────────────────────────────────────────────────────── */
         .hero {
+            width: 100%;
             max-width: 1100px;
             margin: 0 auto;
             padding: 96px 32px 80px;
             text-align: center;
+            overflow-x: hidden;
         }
 
         .hero-badge { margin-bottom: 28px; }
@@ -419,13 +421,17 @@
 
         /* ── Responsive ────────────────────────────────────────────────── */
         @media (max-width: 768px) {
-            .hero { padding: 64px 24px 56px; }
+            .hero { padding: 64px 24px 56px; overflow-x: hidden; }
             .section { padding: 56px 24px; }
             .steps { grid-template-columns: 1fr; }
             .step:not(:last-child) { border-right: none; border-bottom: 1px solid var(--border); }
             .selfhost-box { flex-direction: column; text-align: center; padding: 32px 24px; }
             .selfhost-text p { max-width: 100%; }
             .cta-box { padding: 56px 24px; border-radius: 16px; }
+            /* Prevent hero terminal pre-content from expanding page width */
+            .hero-code { width: 100%; max-width: 100%; }
+            .code-window { overflow: hidden; }
+            .code-body { font-size: 0.72rem; }
         }
     </style>
 </head>
