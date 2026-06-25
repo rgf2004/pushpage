@@ -650,8 +650,8 @@ let pendingDeactivateId = null;
 let pendingPromoteId = null;
 
 // ── Helpers ──────────────────────────────────────────────────────────────
-function api(path, opts = {}) {
-    return fetch('/api' + path, {
+async function api(path, opts = {}) {
+    const res = await fetch('/api' + path, {
         ...opts,
         headers: {
             'Authorization': 'Bearer ' + jwt,
@@ -659,6 +659,13 @@ function api(path, opts = {}) {
             ...(opts.headers || {})
         }
     });
+    if (res.status === 401 || res.status === 403) {
+        jwt = null;
+        sessionStorage.removeItem('pp_jwt');
+        setHeaderAuth(false);
+        showScreen('login');
+    }
+    return res;
 }
 
 function fmtDate(iso) {
