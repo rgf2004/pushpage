@@ -54,10 +54,11 @@ push-page/
 
 ### Adding a new nginx page
 
-Every new static page requires **three** changes:
+Every new static page requires **four** changes:
 1. Create `nginx/<name>.html`
 2. Add `COPY nginx/<name>.html /usr/share/nginx/html/<name>.html` to `nginx/Dockerfile`
 3. Add a `location = /<name>` block to `nginx/default.conf` pointing to the file
+4. Add a `<url>` entry to `nginx/sitemap.xml` (only for pages that should be indexed — exclude auth-required or noindex pages like the dashboard)
 
 Shared visual styles (`theme.css`) are already linked from all pages — new pages should link to `/static/theme.css` and follow the same header/footer pattern as `docs.html`.
 
