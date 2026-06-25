@@ -61,6 +61,29 @@
 
         .auth-switch a:hover { text-decoration: underline; }
 
+        /* ── Session toast ────────────────────────────────────────────── */
+        #session-toast {
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1e293b;
+            color: #f1f5f9;
+            font-size: .85rem;
+            padding: 12px 22px;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.2);
+            opacity: 0;
+            transition: opacity .25s, transform .25s;
+            pointer-events: none;
+            white-space: nowrap;
+            z-index: 9999;
+        }
+        #session-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
         .terms-check {
             display: flex;
             align-items: flex-start;
@@ -426,6 +449,8 @@
 </head>
 <body>
 
+<div id="session-toast">Session expired — redirecting to sign in…</div>
+
 <header class="site-header">
     <div class="header-inner">
         <a href="/" class="logo">push<span>page</span></a>
@@ -663,7 +688,12 @@ async function api(path, opts = {}) {
         jwt = null;
         sessionStorage.removeItem('pp_jwt');
         setHeaderAuth(false);
-        showScreen('login');
+        const toast = document.getElementById('session-toast');
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+            showScreen('login');
+        }, 2500);
     }
     return res;
 }
