@@ -35,6 +35,9 @@ class UserServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private UserLifecycleHooks lifecycleHooks;
+
     @InjectMocks
     private UserService userService;
 
@@ -104,6 +107,24 @@ class UserServiceTest {
         assertThat(BCRYPT.matches("mypassword", captor.getValue().passwordHash())).isTrue();
     }
 
+    @Test
+    void signUp_withValidRequest_invokesAfterSignUpHook() {
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+
+        userService.signUp(new SignUpRequest("carol@example.com", "securepass"));
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(lifecycleHooks).afterSignUp(captor.capture());
+        assertThat(captor.getValue().email()).isEqualTo("carol@example.com");
+    }
+
+    @Test
+    void signUp_withInvalidEmail_doesNotInvokeAfterSignUpHook() {
+        assertThatThrownBy(() -> userService.signUp(new SignUpRequest("not-an-email", "securepass")))
+                .isInstanceOf(ResponseStatusException.class);
+        verify(lifecycleHooks, never()).afterSignUp(any());
+    }
+
     // ── login ────────────────────────────────────────────────────────────────
 
     @Test
@@ -116,6 +137,22 @@ class UserServiceTest {
         LoginResponse response = userService.login(new LoginRequest("alice@example.com", "correctpass"));
 
         assertThat(response.jwt()).isEqualTo("jwt-token");
+        verify(lifecycleHooks).beforeLogin(user);
+    }
+
+    @Test
+    void login_whenBeforeLoginHookThrows_propagatesAndSkipsJwtGeneration() {
+        String hash = BCRYPT.encode("correctpass");
+        User user = new User("id1", "alice@example.com", "pp_key", hash, Instant.now(), true, false);
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Please verify your email"))
+                .when(lifecycleHooks).beforeLogin(user);
+
+        assertThatThrownBy(() -> userService.login(new LoginRequest("alice@example.com", "correctpass")))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+        verify(jwtService, never()).generateToken(any());
     }
 
     @Test

@@ -36,10 +36,12 @@ public class UserService implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final UserLifecycleHooks lifecycleHooks;
 
-    public UserService(UserRepository userRepository, JwtService jwtService) {
+    public UserService(UserRepository userRepository, JwtService jwtService, UserLifecycleHooks lifecycleHooks) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.lifecycleHooks = lifecycleHooks;
     }
 
     @Override
@@ -73,9 +75,11 @@ public class UserService implements ApplicationRunner {
         }
         String id = generateId();
         String rawKey = generateRawKey();
-        userRepository.save(new User(id, request.email().trim(),
+        User user = new User(id, request.email().trim(),
                 ApiKeyHasher.hash(rawKey), BCRYPT.encode(request.password()),
-                Instant.now(), true, false));
+                Instant.now(), true, false);
+        userRepository.save(user);
+        lifecycleHooks.afterSignUp(user);
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -93,6 +97,7 @@ public class UserService implements ApplicationRunner {
         if (user.passwordHash() == null || !BCRYPT.matches(request.password(), user.passwordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
+        lifecycleHooks.beforeLogin(user);
         return new LoginResponse(jwtService.generateToken(user));
     }
 
