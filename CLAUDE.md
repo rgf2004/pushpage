@@ -29,6 +29,7 @@ push-page/
 │   ├── docs.html               # documentation page (/docs)
 │   ├── terms.html              # Terms of Use page (/terms)
 │   ├── 404.html                # custom 404 error page
+│   ├── overlay/                # empty; downstream forks drop override files here (see below)
 │   └── static/
 │       ├── theme.css           # shared visual styles (header, footer, buttons, badges)
 │       └── favicon.svg         # "pp" wordmark favicon
@@ -61,6 +62,10 @@ Every new static page requires **four** changes:
 4. Add a `<url>` entry to `nginx/sitemap.xml` (only for pages that should be indexed — exclude auth-required or noindex pages like the dashboard)
 
 Shared visual styles (`theme.css`) are already linked from all pages — new pages should link to `/static/theme.css` and follow the same header/footer pattern as `docs.html`.
+
+### Downstream overlay hook
+
+`nginx/Dockerfile`'s last step is `COPY nginx/overlay/ /usr/share/nginx/html/`, which runs after every other static file. `nginx/overlay/` is empty in this repo, so it's a no-op here — self-hosted deployments get exactly the files above. Forks that need to override or add files (e.g. the private pushpage-cloud repo) can drop them into `nginx/overlay/` without touching this Dockerfile; anything placed there replaces the matching file at the same relative path.
 
 ## Git Workflow
 

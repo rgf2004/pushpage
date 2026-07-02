@@ -10,3 +10,7 @@ COPY llms.txt /usr/share/nginx/html/llms.txt
 COPY nginx/robots.txt /usr/share/nginx/html/robots.txt
 COPY nginx/sitemap.xml /usr/share/nginx/html/sitemap.xml
 COPY nginx/static/og-image.png /usr/share/nginx/html/static/og-image.png
+
+# Downstream forks can override or add files by dropping them in nginx/overlay/
+# (empty here — self-hosted deployments get exactly the files above).
+COPY nginx/overlay/ /usr/share/nginx/html/
