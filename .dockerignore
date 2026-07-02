@@ -1,0 +1,4 @@
+# Placeholder that keeps nginx/overlay/ tracked in git (git doesn't track
+# empty directories). Not meant to be served, so it's excluded from the
+# nginx image build context.
+nginx/overlay/.gitkeep
