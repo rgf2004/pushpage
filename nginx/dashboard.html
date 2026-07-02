@@ -765,7 +765,9 @@ async function signUp() {
     if (!password) { errEl.textContent = 'Password is required.'; errEl.style.display = 'block'; return; }
     if (!document.getElementById('signup-terms').checked) { errEl.textContent = 'You must agree to the Terms of Use to create an account.'; errEl.style.display = 'block'; return; }
 
-    document.getElementById('signup-btn').textContent = 'Creating account…';
+    const signupBtn = document.getElementById('signup-btn');
+    signupBtn.disabled = true;
+    signupBtn.textContent = 'Creating account…';
     try {
         const r = await fetch('/api/auth/signup', {
             method: 'POST',
@@ -791,8 +793,10 @@ async function signUp() {
     } catch {
         errEl.textContent = 'Could not reach the server.';
         errEl.style.display = 'block';
+    } finally {
+        signupBtn.disabled = false;
+        signupBtn.textContent = 'Create account';
     }
-    document.getElementById('signup-btn').textContent = 'Create account';
 }
 
 // ── Login ────────────────────────────────────────────────────────────────
@@ -813,7 +817,9 @@ async function doLogin() {
         return;
     }
 
-    document.getElementById('login-btn').textContent = 'Signing in…';
+    const loginBtn = document.getElementById('login-btn');
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Signing in…';
     try {
         const r = await fetch('/api/auth/login', {
             method: 'POST',
@@ -823,13 +829,11 @@ async function doLogin() {
         if (r.status === 401) {
             errEl.textContent = 'Invalid credentials.';
             errEl.style.display = 'block';
-            document.getElementById('login-btn').textContent = 'Sign in';
             return;
         }
         if (!r.ok) {
             errEl.textContent = 'Login failed. Try again.';
             errEl.style.display = 'block';
-            document.getElementById('login-btn').textContent = 'Sign in';
             return;
         }
         const data = await r.json();
@@ -839,7 +843,9 @@ async function doLogin() {
     } catch {
         errEl.textContent = 'Could not reach the server.';
         errEl.style.display = 'block';
-        document.getElementById('login-btn').textContent = 'Sign in';
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign in';
     }
 }
 

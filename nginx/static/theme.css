@@ -176,6 +176,8 @@ footer {
 
 .btn:hover { text-decoration: none; }
 
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+
 .btn-primary {
     background: var(--accent);
     color: #fff;
