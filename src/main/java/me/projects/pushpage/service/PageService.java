@@ -52,11 +52,14 @@ public class PageService {
     private final PageRepository pageRepository;
     private final HealthService healthService;
     private final AuthContext authContext;
+    private final QuotaPolicy quotaPolicy;
 
-    public PageService(PageRepository pageRepository, HealthService healthService, AuthContext authContext) {
+    public PageService(PageRepository pageRepository, HealthService healthService,
+                       AuthContext authContext, QuotaPolicy quotaPolicy) {
         this.pageRepository = pageRepository;
         this.healthService = healthService;
         this.authContext = authContext;
+        this.quotaPolicy = quotaPolicy;
     }
 
     @PostConstruct
@@ -96,6 +99,8 @@ public class PageService {
     }
 
     private PublishResponse publishHtml(String html, String title) {
+        User currentUser = authContext.getCurrentUser();
+        quotaPolicy.check(currentUser);
         long sizeBytes = html.getBytes(StandardCharsets.UTF_8).length;
         if (sizeBytes > maxFileSize.toBytes()) {
             throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE,
@@ -110,7 +115,6 @@ public class PageService {
             throw new RuntimeException("Failed to write page file", e);
         }
 
-        User currentUser = authContext.getCurrentUser();
         String userId = currentUser != null ? currentUser.id() : null;
         Instant expiresAt = expiresAt(currentUser);
         pageRepository.save(id, title, userId, expiresAt);

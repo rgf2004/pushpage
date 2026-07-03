@@ -37,11 +37,14 @@ public class UserService implements ApplicationRunner {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final UserLifecycleHooks lifecycleHooks;
+    private final UserSummaryEnricher summaryEnricher;
 
-    public UserService(UserRepository userRepository, JwtService jwtService, UserLifecycleHooks lifecycleHooks) {
+    public UserService(UserRepository userRepository, JwtService jwtService,
+                       UserLifecycleHooks lifecycleHooks, UserSummaryEnricher summaryEnricher) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.lifecycleHooks = lifecycleHooks;
+        this.summaryEnricher = summaryEnricher;
     }
 
     @Override
@@ -108,7 +111,7 @@ public class UserService implements ApplicationRunner {
     }
 
     public List<UserSummary> listUsers() {
-        return userRepository.findAll();
+        return summaryEnricher.enrich(userRepository.findAll());
     }
 
     public void deactivateUser(String id) {

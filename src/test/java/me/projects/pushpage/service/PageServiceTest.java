@@ -44,6 +44,9 @@ class PageServiceTest {
     @Mock
     private AuthContext authContext;
 
+    @Mock
+    private QuotaPolicy quotaPolicy;
+
     @InjectMocks
     private PageService pageService;
 

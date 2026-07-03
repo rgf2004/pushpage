@@ -1,7 +1,9 @@
 package me.projects.pushpage.config;
 
 import me.projects.pushpage.model.User;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
 
 @Component
 public class AuthContext {
@@ -14,6 +16,14 @@ public class AuthContext {
 
     public User getCurrentUser() {
         return holder.get();
+    }
+
+    public User requireCurrentUser() {
+        User user = holder.get();
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return user;
     }
 
     public boolean isAdmin() {
