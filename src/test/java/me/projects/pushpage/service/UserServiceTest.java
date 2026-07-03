@@ -3,6 +3,7 @@ package me.projects.pushpage.service;
 import me.projects.pushpage.model.LoginRequest;
 import me.projects.pushpage.model.LoginResponse;
 import me.projects.pushpage.model.SignUpRequest;
+import me.projects.pushpage.model.UserSummary;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,9 @@ class UserServiceTest {
 
     @Mock
     private UserLifecycleHooks lifecycleHooks;
+
+    @Mock
+    private UserSummaryEnricher summaryEnricher;
 
     @InjectMocks
     private UserService userService;

@@ -1,6 +1,7 @@
 package me.projects.pushpage.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
@@ -10,5 +11,6 @@ public record UserSummary(
         String email,
         @JsonProperty("created_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant createdAt,
         boolean active,
-        boolean admin
+        boolean admin,
+        @JsonInclude(JsonInclude.Include.NON_NULL) String plan
 ) {}

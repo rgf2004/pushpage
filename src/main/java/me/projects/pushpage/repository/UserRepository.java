@@ -48,7 +48,8 @@ public class UserRepository {
                         rs.getString("email"),
                         rs.getTimestamp("created_at").toInstant(),
                         rs.getBoolean("active"),
-                        rs.getBoolean("admin")
+                        rs.getBoolean("admin"),
+                        null
                 )
         );
     }
