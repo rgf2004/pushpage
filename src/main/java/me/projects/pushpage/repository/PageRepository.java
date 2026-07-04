@@ -107,7 +107,7 @@ public class PageRepository {
                 rs.getString("title"),
                 toInstant(rs.getTimestamp("created_at")),
                 toInstant(rs.getTimestamp("deleted_at")),
-                Page.toExternalExpiresAt(toInstant(rs.getTimestamp("expires_at"))),
+                toInstant(rs.getTimestamp("expires_at")),
                 url,
                 rs.getString("user_id")
         );

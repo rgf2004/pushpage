@@ -64,7 +64,7 @@ class PageServiceTest {
         ReflectionTestUtils.setField(pageService, "guestExpirationMinutes", 30);
         pageService.init();
         lenient().when(authContext.getCurrentUser()).thenReturn(ADMIN_USER);
-        lenient().when(retentionPolicy.expiresAt(any(), anyBoolean()))
+        lenient().when(retentionPolicy.expiresAt(any()))
                 .thenReturn(Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS));
     }
 
@@ -178,33 +178,17 @@ class PageServiceTest {
     }
 
     @Test
-    void publishPage_whenPermanentOmitted_delegatesToRetentionPolicyWithFalse() {
+    void publishPage_delegatesExpiryToRetentionPolicy() {
         pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
 
-        verify(retentionPolicy).expiresAt(ADMIN_USER, false);
-    }
-
-    @Test
-    void publishPage_whenPermanentTrue_delegatesToRetentionPolicyWithTrue() {
-        pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test", true));
-
-        verify(retentionPolicy).expiresAt(ADMIN_USER, true);
-    }
-
-    @Test
-    void publishPage_whenRetentionPolicyReturnsNoExpiry_responseExposesNullExpiresAt() {
-        when(retentionPolicy.expiresAt(any(), anyBoolean())).thenReturn(Page.NO_EXPIRY);
-
-        PublishResponse response = pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test", true));
-
-        assertThat(response.expiresAt()).isNull();
+        verify(retentionPolicy).expiresAt(ADMIN_USER);
     }
 
     @Test
     void publishPage_asGuest_neverDelegatesToRetentionPolicy() {
         when(authContext.getCurrentUser()).thenReturn(null);
 
-        pageService.publish(new PublishRequest("<h1>Guest</h1>", "Guest Page", true));
+        pageService.publish(new PublishRequest("<h1>Guest</h1>", "Guest Page"));
 
         verifyNoInteractions(retentionPolicy);
     }

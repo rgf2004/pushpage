@@ -16,7 +16,7 @@ Pushpage is a service that accepts HTML and returns a public URL. Use it in two 
 
 | Operation | MCP tool | Direct API |
 |-----------|----------|------------|
-| Publish | `publish_page(html, title?, permanent?)` | `POST /api/pages` |
+| Publish | `publish_page(html, title?)` | `POST /api/pages` |
 | List | `list_pages()` | `GET /api/pages` |
 | Delete | `delete_page(id)` | `DELETE /api/pages/{id}` |
 | Health | `health()` | `GET /api/health` |
@@ -59,8 +59,6 @@ publish_page(html="<html>...</html>")
 
 `title` is optional — when omitted the server extracts it from the HTML `<title>` tag, falling back to `"Untitled"`. Pass it explicitly only to override what's in the HTML.
 
-`permanent` is optional (default `false`) — pass `true` only if the user explicitly asks for a page that never expires; some deployments may restrict this by plan.
-
 **curl fallback — JSON (when you have HTML as a string):**
 ```bash
 PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
@@ -90,8 +88,6 @@ Response (both variants):
   "expires_at": "2026-07-11T10:00:00Z"
 }
 ```
-
-`expires_at` is `null` when the page was published with `permanent: true`.
 
 Return the `url` to the user. That's the shareable link — they can open it in a browser, share it, or bookmark it.
 

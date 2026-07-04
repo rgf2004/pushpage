@@ -142,36 +142,6 @@ class PageControllerIT extends PostgresTestSupport {
     }
 
     @Test
-    void publishPage_withPermanentTrue_returnsNullExpiresAtAndNeverExpires() throws Exception {
-        String response = mockMvc.perform(post("/pages")
-                        .header("X-Api-Key", TEST_API_KEY)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"html": "<h1>Permanent</h1>", "title": "Permanent Page", "permanent": true}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.expires_at").doesNotExist())
-                .andReturn().getResponse().getContentAsString();
-
-        String id = response.replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
-        Timestamp storedExpiresAt = jdbc.queryForObject(
-                "SELECT expires_at FROM pages WHERE id = ?", Timestamp.class, id);
-        assertThat(storedExpiresAt.toInstant()).isEqualTo(me.projects.pushpage.model.Page.NO_EXPIRY);
-    }
-
-    @Test
-    void publishPage_withPermanentFalse_returnsNonNullExpiresAt() throws Exception {
-        mockMvc.perform(post("/pages")
-                        .header("X-Api-Key", TEST_API_KEY)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"html": "<h1>Temp</h1>", "title": "Temp Page", "permanent": false}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.expires_at").exists());
-    }
-
-    @Test
     void listPages_returns200WithJsonArray() throws Exception {
         mockMvc.perform(get("/pages")
                         .header("X-Api-Key", TEST_API_KEY))

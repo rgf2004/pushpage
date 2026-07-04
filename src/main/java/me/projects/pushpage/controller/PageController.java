@@ -31,9 +31,7 @@ public class PageController {
 
     @Operation(summary = "Publish an HTML page (JSON)", operationId = "publishPageJson",
             description = "Saves the HTML as a static file and returns a public URL. " +
-                    "If the content does not start with <!DOCTYPE>, it is automatically wrapped in a minimal HTML shell. " +
-                    "Set \"permanent\": true so the page never expires; self-hosted deployments honor this for any " +
-                    "user, cloud deployments may restrict it by plan.")
+                    "If the content does not start with <!DOCTYPE>, it is automatically wrapped in a minimal HTML shell.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page published successfully",
                     content = @Content(schema = @Schema(implementation = PublishResponse.class))),
@@ -60,13 +58,10 @@ public class PageController {
     @PostMapping(value = "/pages", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PublishResponse> publishFile(
             @Parameter(description = "HTML file to publish")
-            @RequestParam("file") MultipartFile file,
-            @Parameter(description = "If true, the page never expires. Self-hosted deployments honor this " +
-                    "for any user; cloud deployments may restrict it by plan.")
-            @RequestParam(value = "permanent", required = false, defaultValue = "false") boolean permanent) {
+            @RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok()
                 .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(pageService.getMaxFileSizeBytes()))
-                .body(pageService.publishFile(file, permanent));
+                .body(pageService.publishFile(file));
     }
 
     @Operation(summary = "List all published pages",

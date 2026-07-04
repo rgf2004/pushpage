@@ -77,10 +77,10 @@ public class PageService {
         }
         String title = (request.title() != null && !request.title().isBlank())
                 ? request.title() : extractTitle(request.html());
-        return publishHtml(request.html(), title, Boolean.TRUE.equals(request.permanent()));
+        return publishHtml(request.html(), title);
     }
 
-    public PublishResponse publishFile(MultipartFile file, boolean permanent) {
+    public PublishResponse publishFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File part is required");
         }
@@ -94,10 +94,10 @@ public class PageService {
         String filenameTitle = titleFromFilename(file.getOriginalFilename());
         String title = !titleFromTag.equals("Untitled") ? titleFromTag
                 : (filenameTitle != null ? filenameTitle : "Untitled");
-        return publishHtml(html, title, permanent);
+        return publishHtml(html, title);
     }
 
-    private PublishResponse publishHtml(String html, String title, boolean permanentRequested) {
+    private PublishResponse publishHtml(String html, String title) {
         User currentUser = authContext.getCurrentUser();
         quotaPolicy.check(currentUser);
         long sizeBytes = html.getBytes(StandardCharsets.UTF_8).length;
@@ -115,12 +115,12 @@ public class PageService {
         }
 
         String userId = currentUser != null ? currentUser.id() : null;
-        Instant expiresAt = expiresAt(currentUser, permanentRequested);
+        Instant expiresAt = expiresAt(currentUser);
         pageRepository.save(id, title, userId, expiresAt);
         healthService.invalidateCache();
 
         String url = baseUrl + "/" + id + ".html";
-        return new PublishResponse(url, id, Page.toExternalExpiresAt(expiresAt));
+        return new PublishResponse(url, id, expiresAt);
     }
 
     public List<Page> listPages() {
@@ -147,10 +147,10 @@ public class PageService {
         healthService.invalidateCache();
     }
 
-    private Instant expiresAt(User user, boolean permanentRequested) {
+    private Instant expiresAt(User user) {
         return user == null
                 ? Instant.now().plus(guestExpirationMinutes, ChronoUnit.MINUTES)
-                : retentionPolicy.expiresAt(user, permanentRequested);
+                : retentionPolicy.expiresAt(user);
     }
 
     private User requireCurrentUser() {

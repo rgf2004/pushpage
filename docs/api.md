@@ -94,7 +94,7 @@ Publish an HTML page and receive a shareable URL. Two content types are accepted
 
 **Auth:** optional (guest or authenticated)
 
-Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after `CLEANUP_RETENTION_DAYS` (default 30 days), unless published with `"permanent": true` (see below). Retention is computed by the `RetentionPolicy` extension point (`me.projects.pushpage.service.RetentionPolicy`); self-hosted deployments use the single global default for every user, cloud deployments may vary it by plan.
+Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after `CLEANUP_RETENTION_DAYS` (default 30 days). Retention is computed by the `RetentionPolicy` extension point (`me.projects.pushpage.service.RetentionPolicy`); self-hosted deployments use the single global default for every user, cloud deployments may vary it by plan.
 
 **Response headers (both variants):**
 
@@ -112,15 +112,12 @@ Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after 
 }
 ```
 
-`expires_at` is `null` when the page never expires (see `permanent` below).
-
 #### Variant A — JSON (`Content-Type: application/json`)
 
 ```json
 {
   "html": "<html>...</html>",
-  "title": "My Report",
-  "permanent": false
+  "title": "My Report"
 }
 ```
 
@@ -128,7 +125,6 @@ Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after 
 |-------|------|----------|-------------|
 | `html` | string | yes | Full HTML content. Max size controlled by `MAX_FILE_SIZE`. |
 | `title` | string | no | Human-readable title. Extracted from the HTML `<title>` tag if omitted; falls back to `"Untitled"`. |
-| `permanent` | boolean | no | If `true`, the page never expires (default `false`). Self-hosted deployments honor this for any authenticated user; cloud deployments may restrict it by plan. Ignored for guest (unauthenticated) publishes, which always use the fixed guest expiry window. |
 
 ```bash
 curl -s -X POST https://pushpage.link/api/pages \
@@ -144,7 +140,6 @@ Upload an `.html` file directly — no JSON wrapping required.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `file` | file part | yes | HTML file to publish. Max size controlled by `MAX_FILE_SIZE`. |
-| `permanent` | boolean | no | Same semantics as the JSON variant's `permanent` field (default `false`). |
 
 Title resolution order:
 1. `<title>` tag in the HTML content
