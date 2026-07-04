@@ -54,6 +54,12 @@ JWT_SECRET=<output from above>
 
 Never use a short, predictable, or human-typed string — the secret protects all authenticated sessions.
 
+## Flyway Migrations
+
+| Variable / Property | Where | Description | Default |
+|---------------------|-------|-------------|---------|
+| `FLYWAY_OUT_OF_ORDER` | `.env` | Whether Flyway is allowed to apply a resolved migration numbered lower than one already applied. Only relevant to forks that merge a second migration location on top of this one (e.g. a cloud fork with its own higher-numbered migrations) — after such a fork applies its own migration, a later upstream sync can introduce a new lower-numbered migration that Flyway's default strict-ordering validation would otherwise reject at startup. Self-hosted deployments only ever have one location applied strictly in order, so leave this at the default. | `false` |
+
 ## Database Variables
 
 pushpage uses PostgreSQL. The following variables configure the connection:
