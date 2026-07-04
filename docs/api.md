@@ -267,10 +267,13 @@ List all users ordered by creation date.
     "email": "alice@example.com",
     "created_at": "2026-01-01T00:00:00Z",
     "active": true,
-    "admin": false
+    "admin": false,
+    "active_page_count": 3
   }
 ]
 ```
+
+`active_page_count` is the number of the user's pages that are not soft-deleted and not expired. Cloud deployments may add extra nullable fields (e.g. `plan`, `email_verified`) that are absent in self-hosted responses.
 
 ---
 

@@ -604,6 +604,7 @@
                             <th>Email</th>
                             <th>Role</th>
                             <th>Status</th>
+                            <th>Active Pages</th>
                             <th>Created</th>
                             <th></th>
                         </tr>
@@ -1055,6 +1056,7 @@ async function loadUsers() {
                 <td style="font-weight:500">${esc(u.email || '—')}</td>
                 <td><span class="role-badge ${u.admin ? 'admin' : ''}">${u.admin ? 'admin' : 'user'}</span></td>
                 <td><span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>${isActive ? 'Active' : 'Inactive'}</td>
+                <td>${u['active_page_count'] ?? 0}</td>
                 <td class="date-cell">${fmtDate(u['created_at'])}</td>
                 <td>
                     <div class="user-actions">

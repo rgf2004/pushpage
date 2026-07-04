@@ -21,6 +21,7 @@ pushpage uses **PostgreSQL** for persistence. Schema migrations are managed by F
 |------|--------|---------|
 | `idx_pages_created_at` | `created_at` | Speeds up chronological ordering and range queries |
 | `idx_pages_expires_at` | `expires_at` | Speeds up the cleanup predicate scan |
+| `idx_pages_user_id` | `user_id` | Speeds up per-user page lookups (e.g. `GET /admin/users` active page count) |
 
 ---
 
@@ -57,3 +58,5 @@ Migration files follow the naming convention: `V{version}__{description}.sql`
 | `V3__add_users_table.sql` | Creates `users` table; adds `user_id` FK column to `pages` |
 | `V4__add_expires_at_to_pages.sql` | Adds `expires_at` to `pages`; adds `idx_pages_expires_at` |
 | `V5__convert_active_admin_to_boolean.sql` | Converts `active` and `admin` columns in `users` from `INTEGER` to `BOOLEAN` |
+| `V6__add_password_hash.sql` | Adds `password_hash` to `users`; drops `username`; adds unique index on `email` |
+| `V7__add_user_id_index_to_pages.sql` | Adds `idx_pages_user_id` on `pages(user_id)` |
