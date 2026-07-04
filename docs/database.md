@@ -29,9 +29,9 @@ pushpage uses **PostgreSQL** for persistence. Schema migrations are managed by F
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
 | `id` | TEXT (PK) | no | Randomly generated 8-char hex identifier |
-| `username` | TEXT | no | Unique login name |
-| `email` | TEXT | yes | Optional contact email |
+| `email` | TEXT | yes | Contact email; login identifier |
 | `api_key_hash` | TEXT | no | SHA-256 hex digest of the raw API key |
+| `password_hash` | TEXT | yes | BCrypt hash of the account password |
 | `created_at` | TIMESTAMP | no | Timestamp of account creation |
 | `active` | BOOLEAN | no | `true` = active, `false` = deactivated (default: `true`) |
 | `admin` | BOOLEAN | no | `true` = admin, `false` = regular user (default: `false`) |
@@ -41,8 +41,7 @@ pushpage uses **PostgreSQL** for persistence. Schema migrations are managed by F
 | Name | Column | Purpose |
 |------|--------|---------|
 | `idx_users_api_key_hash` | `api_key_hash` | Fast lookup on every authenticated request |
-| `idx_users_username` | `username` | Uniqueness check on user creation |
-| `idx_users_email` | `email` | Optional lookup by email |
+| `idx_users_email_unique` | `email` | Unique partial index enforcing email uniqueness where `email IS NOT NULL` |
 
 ## Migrations
 
@@ -57,3 +56,4 @@ Migration files follow the naming convention: `V{version}__{description}.sql`
 | `V3__add_users_table.sql` | Creates `users` table; adds `user_id` FK column to `pages` |
 | `V4__add_expires_at_to_pages.sql` | Adds `expires_at` to `pages`; adds `idx_pages_expires_at` |
 | `V5__convert_active_admin_to_boolean.sql` | Converts `active` and `admin` columns in `users` from `INTEGER` to `BOOLEAN` |
+| `V6__add_password_hash.sql` | Adds `password_hash` to `users`; drops `username`; adds `idx_users_email_unique` |
