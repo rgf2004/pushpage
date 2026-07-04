@@ -42,13 +42,22 @@ public class UserRepository {
 
     public List<UserSummary> findAll() {
         return jdbc.query(
-                "SELECT id, email, created_at, active, admin FROM users ORDER BY created_at ASC",
+                """
+                SELECT u.id, u.email, u.created_at, u.active, u.admin,
+                       COUNT(p.id) FILTER (WHERE p.deleted_at IS NULL AND (p.expires_at IS NULL OR p.expires_at > NOW())) AS active_page_count
+                FROM users u
+                LEFT JOIN pages p ON p.user_id = u.id
+                GROUP BY u.id, u.email, u.created_at, u.active, u.admin
+                ORDER BY u.created_at ASC
+                """,
                 (rs, i) -> new UserSummary(
                         rs.getString("id"),
                         rs.getString("email"),
                         rs.getTimestamp("created_at").toInstant(),
                         rs.getBoolean("active"),
                         rs.getBoolean("admin"),
+                        null,
+                        rs.getLong("active_page_count"),
                         null
                 )
         );

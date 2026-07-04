@@ -267,7 +267,8 @@ List all users ordered by creation date.
     "email": "alice@example.com",
     "created_at": "2026-01-01T00:00:00Z",
     "active": true,
-    "admin": false
+    "admin": false,
+    "active_page_count": 3
   }
 ]
 ```
