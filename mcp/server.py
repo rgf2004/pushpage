@@ -39,16 +39,17 @@ def _client() -> httpx.Client:
 # ── Tools ─────────────────────────────────────────────────────────────────────
 
 @mcp.tool()
-def publish_page(html: str, title: str | None = None) -> dict:
+def publish_page(html: str, title: str | None = None, permanent: bool = False) -> dict:
     """Publish an HTML page and return its shareable URL.
 
     Returns {url, id, expires_at}. title is optional — when omitted it is
     extracted from the HTML <title> tag, or falls back to 'Untitled'.
     expires_at is an ISO-8601 timestamp indicating when the page will be
-    automatically deleted.
+    automatically deleted, or null if permanent=True. Some deployments may
+    restrict permanent pages by plan.
     """
     with _client() as client:
-        payload = {"html": html}
+        payload = {"html": html, "permanent": permanent}
         if title is not None:
             payload["title"] = title
         r = client.post("/api/pages", json=payload)

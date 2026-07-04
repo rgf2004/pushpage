@@ -43,9 +43,6 @@ public class PageService {
     @Value("${app.max-file-size}")
     private DataSize maxFileSize;
 
-    @Value("${app.cleanup.retention-days:30}")
-    private int retentionDays;
-
     @Value("${app.guest.expiration-minutes:30}")
     private int guestExpirationMinutes;
 
@@ -53,13 +50,15 @@ public class PageService {
     private final HealthService healthService;
     private final AuthContext authContext;
     private final QuotaPolicy quotaPolicy;
+    private final RetentionPolicy retentionPolicy;
 
     public PageService(PageRepository pageRepository, HealthService healthService,
-                       AuthContext authContext, QuotaPolicy quotaPolicy) {
+                       AuthContext authContext, QuotaPolicy quotaPolicy, RetentionPolicy retentionPolicy) {
         this.pageRepository = pageRepository;
         this.healthService = healthService;
         this.authContext = authContext;
         this.quotaPolicy = quotaPolicy;
+        this.retentionPolicy = retentionPolicy;
     }
 
     @PostConstruct
@@ -78,10 +77,10 @@ public class PageService {
         }
         String title = (request.title() != null && !request.title().isBlank())
                 ? request.title() : extractTitle(request.html());
-        return publishHtml(request.html(), title);
+        return publishHtml(request.html(), title, Boolean.TRUE.equals(request.permanent()));
     }
 
-    public PublishResponse publishFile(MultipartFile file) {
+    public PublishResponse publishFile(MultipartFile file, boolean permanent) {
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File part is required");
         }
@@ -95,10 +94,10 @@ public class PageService {
         String filenameTitle = titleFromFilename(file.getOriginalFilename());
         String title = !titleFromTag.equals("Untitled") ? titleFromTag
                 : (filenameTitle != null ? filenameTitle : "Untitled");
-        return publishHtml(html, title);
+        return publishHtml(html, title, permanent);
     }
 
-    private PublishResponse publishHtml(String html, String title) {
+    private PublishResponse publishHtml(String html, String title, boolean permanentRequested) {
         User currentUser = authContext.getCurrentUser();
         quotaPolicy.check(currentUser);
         long sizeBytes = html.getBytes(StandardCharsets.UTF_8).length;
@@ -116,12 +115,12 @@ public class PageService {
         }
 
         String userId = currentUser != null ? currentUser.id() : null;
-        Instant expiresAt = expiresAt(currentUser);
+        Instant expiresAt = expiresAt(currentUser, permanentRequested);
         pageRepository.save(id, title, userId, expiresAt);
         healthService.invalidateCache();
 
         String url = baseUrl + "/" + id + ".html";
-        return new PublishResponse(url, id, expiresAt);
+        return new PublishResponse(url, id, Page.toExternalExpiresAt(expiresAt));
     }
 
     public List<Page> listPages() {
@@ -148,10 +147,10 @@ public class PageService {
         healthService.invalidateCache();
     }
 
-    private Instant expiresAt(User user) {
+    private Instant expiresAt(User user, boolean permanentRequested) {
         return user == null
                 ? Instant.now().plus(guestExpirationMinutes, ChronoUnit.MINUTES)
-                : Instant.now().plus(retentionDays, ChronoUnit.DAYS);
+                : retentionPolicy.expiresAt(user, permanentRequested);
     }
 
     private User requireCurrentUser() {

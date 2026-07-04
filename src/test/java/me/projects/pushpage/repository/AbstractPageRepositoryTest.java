@@ -161,6 +161,28 @@ abstract class AbstractPageRepositoryTest {
         assertThat(stored.toInstant()).isCloseTo(expiresAt, within(1, ChronoUnit.SECONDS));
     }
 
+    // --- permanent pages (NO_EXPIRY sentinel) ---
+
+    @Test
+    void findById_whenExpiresAtIsNoExpirySentinel_mapsToNullExternally() {
+        insertPage("perm1", "Permanent", Instant.now(), Page.NO_EXPIRY);
+
+        Optional<Page> result = repository.findById("perm1");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().expiresAt()).isNull();
+    }
+
+    @Test
+    void findExpired_shouldNeverReturnPermanentPages() {
+        Instant legacyCutoff = Instant.now().minus(30, ChronoUnit.DAYS);
+        insertPage("perm1", "Permanent", Instant.now().minus(400, ChronoUnit.DAYS), Page.NO_EXPIRY);
+
+        List<Page> result = repository.findExpired(legacyCutoff);
+
+        assertThat(result).isEmpty();
+    }
+
     // --- findExpired ---
 
     @Test

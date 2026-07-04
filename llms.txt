@@ -66,14 +66,19 @@ curl -s -X POST https://pushpage.link/api/pages \
 
 `title` is optional. When omitted or blank, the server extracts it from the HTML `<title>` tag; falls back to `"Untitled"`. Pass it explicitly to override what is in the HTML.
 
+Pass `"permanent": true` to make the page never expire (default `false`; some deployments may restrict this by plan).
+
 Response:
 
 ```json
 {
   "url": "https://pushpage.link/pages/abc123.html",
-  "id": "abc123"
+  "id": "abc123",
+  "expires_at": "2026-07-11T10:00:00Z"
 }
 ```
+
+`expires_at` is `null` when the page was published with `permanent: true`.
 
 Return the `url` to the user. That is the shareable link. Do not paste the HTML into chat.
 
