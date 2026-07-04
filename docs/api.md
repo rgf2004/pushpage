@@ -273,8 +273,6 @@ List all users ordered by creation date.
 ]
 ```
 
-`active_page_count` is the number of the user's pages that are not soft-deleted and not expired. Cloud deployments may add extra nullable fields (e.g. `plan`, `email_verified`) that are absent in self-hosted responses.
-
 ---
 
 ### PATCH /api/admin/users/{id}/deactivate
