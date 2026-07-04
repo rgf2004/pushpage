@@ -43,9 +43,6 @@ public class PageService {
     @Value("${app.max-file-size}")
     private DataSize maxFileSize;
 
-    @Value("${app.cleanup.retention-days:30}")
-    private int retentionDays;
-
     @Value("${app.guest.expiration-minutes:30}")
     private int guestExpirationMinutes;
 
@@ -53,13 +50,15 @@ public class PageService {
     private final HealthService healthService;
     private final AuthContext authContext;
     private final QuotaPolicy quotaPolicy;
+    private final RetentionPolicy retentionPolicy;
 
     public PageService(PageRepository pageRepository, HealthService healthService,
-                       AuthContext authContext, QuotaPolicy quotaPolicy) {
+                       AuthContext authContext, QuotaPolicy quotaPolicy, RetentionPolicy retentionPolicy) {
         this.pageRepository = pageRepository;
         this.healthService = healthService;
         this.authContext = authContext;
         this.quotaPolicy = quotaPolicy;
+        this.retentionPolicy = retentionPolicy;
     }
 
     @PostConstruct
@@ -151,7 +150,7 @@ public class PageService {
     private Instant expiresAt(User user) {
         return user == null
                 ? Instant.now().plus(guestExpirationMinutes, ChronoUnit.MINUTES)
-                : Instant.now().plus(retentionDays, ChronoUnit.DAYS);
+                : retentionPolicy.expiresAt(user);
     }
 
     private User requireCurrentUser() {

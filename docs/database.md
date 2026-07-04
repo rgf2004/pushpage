@@ -12,7 +12,7 @@ pushpage uses **PostgreSQL** for persistence. Schema migrations are managed by F
 | `title` | TEXT | no | Human-readable page title |
 | `created_at` | TIMESTAMP | no | Timestamp of when the page was published |
 | `deleted_at` | TIMESTAMP | yes | Timestamp of soft-deletion; `NULL` for live pages |
-| `expires_at` | TIMESTAMP | yes | Scheduled deletion time; `NULL` means the page does not have an explicit expiry |
+| `expires_at` | TIMESTAMP | yes | Scheduled deletion time. `NULL` only occurs on rows written before this column existed (pre-`V4`) and is swept up by the cleanup job's created-at fallback based on `created_at` — every row written by the app always has a concrete `expires_at`. |
 | `user_id` | TEXT (FK → users.id) | yes | Owner of the page |
 
 **Indexes:**

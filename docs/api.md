@@ -94,7 +94,7 @@ Publish an HTML page and receive a shareable URL. Two content types are accepted
 
 **Auth:** optional (guest or authenticated)
 
-Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after `CLEANUP_RETENTION_DAYS` (default 30 days).
+Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after `CLEANUP_RETENTION_DAYS` (default 30 days). Retention is computed by the `RetentionPolicy` extension point (`me.projects.pushpage.service.RetentionPolicy`); self-hosted deployments use the single global default for every user, cloud deployments may vary it by plan.
 
 **Response headers (both variants):**
 
@@ -107,7 +107,8 @@ Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after 
 ```json
 {
   "url": "https://pushpage.link/pages/abc123.html",
-  "id": "abc123"
+  "id": "abc123",
+  "expires_at": "2026-07-11T10:00:00Z"
 }
 ```
 

@@ -71,7 +71,8 @@ Response:
 ```json
 {
   "url": "https://pushpage.link/pages/abc123.html",
-  "id": "abc123"
+  "id": "abc123",
+  "expires_at": "2026-07-11T10:00:00Z"
 }
 ```
 

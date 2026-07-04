@@ -47,6 +47,9 @@ class PageServiceTest {
     @Mock
     private QuotaPolicy quotaPolicy;
 
+    @Mock
+    private RetentionPolicy retentionPolicy;
+
     @InjectMocks
     private PageService pageService;
 
@@ -58,10 +61,11 @@ class PageServiceTest {
         ReflectionTestUtils.setField(pageService, "baseUrl", "http://localhost");
         ReflectionTestUtils.setField(pageService, "pagesDir", tempDir.toString());
         ReflectionTestUtils.setField(pageService, "maxFileSize", DataSize.ofMegabytes(1));
-        ReflectionTestUtils.setField(pageService, "retentionDays", 30);
         ReflectionTestUtils.setField(pageService, "guestExpirationMinutes", 30);
         pageService.init();
         lenient().when(authContext.getCurrentUser()).thenReturn(ADMIN_USER);
+        lenient().when(retentionPolicy.expiresAt(any()))
+                .thenReturn(Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS));
     }
 
     @Test
@@ -171,6 +175,22 @@ class PageServiceTest {
                 argThat(exp -> !exp.isBefore(before.plusSeconds(29 * 60))
                         && !exp.isAfter(after.plusSeconds(31 * 60)))
         );
+    }
+
+    @Test
+    void publishPage_delegatesExpiryToRetentionPolicy() {
+        pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
+
+        verify(retentionPolicy).expiresAt(ADMIN_USER);
+    }
+
+    @Test
+    void publishPage_asGuest_neverDelegatesToRetentionPolicy() {
+        when(authContext.getCurrentUser()).thenReturn(null);
+
+        pageService.publish(new PublishRequest("<h1>Guest</h1>", "Guest Page"));
+
+        verifyNoInteractions(retentionPolicy);
     }
 
     @Test
