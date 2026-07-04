@@ -104,6 +104,8 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 
 `app.jwt.expiration-hours` (default `24`) is set in `application.properties` and does not need a `.env` entry. See `docs/configuration.md` for details.
 
+`FLYWAY_OUT_OF_ORDER` (default `false`) only matters for forks that merge a second Flyway migration location on top of this one (e.g. a cloud fork applying its own higher-numbered migrations). Self-hosted deployments never need to set it. See `docs/configuration.md` for details.
+
 ## Authentication
 
 Two credential types are accepted:
