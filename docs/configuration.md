@@ -56,9 +56,20 @@ Never use a short, predictable, or human-typed string — the secret protects al
 
 ## Flyway Migrations
 
-| Variable / Property | Where | Description | Default |
-|---------------------|-------|-------------|---------|
-| `FLYWAY_OUT_OF_ORDER` | `.env` | Whether Flyway is allowed to apply a resolved migration numbered lower than one already applied. Only relevant to forks that merge a second migration location on top of this one (e.g. a cloud fork with its own higher-numbered migrations) — after such a fork applies its own migration, a later upstream sync can introduce a new lower-numbered migration that Flyway's default strict-ordering validation would otherwise reject at startup. Self-hosted deployments only ever have one location applied strictly in order, so leave this at the default. | `false` |
+All migrations live under `src/main/resources/db/migration/` (Flyway's default
+location, scanned recursively, including the `cloud/` subdirectory) and are applied in
+strictly increasing version order — there's a single timeline, so new migrations should
+always take the next unused version number and never reuse or fall below one already
+released.
+
+## Subscription plans, quota, and email verification (`cloud` profile)
+
+Setting `SPRING_PROFILES_ACTIVE=cloud` turns on daily publish quota, plan-based page
+retention, and mandatory sign-up email verification — see the "Subscription plans"
+section of `CLAUDE.md` and [`docs/email-verification.md`](email-verification.md).
+Admin and guest requests are always exempt from quota, so a self-hosted instance where
+you're the only (admin) user is unaffected either way. Leaving the variable unset (the
+default) keeps the base behavior: no quota, no forced verification.
 
 ## Database Variables
 
