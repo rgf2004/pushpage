@@ -9,7 +9,7 @@ import me.projects.pushpage.service.RateLimitService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import me.projects.pushpage.cloud.config.ConditionalOnEmailVerificationEnabled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@Profile("cloud")
+@ConditionalOnEmailVerificationEnabled
 public class EmailVerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailVerificationService.class);

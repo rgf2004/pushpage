@@ -682,8 +682,8 @@
                         <tr>
                             <th>Email</th>
                             <th>Role</th>
-                            <th>Plan</th>
-                            <th>Verified</th>
+                            <th id="th-plan">Plan</th>
+                            <th id="th-verified">Verified</th>
                             <th>Status</th>
                             <th>Active Pages</th>
                             <th>Created</th>
@@ -1157,6 +1157,12 @@ async function loadUsers() {
             return;
         }
 
+        // Plan / email_verified are only present when PLANS_ENABLED / EMAIL_VERIFICATION_ENABLED are on.
+        const showPlan = users.some(u => u.plan != null);
+        const showVerified = users.some(u => u.email_verified != null);
+        document.getElementById('th-plan').style.display = showPlan ? '' : 'none';
+        document.getElementById('th-verified').style.display = showVerified ? '' : 'none';
+
         const tbody = document.getElementById('users-tbody');
         tbody.innerHTML = '';
         users.forEach(u => {
@@ -1166,14 +1172,14 @@ async function loadUsers() {
             tr.innerHTML = `
                 <td style="font-weight:500">${esc(u.email || '—')}</td>
                 <td><span class="role-badge ${u.admin ? 'admin' : ''}">${u.admin ? 'admin' : 'user'}</span></td>
-                <td><span class="plan-badge ${esc(u.plan || 'tier1')}">${esc(u.plan || 'tier1')}</span></td>
-                <td><span class="verified-badge ${u.email_verified ? 'verified' : ''}">${u.email_verified ? 'Verified' : 'Unverified'}</span></td>
+                ${showPlan ? `<td><span class="plan-badge ${esc(u.plan || 'tier1')}">${esc(u.plan || 'tier1')}</span></td>` : ''}
+                ${showVerified ? `<td><span class="verified-badge ${u.email_verified ? 'verified' : ''}">${u.email_verified ? 'Verified' : 'Unverified'}</span></td>` : ''}
                 <td><span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>${isActive ? 'Active' : 'Inactive'}</td>
                 <td>${u['active_page_count'] ?? 0}</td>
                 <td class="date-cell">${fmtDate(u['created_at'])}</td>
                 <td>
                     <div class="user-actions">
-                        ${!u.email_verified ? `<button class="btn btn-secondary btn-sm" data-verify="${esc(String(u.id))}">Verify</button>` : ''}
+                        ${u.email_verified === false ? `<button class="btn btn-secondary btn-sm" data-verify="${esc(String(u.id))}">Verify</button>` : ''}
                         ${isActive && !u.admin && !isSelf ? `<button class="btn btn-secondary btn-sm" data-promote="${esc(String(u.id))}" data-puname="${esc(u.email || u.id)}">Promote</button>` : ''}
                         ${isActive && !isSelf ? `<button class="btn btn-danger btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.email || u.id)}">Deactivate</button>` : ''}
                     </div>

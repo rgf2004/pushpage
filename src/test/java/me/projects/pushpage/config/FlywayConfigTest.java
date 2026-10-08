@@ -9,10 +9,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * FlywayConfig builds its Flyway bean directly (Flyway.configure()...load()) and never
- * reads spring.flyway.* properties. Its default location, classpath:db/migration, is
- * scanned recursively, so migrations under db/migration/cloud are picked up without any
- * extra configuration and regardless of active profile.
+ * FlywayConfig builds its Flyway bean directly (Flyway.configure()...load()), scanning the
+ * default location classpath:db/migration. Every migration there, including V1000+, is
+ * applied regardless of which optional features are enabled.
  */
 @SpringBootTest
 class FlywayConfigTest extends PostgresTestSupport {
@@ -21,7 +20,7 @@ class FlywayConfigTest extends PostgresTestSupport {
     JdbcTemplate jdbcTemplate;
 
     @Test
-    void cloudMigrationsUnderDefaultSubdirectoryAreAppliedWithoutSpringFlywayLocations() {
+    void allMigrationsAreAppliedRegardlessOfFeatureFlags() {
         var appliedVersions = jdbcTemplate.queryForList(
                 "select version from flyway_schema_history where success = true", String.class);
 

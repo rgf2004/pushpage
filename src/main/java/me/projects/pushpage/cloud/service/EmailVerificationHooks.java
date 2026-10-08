@@ -6,7 +6,7 @@ import me.projects.pushpage.service.UserLifecycleHooks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
+import me.projects.pushpage.cloud.config.ConditionalOnEmailVerificationEnabled;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 @Primary
-@Profile("cloud")
+@ConditionalOnEmailVerificationEnabled
 public class EmailVerificationHooks implements UserLifecycleHooks {
 
     private static final Logger log = LoggerFactory.getLogger(EmailVerificationHooks.class);

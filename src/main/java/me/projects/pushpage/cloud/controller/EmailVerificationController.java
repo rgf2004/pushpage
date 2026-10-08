@@ -10,7 +10,7 @@ import me.projects.pushpage.cloud.model.ResendVerificationRequest;
 import me.projects.pushpage.cloud.service.EmailVerificationService;
 import me.projects.pushpage.cloud.service.ResendOutcome;
 import me.projects.pushpage.cloud.service.VerifyResult;
-import org.springframework.context.annotation.Profile;
+import me.projects.pushpage.cloud.config.ConditionalOnEmailVerificationEnabled;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,8 +24,8 @@ import java.net.URI;
 
 @RestController
 @RequestMapping("/auth")
-@Profile("cloud")
-@Tag(name = "Auth", description = "Email verification endpoints (cloud only)")
+@ConditionalOnEmailVerificationEnabled
+@Tag(name = "Auth", description = "Email verification endpoints (EMAIL_VERIFICATION_ENABLED)")
 public class EmailVerificationController {
 
     private final EmailVerificationService verificationService;

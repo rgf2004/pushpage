@@ -8,7 +8,7 @@ import me.projects.pushpage.service.RetentionPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
+import me.projects.pushpage.cloud.config.ConditionalOnPlansEnabled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -16,7 +16,7 @@ import java.time.temporal.ChronoUnit;
 
 @Service("cloudRetentionPolicy")
 @Primary
-@Profile("cloud")
+@ConditionalOnPlansEnabled
 public class RetentionService implements RetentionPolicy {
 
     private static final Logger log = LoggerFactory.getLogger(RetentionService.class);
