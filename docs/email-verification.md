@@ -1,7 +1,7 @@
 # Sign-up email verification (`EMAIL_VERIFICATION_ENABLED`)
 
 Gated behind the `EMAIL_VERIFICATION_ENABLED` environment variable
-(`me.projects.pushpage.cloud.*`, default `false`). Deployments that don't set it are unaffected — signup/login behaves
+(`me.projects.pushpage.emailverification.*`, default `false`). Deployments that don't set it are unaffected — signup/login behaves
 exactly as without this feature.
 
 ## Flow
@@ -73,7 +73,7 @@ unused columns when the feature is off.
 
 `GET /api/admin/users` surfaces verification status via `UserSummary.emailVerified`
 (nullable `Boolean` on the base `UserSummary` record — `null`/absent when the feature is
-off, always `true`/`false` when it's on). `CloudUserSummaryEnricher`
+off, always `true`/`false` when it's on). `FeatureUserSummaryEnricher`
 populates it with a bulk lookup (`EmailVerificationRepository.findVerifiedStatusByUserIds`),
 the same pattern used for `plan` via `PlanRepository.findPlansByUserIds`.
 
@@ -85,7 +85,7 @@ adds friction without a matching safety benefit.
 
 ## Email delivery — provider-agnostic by design
 
-`EmailService` (`me.projects.pushpage.cloud.email`) is a one-method interface
+`EmailService` (`me.projects.pushpage.emailverification.email`) is a one-method interface
 (`sendVerificationEmail(toEmail, link)`). The only implementation, `SmtpEmailService`,
 sends over SMTP via `spring-boot-starter-mail`/`JavaMailSender`. SMTP is supported by
 every mainstream transactional email provider (Mailtrap, Resend, SES, Sendgrid,

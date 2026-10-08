@@ -51,22 +51,17 @@ push-page/
     │   └── PageRepository.java     # JdbcTemplate
     ├── service/
     │   └── PublishService.java     # business logic
-    └── cloud/                      # optional features, gated by PLANS_ENABLED / EMAIL_VERIFICATION_ENABLED
-        ├── controller/              # PlanAdminController, EmailVerificationAdminController, EmailVerificationController
-        ├── email/                   # EmailService + SmtpEmailService
-        ├── model/                   # Plan enum
-        ├── repository/               # PlanRepository, EmailVerificationRepository
-        └── service/                  # QuotaService, RetentionService, EmailVerificationService, ...
+    ├── plans/                      # PLANS_ENABLED: Plan enum, PlanRepository, QuotaService, RetentionService, PlanAdminController
+    └── emailverification/          # EMAIL_VERIFICATION_ENABLED: hooks, service, repository, SMTP email, controllers
 ```
 
 ### Optional features (feature flags)
 
 Two independent features are compiled into every build and switched on with environment
-variables (both default `false`). Each flag registers `@Primary` beans under
-`me.projects.pushpage.cloud.*` that override the no-op defaults
-(`UserLifecycleHooks`, `QuotaPolicy`, `RetentionPolicy`, `UserSummaryEnricher`), using
-the `@ConditionalOnPlansEnabled` / `@ConditionalOnEmailVerificationEnabled` annotations in
-`cloud/config/`.
+variables (both default `false`). Each flag registers `@Primary` beans (in `plans` / `emailverification`) that override the
+no-op defaults (`UserLifecycleHooks`, `QuotaPolicy`, `RetentionPolicy`,
+`UserSummaryEnricher`), using the `@ConditionalOnPlansEnabled` / `@ConditionalOnEmailVerificationEnabled` annotations
+(one in each feature package).
 
 | Flag | Turns on |
 |------|----------|
@@ -208,12 +203,12 @@ by the server from the user's plan. Plans are set manually via
 
 | File | Role |
 |------|------|
-| `src/main/java/me/projects/pushpage/cloud/model/Plan.java` | Enum — tier names and their `dailyLimit` / `retentionDays` values |
-| `src/main/java/me/projects/pushpage/cloud/repository/PlanRepository.java` | DB access — reads/writes `plan` column on `users` |
-| `src/main/java/me/projects/pushpage/cloud/service/QuotaService.java` | `@Primary` `QuotaPolicy` — enforces daily limits, surfaces usage/limit/plan via `GET /api/me` |
-| `src/main/java/me/projects/pushpage/cloud/service/RetentionService.java` | `@Primary` `RetentionPolicy` — resolves the page's `expires_at` from the user's plan |
-| `src/main/java/me/projects/pushpage/cloud/service/CloudUserSummaryEnricher.java` | `@Primary` `UserSummaryEnricher` — adds `plan` field to admin user list |
-| `src/main/java/me/projects/pushpage/cloud/controller/PlanAdminController.java` | `PATCH /api/admin/users/{id}/plan` |
+| `src/main/java/me/projects/pushpage/plans/model/Plan.java` | Enum — tier names and their `dailyLimit` / `retentionDays` values |
+| `src/main/java/me/projects/pushpage/plans/repository/PlanRepository.java` | DB access — reads/writes `plan` column on `users` |
+| `src/main/java/me/projects/pushpage/plans/service/QuotaService.java` | `@Primary` `QuotaPolicy` — enforces daily limits, surfaces usage/limit/plan via `GET /api/me` |
+| `src/main/java/me/projects/pushpage/plans/service/RetentionService.java` | `@Primary` `RetentionPolicy` — resolves the page's `expires_at` from the user's plan |
+| `src/main/java/me/projects/pushpage/service/FeatureUserSummaryEnricher.java` | `@Primary` `UserSummaryEnricher` — adds `plan` field to admin user list |
+| `src/main/java/me/projects/pushpage/plans/controller/PlanAdminController.java` | `PATCH /api/admin/users/{id}/plan` |
 | `src/main/resources/db/migration/V1001__add_plan_to_users.sql` | Adds `plan TEXT NOT NULL DEFAULT 'tier1'` to `users` |
 | `nginx/dashboard.html` | Plan badge + quota progress bar in the Account tab; plan column in admin Users tab |
 
@@ -221,7 +216,7 @@ by the server from the user's plan. Plans are set manually via
 
 **Backend only — the frontend reads limits dynamically from `GET /api/me`, and per-page expiry from `GET /api/pages`.**
 
-1. Edit `src/main/java/me/projects/pushpage/cloud/model/Plan.java`:
+1. Edit `src/main/java/me/projects/pushpage/plans/model/Plan.java`:
    ```java
    tier1(50, 14),   // was tier1(30, 7)
    ```
