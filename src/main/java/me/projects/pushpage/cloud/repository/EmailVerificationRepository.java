@@ -1,6 +1,6 @@
 package me.projects.pushpage.cloud.repository;
 
-import org.springframework.context.annotation.Profile;
+import me.projects.pushpage.cloud.config.ConditionalOnEmailVerificationEnabled;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
-@Profile("cloud")
+@ConditionalOnEmailVerificationEnabled
 public class EmailVerificationRepository {
 
     private final JdbcTemplate jdbc;

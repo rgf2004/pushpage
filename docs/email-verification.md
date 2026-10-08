@@ -1,7 +1,7 @@
-# Sign-up email verification (optional, `cloud` profile)
+# Sign-up email verification (`EMAIL_VERIFICATION_ENABLED`)
 
-Gated behind the `cloud` Spring profile (`me.projects.pushpage.cloud.*`). Deployments
-that don't set `SPRING_PROFILES_ACTIVE=cloud` are unaffected — signup/login behaves
+Gated behind the `EMAIL_VERIFICATION_ENABLED` environment variable
+(`me.projects.pushpage.cloud.*`, default `false`). Deployments that don't set it are unaffected — signup/login behaves
 exactly as without this feature.
 
 ## Flow
@@ -66,18 +66,18 @@ Adds to `users`:
 
 Indexed on `verification_token` for the `verify-email` lookup.
 
-Note this migration always runs (it's part of the app's classpath regardless of which
-profile is active) — it just adds unused columns when the `cloud` profile is off.
+Note this migration always runs, whether or not the feature is enabled — it just adds
+unused columns when the feature is off.
 
 ## Admin Users tab
 
 `GET /api/admin/users` surfaces verification status via `UserSummary.emailVerified`
-(nullable `Boolean` on the base `UserSummary` record — `null`/absent when the `cloud`
-profile is off, always `true`/`false` when it's on). `CloudUserSummaryEnricher`
+(nullable `Boolean` on the base `UserSummary` record — `null`/absent when the feature is
+off, always `true`/`false` when it's on). `CloudUserSummaryEnricher`
 populates it with a bulk lookup (`EmailVerificationRepository.findVerifiedStatusByUserIds`),
 the same pattern used for `plan` via `PlanRepository.findPlansByUserIds`.
 
-`nginx/dashboard.html`'s Users tab shows a "Verified" badge per user, and a "Verify"
+`nginx/dashboard.html`'s Users tab (the Verified column only appears when the feature is on) shows a "Verified" badge per user, and a "Verify"
 button next to any unverified account, wired to `PATCH /admin/users/{id}/verify-email`
 (item 6 above). The button doesn't use a confirm modal, unlike Promote/Deactivate —
 marking an email verified isn't destructive or privilege-granting, so the extra click
@@ -97,7 +97,7 @@ category in Mailtrap's stats (open/click/bounce rate per category, useful for sp
 regression in one template). It's sent as a plain `X-` extension header, so any other
 SMTP provider just ignores it; nothing else about the integration depends on Mailtrap.
 
-### Env vars (only used when `SPRING_PROFILES_ACTIVE=cloud`)
+### Env vars (only used when `EMAIL_VERIFICATION_ENABLED=true`)
 
 | Variable | Description | Default |
 |----------|--------------|---------|
@@ -128,7 +128,7 @@ only these values.
 
 ## Activating
 
-Set `SPRING_PROFILES_ACTIVE=cloud` on the `publisher` service (see `docker-compose.yml`)
-and pass the `EMAIL_*` vars through. Without the `cloud` profile active, none of this
-code runs — `UserLifecycleHooks` falls back to the no-op and signup/login behavior is
-exactly as without this feature.
+Set `EMAIL_VERIFICATION_ENABLED=true` on the `publisher` service (see `docker-compose.yml`)
+and pass the `EMAIL_*` vars through. While it is `false`, none of this code runs —
+`UserLifecycleHooks` falls back to the no-op and signup/login behavior is exactly as
+without this feature.

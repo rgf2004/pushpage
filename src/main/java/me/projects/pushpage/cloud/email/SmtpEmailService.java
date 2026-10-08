@@ -3,7 +3,7 @@ package me.projects.pushpage.cloud.email;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import me.projects.pushpage.cloud.config.ConditionalOnEmailVerificationEnabled;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
  * providers is a matter of changing the {@code EMAIL_SMTP_*} env vars — no code change.
  */
 @Service
-@Profile("cloud")
+@ConditionalOnEmailVerificationEnabled
 public class SmtpEmailService implements EmailService {
 
     /**

@@ -56,20 +56,19 @@ Never use a short, predictable, or human-typed string — the secret protects al
 
 ## Flyway Migrations
 
-All migrations live under `src/main/resources/db/migration/` (Flyway's default
-location, scanned recursively, including the `cloud/` subdirectory) and are applied in
-strictly increasing version order — there's a single timeline, so new migrations should
+All migrations live in a single folder, `src/main/resources/db/migration/`, and are
+applied in strictly increasing version order — there's a single timeline, so new migrations should
 always take the next unused version number and never reuse or fall below one already
 released.
 
-## Subscription plans, quota, and email verification (`cloud` profile)
+## Optional features
 
-Setting `SPRING_PROFILES_ACTIVE=cloud` turns on daily publish quota, plan-based page
-retention, and mandatory sign-up email verification — see the "Subscription plans"
-section of `CLAUDE.md` and [`docs/email-verification.md`](email-verification.md).
-Admin and guest requests are always exempt from quota, so a self-hosted instance where
-you're the only (admin) user is unaffected either way. Leaving the variable unset (the
-default) keeps the base behavior: no quota, no forced verification.
+Both are off by default and independent of each other.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PLANS_ENABLED` | Subscription plans: daily publish quota and plan-based page retention (`tier1`/`tier2`/`tier3`, set by an admin). Admin and guest requests are always exempt from quota, so a self-hosted instance where you're the only (admin) user is unaffected either way. See the "Subscription plans" section of `CLAUDE.md`. | `false` |
+| `EMAIL_VERIFICATION_ENABLED` | Require users to confirm their email address before they can log in. Needs working `EMAIL_SMTP_*` settings; see [`docs/email-verification.md`](email-verification.md). | `false` |
 
 ## Database Variables
 

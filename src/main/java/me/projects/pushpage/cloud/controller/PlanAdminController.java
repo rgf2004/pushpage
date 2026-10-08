@@ -6,11 +6,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import me.projects.pushpage.cloud.config.ConditionalOnPlansEnabled;
 import me.projects.pushpage.cloud.model.Plan;
 import me.projects.pushpage.cloud.repository.PlanRepository;
-import me.projects.pushpage.cloud.service.EmailVerificationService;
-import me.projects.pushpage.repository.UserRepository;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,35 +20,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/admin")
-@Profile("cloud")
-@Tag(name = "Admin", description = "Cloud-only admin actions")
-public class CloudAdminController {
+@ConditionalOnPlansEnabled
+@Tag(name = "Admin", description = "Subscription plan admin actions (PLANS_ENABLED)")
+public class PlanAdminController {
 
-    private final EmailVerificationService verificationService;
-    private final UserRepository userRepository;
     private final PlanRepository planRepository;
 
-    public CloudAdminController(EmailVerificationService verificationService,
-                                UserRepository userRepository,
-                                PlanRepository planRepository) {
-        this.verificationService = verificationService;
-        this.userRepository = userRepository;
+    public PlanAdminController(PlanRepository planRepository) {
         this.planRepository = planRepository;
-    }
-
-    @Operation(summary = "Manually verify a user's email", description = "Marks the user's email as verified without requiring the confirmation link.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Email marked verified", content = @Content),
-            @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
-    })
-    @PatchMapping("/users/{id}/verify-email")
-    public ResponseEntity<Void> verifyEmailManually(
-            @Parameter(description = "8-character user ID") @PathVariable String id) {
-        if (userRepository.findById(id).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + id);
-        }
-        verificationService.markVerifiedManually(id);
-        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Change a user's subscription plan", description = "Sets the plan for the specified user. Valid values: tier1, tier2, tier3.")

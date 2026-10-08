@@ -8,14 +8,14 @@ import me.projects.pushpage.service.QuotaPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
+import me.projects.pushpage.cloud.config.ConditionalOnPlansEnabled;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service("cloudQuotaPolicy")
 @Primary
-@Profile("cloud")
+@ConditionalOnPlansEnabled
 public class QuotaService implements QuotaPolicy {
 
     private static final Logger log = LoggerFactory.getLogger(QuotaService.class);

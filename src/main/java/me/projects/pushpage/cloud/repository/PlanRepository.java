@@ -1,6 +1,6 @@
 package me.projects.pushpage.cloud.repository;
 
-import org.springframework.context.annotation.Profile;
+import me.projects.pushpage.cloud.config.ConditionalOnPlansEnabled;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
-@Profile("cloud")
+@ConditionalOnPlansEnabled
 public class PlanRepository {
 
     private final JdbcTemplate jdbc;

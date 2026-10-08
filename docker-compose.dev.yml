@@ -4,7 +4,8 @@ services:
       context: .
       dockerfile: publisher/Dockerfile
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      PLANS_ENABLED: ${PLANS_ENABLED:-false}
+      EMAIL_VERIFICATION_ENABLED: ${EMAIL_VERIFICATION_ENABLED:-false}
       APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
       DB_HOST: postgres
       DB_NAME: ${DB_NAME:-pushpage}

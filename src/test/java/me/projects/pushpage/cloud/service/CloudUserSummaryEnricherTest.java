@@ -6,13 +6,13 @@ import me.projects.pushpage.model.UserSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -27,7 +27,6 @@ class CloudUserSummaryEnricherTest {
     @Mock
     EmailVerificationRepository emailVerificationRepository;
 
-    @InjectMocks
     CloudUserSummaryEnricher enricher;
 
     private static UserSummary summary(String id) {
@@ -36,6 +35,7 @@ class CloudUserSummaryEnricherTest {
 
     @BeforeEach
     void setUp() {
+        enricher = new CloudUserSummaryEnricher(Optional.of(planRepository), Optional.of(emailVerificationRepository));
         lenient().when(emailVerificationRepository.findVerifiedStatusByUserIds(anyList())).thenReturn(Map.of());
     }
 
@@ -119,5 +119,29 @@ class CloudUserSummaryEnricherTest {
         assertThat(enriched.plan()).isEqualTo("tier2");
         assertThat(enriched.activePageCount()).isEqualTo(4);
         assertThat(enriched.emailVerified()).isTrue();
+    }
+
+    @Test
+    void enrich_withOnlyPlansEnabled_leavesEmailVerifiedUntouched() {
+        var plansOnly = new CloudUserSummaryEnricher(Optional.of(planRepository), Optional.empty());
+        when(planRepository.findPlansByUserIds(List.of("u1"))).thenReturn(Map.of("u1", "tier2"));
+
+        UserSummary enriched = plansOnly.enrich(List.of(summary("u1"))).get(0);
+
+        assertThat(enriched.plan()).isEqualTo("tier2");
+        assertThat(enriched.emailVerified()).isNull();
+        verifyNoInteractions(emailVerificationRepository);
+    }
+
+    @Test
+    void enrich_withOnlyEmailVerificationEnabled_leavesPlanUntouched() {
+        var verificationOnly = new CloudUserSummaryEnricher(Optional.empty(), Optional.of(emailVerificationRepository));
+        when(emailVerificationRepository.findVerifiedStatusByUserIds(List.of("u1"))).thenReturn(Map.of("u1", true));
+
+        UserSummary enriched = verificationOnly.enrich(List.of(summary("u1"))).get(0);
+
+        assertThat(enriched.plan()).isNull();
+        assertThat(enriched.emailVerified()).isTrue();
+        verifyNoInteractions(planRepository);
     }
 }
