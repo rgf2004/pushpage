@@ -110,6 +110,22 @@
             display: none;
         }
 
+        .verify-banner {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            font-size: .85rem;
+            color: #92400e;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .verify-banner button {
+            display: block;
+            margin-top: 10px;
+        }
+
         /* ── Dashboard shell ──────────────────────────────────────────── */
         #dashboard-screen { display: none; flex: 1; flex-direction: column; }
 
@@ -280,6 +296,50 @@
         }
 
         .role-badge.admin { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+        .plan-badge {
+            display: inline-block;
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            padding: 2px 12px;
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: var(--bg-input);
+        }
+        .plan-badge.tier2 { border-color: #a78bfa; color: #7c3aed; background: #ede9fe; }
+        .plan-badge.tier3 { border-color: #fbbf24; color: #92400e; background: #fffbeb; }
+
+        .verified-badge {
+            display: inline-block;
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            padding: 2px 12px;
+            font-size: .78rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .verified-badge.verified { border-color: var(--green-dot); color: var(--green-dot); }
+
+        .quota-bar-wrap {
+            margin-top: 6px;
+        }
+        .quota-bar-track {
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-soft);
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .quota-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--accent);
+            transition: width .3s;
+        }
+        .quota-bar-fill.warn { background: #f59e0b; }
+        .quota-bar-fill.danger { background: var(--red); }
 
         /* ── API key section in Account tab ──────────────────────────── */
         .api-key-section {
@@ -475,6 +535,10 @@
         <h2>Sign in</h2>
         <p>Welcome back — enter your credentials to continue.</p>
         <div id="login-error" class="auth-error"></div>
+        <div id="verify-banner" class="verify-banner">
+            Your email address isn't verified yet. Check your inbox for the confirmation link.
+            <button type="button" class="btn btn-secondary btn-sm" id="resend-verification-btn">Resend verification email</button>
+        </div>
         <div class="field">
             <label for="login-email">Email</label>
             <input type="email" id="login-email" autocomplete="email" spellcheck="false">
@@ -570,6 +634,21 @@
                     <span class="info-label">Role</span>
                     <span class="info-value"><span class="role-badge" id="acc-role">—</span></span>
                 </div>
+                <div class="info-row" id="acc-plan-row" style="display:none">
+                    <span class="info-label">Plan</span>
+                    <span class="info-value"><span class="plan-badge" id="acc-plan">—</span></span>
+                </div>
+                <div class="info-row" id="acc-quota-row" style="display:none">
+                    <span class="info-label">Today's usage</span>
+                    <span class="info-value">
+                        <span id="acc-quota-text">—</span>
+                        <div class="quota-bar-wrap">
+                            <div class="quota-bar-track">
+                                <div class="quota-bar-fill" id="acc-quota-bar" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </span>
+                </div>
             </div>
 
             <div class="api-key-section">
@@ -603,6 +682,8 @@
                         <tr>
                             <th>Email</th>
                             <th>Role</th>
+                            <th id="th-plan">Plan</th>
+                            <th id="th-verified">Verified</th>
                             <th>Status</th>
                             <th>Active Pages</th>
                             <th>Created</th>
@@ -785,7 +866,7 @@ async function signUp() {
         } else if (r.status === 201) {
             document.getElementById('login-email').value = email;
             document.getElementById('login-password').value = '';
-            toast('Account created — please sign in.');
+            toast('Account created — check your email to verify before signing in.');
             showScreen('login');
         } else {
             errEl.textContent = 'Sign-up failed. Try again.';
@@ -811,6 +892,7 @@ async function doLogin() {
     const password = document.getElementById('login-password').value;
     const errEl    = document.getElementById('login-error');
     errEl.style.display = 'none';
+    document.getElementById('verify-banner').style.display = 'none';
 
     if (!email || !password) {
         errEl.textContent = 'Please enter your email and password.';
@@ -830,6 +912,10 @@ async function doLogin() {
         if (r.status === 401) {
             errEl.textContent = 'Invalid credentials.';
             errEl.style.display = 'block';
+            return;
+        }
+        if (r.status === 403) {
+            document.getElementById('verify-banner').style.display = 'block';
             return;
         }
         if (!r.ok) {
@@ -863,8 +949,9 @@ async function loadDashboard() {
     const email   = claims.email || 'unknown';
     const isAdmin = claims.admin === true;
 
-    const pagesR = await api('/pages');
-    const pages  = pagesR.ok ? await pagesR.json() : [];
+    const [pagesR, meR] = await Promise.all([api('/pages'), api('/me')]);
+    const pages = pagesR.ok ? await pagesR.json() : [];
+    const me    = meR.ok   ? await meR.json()    : {};
 
     currentUser = { email, isAdmin };
     allPages = pages;
@@ -880,6 +967,30 @@ async function loadDashboard() {
     const roleEl = document.getElementById('acc-role');
     roleEl.textContent = isAdmin ? 'admin' : 'user';
     roleEl.className = 'role-badge' + (isAdmin ? ' admin' : '');
+
+    const planRow = document.getElementById('acc-plan-row');
+    if (me.plan != null) {
+        const planEl = document.getElementById('acc-plan');
+        planEl.textContent = me.plan;
+        planEl.className = 'plan-badge ' + me.plan;
+        planRow.style.display = '';
+    } else {
+        planRow.style.display = 'none';
+    }
+
+    const quotaRow = document.getElementById('acc-quota-row');
+    if (!isAdmin && me.daily_limit != null) {
+        const used  = me.daily_usage ?? 0;
+        const limit = me.daily_limit;
+        const pct   = Math.min(100, Math.round(used / limit * 100));
+        document.getElementById('acc-quota-text').textContent = `${used} / ${limit} pages today`;
+        const bar = document.getElementById('acc-quota-bar');
+        bar.style.width = pct + '%';
+        bar.className = 'quota-bar-fill' + (pct >= 100 ? ' danger' : pct >= 80 ? ' warn' : '');
+        quotaRow.style.display = '';
+    } else {
+        quotaRow.style.display = 'none';
+    }
 
     // Admin tab
     if (isAdmin) {
@@ -1046,6 +1157,12 @@ async function loadUsers() {
             return;
         }
 
+        // Plan / email_verified are only present when PLANS_ENABLED / EMAIL_VERIFICATION_ENABLED are on.
+        const showPlan = users.some(u => u.plan != null);
+        const showVerified = users.some(u => u.email_verified != null);
+        document.getElementById('th-plan').style.display = showPlan ? '' : 'none';
+        document.getElementById('th-verified').style.display = showVerified ? '' : 'none';
+
         const tbody = document.getElementById('users-tbody');
         tbody.innerHTML = '';
         users.forEach(u => {
@@ -1055,11 +1172,14 @@ async function loadUsers() {
             tr.innerHTML = `
                 <td style="font-weight:500">${esc(u.email || '—')}</td>
                 <td><span class="role-badge ${u.admin ? 'admin' : ''}">${u.admin ? 'admin' : 'user'}</span></td>
+                ${showPlan ? `<td><span class="plan-badge ${esc(u.plan || 'tier1')}">${esc(u.plan || 'tier1')}</span></td>` : ''}
+                ${showVerified ? `<td><span class="verified-badge ${u.email_verified ? 'verified' : ''}">${u.email_verified ? 'Verified' : 'Unverified'}</span></td>` : ''}
                 <td><span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>${isActive ? 'Active' : 'Inactive'}</td>
                 <td>${u['active_page_count'] ?? 0}</td>
                 <td class="date-cell">${fmtDate(u['created_at'])}</td>
                 <td>
                     <div class="user-actions">
+                        ${u.email_verified === false ? `<button class="btn btn-secondary btn-sm" data-verify="${esc(String(u.id))}">Verify</button>` : ''}
                         ${isActive && !u.admin && !isSelf ? `<button class="btn btn-secondary btn-sm" data-promote="${esc(String(u.id))}" data-puname="${esc(u.email || u.id)}">Promote</button>` : ''}
                         ${isActive && !isSelf ? `<button class="btn btn-danger btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.email || u.id)}">Deactivate</button>` : ''}
                     </div>
@@ -1068,6 +1188,9 @@ async function loadUsers() {
             tbody.appendChild(tr);
         });
 
+        tbody.querySelectorAll('[data-verify]').forEach(btn => {
+            btn.addEventListener('click', () => verifyEmail(btn.dataset.verify));
+        });
         tbody.querySelectorAll('[data-promote]').forEach(btn => {
             btn.addEventListener('click', () => promptPromote(btn.dataset.promote, btn.dataset.puname));
         });
@@ -1076,6 +1199,21 @@ async function loadUsers() {
         });
 
         document.getElementById('users-table-wrap').style.display = 'block';
+    } catch {
+        toast('Network error.', 'error');
+    }
+}
+
+// ── Verify email (admin) ──────────────────────────────────────────────────
+async function verifyEmail(uid) {
+    try {
+        const r = await api('/admin/users/' + uid + '/verify-email', { method: 'PATCH' });
+        if (r.ok) {
+            toast('Email marked as verified.');
+            loadUsers();
+        } else {
+            toast('Failed to verify email.', 'error');
+        }
     } catch {
         toast('Network error.', 'error');
     }
@@ -1142,6 +1280,41 @@ document.getElementById('deactivate-confirm').addEventListener('click', async ()
 function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Resend verification email ─────────────────────────────────────────────
+document.getElementById('resend-verification-btn').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) { toast('Enter your email above first.', 'error'); return; }
+
+    const btn = document.getElementById('resend-verification-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    try {
+        await fetch('/api/auth/resend-verification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        toast('Verification email sent — check your inbox.');
+    } catch {
+        toast('Network error.', 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Resend verification email';
+});
+
+// ── Verification link landing (redirected from /api/auth/verify-email) ────
+(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('verified') === 'true') {
+        toast('Email verified — you can now sign in.');
+    } else if (params.get('verify_error') === 'invalid') {
+        toast('That verification link is invalid or expired. Sign in and use "Resend verification email".', 'error');
+    }
+    if (params.has('verified') || params.has('verify_error')) {
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+})();
 
 // ── Auto-login from sessionStorage ───────────────────────────────────────
 (async () => {

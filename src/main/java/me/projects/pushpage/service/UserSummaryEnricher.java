@@ -5,7 +5,7 @@ import me.projects.pushpage.model.UserSummary;
 import java.util.List;
 
 /**
- * Extension point for enriching the admin user list with cloud-only fields
+ * Extension point for enriching the admin user list with optional-feature fields
  * (e.g. subscription plan). The default implementation is a pass-through;
  * cloud deployments provide a {@code @Primary} bean that fills in extra fields.
  */

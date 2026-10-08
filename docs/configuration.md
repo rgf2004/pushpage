@@ -56,9 +56,19 @@ Never use a short, predictable, or human-typed string — the secret protects al
 
 ## Flyway Migrations
 
-| Variable / Property | Where | Description | Default |
-|---------------------|-------|-------------|---------|
-| `FLYWAY_OUT_OF_ORDER` | `.env` | Whether Flyway is allowed to apply a resolved migration numbered lower than one already applied. Only relevant to forks that merge a second migration location on top of this one (e.g. a cloud fork with its own higher-numbered migrations) — after such a fork applies its own migration, a later upstream sync can introduce a new lower-numbered migration that Flyway's default strict-ordering validation would otherwise reject at startup. Self-hosted deployments only ever have one location applied strictly in order, so leave this at the default. | `false` |
+All migrations live in a single folder, `src/main/resources/db/migration/`, and are
+applied in strictly increasing version order — there's a single timeline, so new migrations should
+always take the next unused version number and never reuse or fall below one already
+released.
+
+## Optional features
+
+Both are off by default and independent of each other.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PLANS_ENABLED` | Subscription plans: daily publish quota and plan-based page retention (`tier1`/`tier2`/`tier3`, set by an admin). Admin and guest requests are always exempt from quota, so a self-hosted instance where you're the only (admin) user is unaffected either way. See the "Subscription plans" section of `CLAUDE.md`. | `false` |
+| `EMAIL_VERIFICATION_ENABLED` | Require users to confirm their email address before they can log in. Needs working `EMAIL_SMTP_*` settings; see [`docs/email-verification.md`](email-verification.md). | `false` |
 
 ## Database Variables
 

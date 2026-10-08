@@ -49,9 +49,33 @@ push-page/
     │   └── PublishResponse.java
     ├── repository/
     │   └── PageRepository.java     # JdbcTemplate
-    └── service/
-        └── PublishService.java     # business logic
+    ├── service/
+    │   └── PublishService.java     # business logic
+    ├── plans/                      # PLANS_ENABLED: Plan enum, PlanRepository, QuotaService, RetentionService, PlanAdminController
+    └── emailverification/          # EMAIL_VERIFICATION_ENABLED: hooks, service, repository, SMTP email, controllers
 ```
+
+### Optional features (feature flags)
+
+Two independent features are compiled into every build and switched on with environment
+variables (both default `false`). Each flag registers `@Primary` beans (in `plans` / `emailverification`) that override the
+no-op defaults (`UserLifecycleHooks`, `QuotaPolicy`, `RetentionPolicy`,
+`UserSummaryEnricher`), using the `@ConditionalOnPlansEnabled` / `@ConditionalOnEmailVerificationEnabled` annotations
+(one in each feature package).
+
+| Flag | Turns on |
+|------|----------|
+| `PLANS_ENABLED` | Daily publish quota, plan-based retention, `PATCH /api/admin/users/{id}/plan`. See "Subscription plans" below. |
+| `EMAIL_VERIFICATION_ENABLED` | Mandatory sign-up email verification (SMTP), verify/resend endpoints. See [`docs/email-verification.md`](docs/email-verification.md). |
+
+Leaving both unset keeps the default behavior (unlimited, no verification), which is
+what most self-hosted deployments want. The managed `pushpage.link` instance sets both
+to `true`.
+
+All migrations, including the `V1000+` ones used by these features, live in the single
+`db/migration/` folder and always run regardless of the flags (they just add unused
+columns when a feature is off). New migrations take the next unused version number;
+**never reuse or drop below a version number already released**.
 
 ### Adding a new nginx page
 
@@ -62,10 +86,6 @@ Every new static page requires **four** changes:
 4. Add a `<url>` entry to `nginx/sitemap.xml` (only for pages that should be indexed — exclude auth-required or noindex pages like the dashboard)
 
 Shared visual styles (`theme.css`) are already linked from all pages — new pages should link to `/static/theme.css` and follow the same header/footer pattern as `docs.html`.
-
-### Downstream overlay hook
-
-`nginx/Dockerfile`'s last step is `COPY nginx/overlay/ /usr/share/nginx/html/`, which runs after every other static file. `nginx/overlay/` is empty in this repo, so it's a no-op here — self-hosted deployments get exactly the files above. Forks that need to override or add files (e.g. the private pushpage-cloud repo) can drop them into `nginx/overlay/` without touching this Dockerfile; anything placed there replaces the matching file at the same relative path.
 
 ## Git Workflow
 
@@ -104,7 +124,13 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 
 `app.jwt.expiration-hours` (default `24`) is set in `application.properties` and does not need a `.env` entry. See `docs/configuration.md` for details.
 
-`FLYWAY_OUT_OF_ORDER` (default `false`) only matters for forks that merge a second Flyway migration location on top of this one (e.g. a cloud fork applying its own higher-numbered migrations). Self-hosted deployments never need to set it. See `docs/configuration.md` for details.
+| `PLANS_ENABLED` | Enable subscription plans: daily publish quota + plan-based retention. | `false` |
+| `EMAIL_VERIFICATION_ENABLED` | Require sign-up email verification (needs the `EMAIL_SMTP_*` settings). | `false` |
+| `EMAIL_SMTP_HOST` / `EMAIL_SMTP_PORT` / `EMAIL_SMTP_USERNAME` / `EMAIL_SMTP_PASSWORD` | SMTP credentials for sending verification emails. Only used when `EMAIL_VERIFICATION_ENABLED=true`. | — |
+| `EMAIL_FROM` | From address on the confirmation email. | `no-reply@pushpage.link` |
+| `EMAIL_VERIFICATION_TOKEN_TTL_HOURS` | How long a verification link stays valid. | `24` |
+| `EMAIL_VERIFICATION_RATE_LIMIT_PER_MINUTE` | Max verification emails per account per minute. | `1` |
+| `EMAIL_RESEND_IP_RATE_LIMIT_RPM` | Max resend-verification requests per IP per minute. | `5` |
 
 ## Authentication
 
@@ -135,6 +161,11 @@ All endpoints are under `/api` (Spring Boot context path).
 | `GET` | `/api/admin/users` | Admin | List all users. |
 | `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user. |
 | `PATCH` | `/api/admin/users/{id}/promote` | Admin | Grant admin role. |
+| `GET` | `/api/me` | User | Current user's email/role, and (with `PLANS_ENABLED`) `plan`, `daily_limit`, `daily_usage`. |
+| `GET` | `/api/auth/verify-email` | None | *(`EMAIL_VERIFICATION_ENABLED`)* Consumes a sign-up verification token, redirects to `/dashboard`. |
+| `POST` | `/api/auth/resend-verification` | None | *(`EMAIL_VERIFICATION_ENABLED`)* Resend the verification email. Always `204`; rate-limited per IP. |
+| `PATCH` | `/api/admin/users/{id}/verify-email` | Admin | *(`EMAIL_VERIFICATION_ENABLED`)* Manually mark a user's email verified. |
+| `PATCH` | `/api/admin/users/{id}/plan` | Admin | *(`PLANS_ENABLED`)* Set a user's plan (`tier1`/`tier2`/`tier3`). |
 
 Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
 
@@ -148,8 +179,58 @@ A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.h
 
 **Tabs:**
 - **Pages** — lists the caller's pages, with delete and pagination
-- **Account** — displays email, role; Generate / Rotate API Key button (shows key once)
-- **Users** (admin only) — lists all users; Promote and Deactivate actions
+- **Account** — displays email, role; Generate / Rotate API Key button (shows key once); plan badge + quota progress bar (`PLANS_ENABLED` only — hidden otherwise)
+- **Users** (admin only) — lists all users; Promote and Deactivate actions; plan column (`PLANS_ENABLED`), verified column and Verify button (`EMAIL_VERIFICATION_ENABLED`)
+
+## Subscription plans (`PLANS_ENABLED`)
+
+When `PLANS_ENABLED=true`, three tiers enforce a **daily publish
+quota** (resets at UTC midnight) and a **page retention window**. Admins and guests
+are exempt from the quota; guests always get the fixed 30-minute guest expiry
+regardless of plan.
+
+| Tier | Daily limit | Retention |
+|------|-------------|-----------|
+| `tier1` | 30 pages | 7 days |
+| `tier2` | 100 pages | 30 days |
+| `tier3` | 500 pages | 90 days |
+
+There is no caller-settable "permanent"/never-expire flag — retention is always chosen
+by the server from the user's plan. Plans are set manually via
+`PATCH /api/admin/users/{id}/plan` — there is no self-serve billing yet.
+
+### Key files
+
+| File | Role |
+|------|------|
+| `src/main/java/me/projects/pushpage/plans/model/Plan.java` | Enum — tier names and their `dailyLimit` / `retentionDays` values |
+| `src/main/java/me/projects/pushpage/plans/repository/PlanRepository.java` | DB access — reads/writes `plan` column on `users` |
+| `src/main/java/me/projects/pushpage/plans/service/QuotaService.java` | `@Primary` `QuotaPolicy` — enforces daily limits, surfaces usage/limit/plan via `GET /api/me` |
+| `src/main/java/me/projects/pushpage/plans/service/RetentionService.java` | `@Primary` `RetentionPolicy` — resolves the page's `expires_at` from the user's plan |
+| `src/main/java/me/projects/pushpage/service/FeatureUserSummaryEnricher.java` | `@Primary` `UserSummaryEnricher` — adds `plan` field to admin user list |
+| `src/main/java/me/projects/pushpage/plans/controller/PlanAdminController.java` | `PATCH /api/admin/users/{id}/plan` |
+| `src/main/resources/db/migration/V1001__add_plan_to_users.sql` | Adds `plan TEXT NOT NULL DEFAULT 'tier1'` to `users` |
+| `nginx/dashboard.html` | Plan badge + quota progress bar in the Account tab; plan column in admin Users tab |
+
+### Changing a tier's quota limit or retention window
+
+**Backend only — the frontend reads limits dynamically from `GET /api/me`, and per-page expiry from `GET /api/pages`.**
+
+1. Edit `src/main/java/me/projects/pushpage/plans/model/Plan.java`:
+   ```java
+   tier1(50, 14),   // was tier1(30, 7)
+   ```
+   First argument is `dailyLimit`, second is `retentionDays`.
+2. No DB migration needed — both values live in the enum, not the database.
+3. No frontend change needed — the dashboard fetches `daily_limit` from the API and reads each page's `expires_at` at runtime.
+4. Changing `retentionDays` only affects newly published pages; existing pages keep the `expires_at` computed at publish time.
+
+### Adding a new tier
+
+1. Add the new constant to `Plan.java` (e.g. `tier4(1000, 180)`).
+2. Update `PlanAdminController.changePlan()` error message to list the new tier.
+3. Add a CSS class for the new badge colour in `nginx/dashboard.html` (search for `.tier3`).
+4. No migration needed — new users still default to `tier1`; admins set the plan via `PATCH /api/admin/users/{id}/plan`.
 
 Shared visual styles live in `nginx/static/theme.css`, linked by all nginx-served HTML pages.
 

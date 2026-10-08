@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <!-- EmailVerificationServiceTest deliberately exercises the SMTP-failure
+         path, which logs at ERROR with a full stack trace. Silence it here so
+         it doesn't look like a real build failure in CI/local logs. -->
+    <logger name="me.projects.pushpage.emailverification.service.EmailVerificationService" level="OFF"/>
+</configuration>
