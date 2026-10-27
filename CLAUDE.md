@@ -63,6 +63,12 @@ Every new static page requires **four** changes:
 
 Shared visual styles (`theme.css`) are already linked from all pages — new pages should link to `/static/theme.css` and follow the same header/footer pattern as `docs.html`.
 
+### Security headers and rate limiting (nginx)
+
+- **User pages are sandboxed.** `/pages/*.html` is untrusted user HTML on the same origin as the dashboard (which keeps its JWT in `sessionStorage`) and the API. The `location` serving it sets `Content-Security-Policy: sandbox allow-scripts allow-popups allow-forms allow-modals`. **Never add `allow-same-origin`**, and remember nginx `add_header` is not inherited into a location that defines its own `add_header`.
+- **Framing is denied** server-wide (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`); the pages location overrides this so pages stay embeddable.
+- **`/api/auth/login` and `/api/auth/signup`** have a `limit_req` zone (`auth`, 10 r/m per IP, burst 5, `429`). These locations repeat the `proxy_pass` block from `/api/`; keep them in sync.
+
 ### Downstream overlay hook
 
 `nginx/Dockerfile`'s last step is `COPY nginx/overlay/ /usr/share/nginx/html/`, which runs after every other static file. `nginx/overlay/` is empty in this repo, so it's a no-op here — self-hosted deployments get exactly the files above. Forks that need to override or add files (e.g. the private pushpage-cloud repo) can drop them into `nginx/overlay/` without touching this Dockerfile; anything placed there replaces the matching file at the same relative path.

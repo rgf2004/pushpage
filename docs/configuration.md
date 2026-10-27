@@ -54,6 +54,18 @@ JWT_SECRET=<output from above>
 
 Never use a short, predictable, or human-typed string — the secret protects all authenticated sessions.
 
+## Security Hardening (nginx)
+
+Both protections live in `nginx/default.conf`; there is nothing to configure in `.env`.
+
+| Protection | Behavior |
+|------------|----------|
+| Page sandbox | `/pages/*.html` is served with `Content-Security-Policy: sandbox allow-scripts allow-popups allow-forms allow-modals` (plus `nosniff` and `Referrer-Policy: no-referrer`). Published pages are untrusted user content on the same origin as the dashboard and API. The sandbox omits `allow-same-origin`, so a page's scripts run in an opaque origin and cannot read the dashboard's `sessionStorage` JWT or call `/api` as the viewer. Side effect: pages cannot use `localStorage`, `sessionStorage` or cookies. Never add `allow-same-origin`. |
+| Frame blocking | All other responses carry `X-Frame-Options: DENY` and `Content-Security-Policy: frame-ancestors 'none'`, so the dashboard cannot be framed. |
+| Auth rate limit | `POST /api/auth/login` and `/api/auth/signup` are limited to 10 requests/minute per client IP (burst 5) via `limit_req`; excess requests get `429`. If nginx runs behind another proxy or load balancer, configure `real_ip_header`/`set_real_ip_from` so the limit keys on the real client IP rather than the proxy's. |
+
+Serving pages from a separate domain would give stronger isolation, but the sandbox header achieves the same protection without a second domain.
+
 ## Flyway Migrations
 
 | Variable / Property | Where | Description | Default |

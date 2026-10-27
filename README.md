@@ -188,6 +188,10 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
 
 For the full tool reference, alternative connection methods (including `mcp-remote` for HTTP-only or older clients), and troubleshooting, see [`docs/mcp.md`](docs/mcp.md).
 
+## Security
+
+Published pages are served with a `Content-Security-Policy: sandbox` header (without `allow-same-origin`), so scripts in a page cannot access the dashboard session or call the API on a viewer's behalf. The dashboard cannot be framed, and login/signup are rate-limited per IP by nginx. Details in [`docs/configuration.md`](docs/configuration.md#security-hardening-nginx).
+
 ## Database
 
 pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres:17-alpine` container automatically — no extra setup required.
