@@ -61,6 +61,8 @@ Create a new account. No authentication required.
 
 ### POST /api/auth/login
 
+> Rate-limited by nginx (`/api/auth/login` and `/api/auth/signup`): 10 requests/minute per IP, burst 5, then `429`. See [Security Hardening](configuration.md#security-hardening-nginx).
+
 Authenticate with email and password. Returns a short-lived JWT.
 
 **Request body:**
