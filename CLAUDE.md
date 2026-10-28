@@ -239,6 +239,8 @@ by the server from the user's plan. Plans are set manually via
 3. Add a CSS class for the new badge colour in `nginx/dashboard.html` (search for `.tier3`).
 4. No migration needed — new users still default to `tier1`; admins set the plan via `PATCH /api/admin/users/{id}/plan`.
 
+The dashboard decides which optional UI to show (plan badge, quota bar, Plan/Verified columns, verification messaging) **only** from `GET /api/config` (`features.*`), never by inferring from the presence of fields in other responses. Code that renders feature-dependent UI must `await configReady` first.
+
 Shared visual styles live in `nginx/static/theme.css`, linked by all nginx-served HTML pages.
 
 ## Running
