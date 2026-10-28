@@ -6,8 +6,8 @@ email: the SMTP sender, the sign-up verification described here, and self-servic
 reset (see [`password-reset.md`](password-reset.md)). Deployments that don't set it are
 unaffected — signup/login behaves exactly as without this feature.
 
-> **Renamed from `EMAIL_VERIFICATION_ENABLED`.** The old name is still read as a fallback
-> (and logs a deprecation warning at startup) but will be removed; use `EMAIL_ENABLED`.
+> **Renamed from `EMAIL_VERIFICATION_ENABLED`.** Only `EMAIL_ENABLED` is read; if your
+> configuration still sets the old name, rename it or email stays off.
 
 ## Flow
 

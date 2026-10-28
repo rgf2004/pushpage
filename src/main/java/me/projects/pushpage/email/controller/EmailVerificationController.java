@@ -25,7 +25,7 @@ import java.net.URI;
 @RestController
 @RequestMapping("/auth")
 @ConditionalOnEmailEnabled
-@Tag(name = "Auth", description = "Email verification endpoints (EMAIL_VERIFICATION_ENABLED)")
+@Tag(name = "Auth", description = "Email verification endpoints (EMAIL_ENABLED)")
 public class EmailVerificationController {
 
     private final EmailVerificationService verificationService;

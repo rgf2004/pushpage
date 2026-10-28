@@ -66,7 +66,7 @@ no-op defaults (`UserLifecycleHooks`, `QuotaPolicy`, `RetentionPolicy`,
 | Flag | Turns on |
 |------|----------|
 | `PLANS_ENABLED` | Daily publish quota, plan-based retention, `PATCH /api/admin/users/{id}/plan`. See "Subscription plans" below. |
-| `EMAIL_ENABLED` | Everything that sends email: SMTP sender, mandatory sign-up email verification, verify/resend endpoints, `forgot-password`. Replaces the deprecated `EMAIL_VERIFICATION_ENABLED` (still read as a fallback, with a startup warning). See [`docs/email-verification.md`](docs/email-verification.md) and [`docs/password-reset.md`](docs/password-reset.md). |
+| `EMAIL_ENABLED` | Everything that sends email: SMTP sender, mandatory sign-up email verification, verify/resend endpoints, `forgot-password`. See [`docs/email-verification.md`](docs/email-verification.md) and [`docs/password-reset.md`](docs/password-reset.md). |
 
 Leaving both unset keeps the default behavior (unlimited, no verification), which is
 what most self-hosted deployments want. The managed `pushpage.link` instance sets both
@@ -132,7 +132,7 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 `app.jwt.expiration-hours` (default `24`) is set in `application.properties` and does not need a `.env` entry. See `docs/configuration.md` for details.
 
 | `PLANS_ENABLED` | Enable subscription plans: daily publish quota + plan-based retention. | `false` |
-| `EMAIL_ENABLED` | Enable email: sign-up verification and password-reset emails (needs the `EMAIL_SMTP_*` settings). Formerly `EMAIL_VERIFICATION_ENABLED`. | `false` |
+| `EMAIL_ENABLED` | Enable email: sign-up verification and password-reset emails (needs the `EMAIL_SMTP_*` settings). | `false` |
 | `EMAIL_SMTP_HOST` / `EMAIL_SMTP_PORT` / `EMAIL_SMTP_USERNAME` / `EMAIL_SMTP_PASSWORD` | SMTP credentials for sending verification and password-reset emails. Only used when `EMAIL_ENABLED=true`. | — |
 | `EMAIL_FROM` | From address on the confirmation email. | `no-reply@pushpage.link` |
 | `EMAIL_VERIFICATION_TOKEN_TTL_HOURS` | How long a verification link stays valid. | `24` |

@@ -5,7 +5,7 @@ services:
       dockerfile: publisher/Dockerfile
     environment:
       PLANS_ENABLED: ${PLANS_ENABLED:-false}
-      EMAIL_ENABLED: ${EMAIL_ENABLED:-${EMAIL_VERIFICATION_ENABLED:-false}}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
       APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
       DB_HOST: postgres
       DB_NAME: ${DB_NAME:-pushpage}

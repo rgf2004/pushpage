@@ -20,7 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/admin")
 @ConditionalOnEmailEnabled
-@Tag(name = "Admin", description = "Email verification admin actions (EMAIL_VERIFICATION_ENABLED)")
+@Tag(name = "Admin", description = "Email verification admin actions (EMAIL_ENABLED)")
 public class EmailVerificationAdminController {
 
     private final EmailVerificationService verificationService;
