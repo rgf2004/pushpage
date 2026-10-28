@@ -46,6 +46,9 @@ class FeatureFlagsIT {
             assertThat(ctx.getBeansOfType(PlanAdminController.class)).isEmpty();
             assertThat(ctx.getBeansOfType(EmailVerificationController.class)).isEmpty();
             assertThat(ctx.getBeansOfType(EmailVerificationAdminController.class)).isEmpty();
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.email.controller.ForgotPasswordController.class)).isEmpty();
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.email.service.PasswordResetEmailService.class)).isEmpty();
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.service.PasswordResetService.class)).hasSize(1);
         }
     }
 
@@ -80,6 +83,8 @@ class FeatureFlagsIT {
             assertThat(ctx.getBean(UserSummaryEnricher.class)).isInstanceOf(FeatureUserSummaryEnricher.class);
             assertThat(ctx.getBeansOfType(EmailVerificationController.class)).hasSize(1);
             assertThat(ctx.getBeansOfType(EmailVerificationAdminController.class)).hasSize(1);
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.email.controller.ForgotPasswordController.class)).hasSize(1);
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.email.service.PasswordResetEmailService.class)).hasSize(1);
             assertThat(ctx.getBean(QuotaPolicy.class)).isInstanceOf(NoOpQuotaPolicy.class);
             assertThat(ctx.getBean(RetentionPolicy.class)).isInstanceOf(NoOpRetentionPolicy.class);
             assertThat(ctx.getBeansOfType(PlanRepository.class)).isEmpty();

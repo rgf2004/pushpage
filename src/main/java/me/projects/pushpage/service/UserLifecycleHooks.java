@@ -21,4 +21,11 @@ public interface UserLifecycleHooks {
      */
     default void beforeLogin(User user) {
     }
+
+    /**
+     * Called after the user redeemed a password-reset token that was delivered to their
+     * mailbox, which proves they own the address.
+     */
+    default void afterEmailOwnershipProven(User user) {
+    }
 }

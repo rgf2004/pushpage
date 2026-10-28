@@ -7,4 +7,7 @@ package me.projects.pushpage.email.sender;
 public interface EmailService {
 
     void sendVerificationEmail(String toEmail, String verificationLink);
+
+    /** @param expiresInMinutes shown to the user so they know how long the link stays valid */
+    void sendPasswordResetEmail(String toEmail, String resetLink, long expiresInMinutes);
 }

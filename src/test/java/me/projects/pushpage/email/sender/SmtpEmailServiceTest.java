@@ -37,4 +37,36 @@ class SmtpEmailServiceTest {
         assertThat(sent.getSubject()).isEqualTo("Confirm your pushpage email address");
         assertThat(sent.getAllRecipients()).extracting(Object::toString).containsExactly("alice@example.com");
     }
+
+    @Test
+    void sendPasswordResetEmail_containsLinkAndExpiryAndCategory() throws Exception {
+        MimeMessage realMessage = new MimeMessage(Session.getDefaultInstance(new Properties()));
+        when(mailSender.createMimeMessage()).thenReturn(realMessage);
+
+        new SmtpEmailService(mailSender, "no-reply@pushpage.link")
+                .sendPasswordResetEmail("alice@example.com", "https://pushpage.link/dashboard?reset_token=abc", 60);
+
+        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
+        verify(mailSender).send(captor.capture());
+        MimeMessage sent = captor.getValue();
+
+        assertThat(sent.getHeader("X-MT-Category", null)).isEqualTo("password-reset");
+        assertThat(sent.getSubject()).isEqualTo("Reset your pushpage password");
+        assertThat(sent.getAllRecipients()).extracting(Object::toString).containsExactly("alice@example.com");
+        String body = (String) sent.getContent();
+        assertThat(body).contains("https://pushpage.link/dashboard?reset_token=abc")
+                .contains("1 hour")
+                .doesNotContain("{{");
+    }
+
+    @Test
+    void sendPasswordResetEmail_describesNonWholeHoursInMinutes() throws Exception {
+        MimeMessage realMessage = new MimeMessage(Session.getDefaultInstance(new Properties()));
+        when(mailSender.createMimeMessage()).thenReturn(realMessage);
+
+        new SmtpEmailService(mailSender, "no-reply@pushpage.link")
+                .sendPasswordResetEmail("alice@example.com", "https://x/y", 45);
+
+        assertThat((String) realMessage.getContent()).contains("45 minutes");
+    }
 }

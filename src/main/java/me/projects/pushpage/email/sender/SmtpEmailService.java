@@ -29,16 +29,20 @@ public class SmtpEmailService implements EmailService {
      * X- header, so it's a no-op with any other SMTP provider, not a provider lock-in.
      */
     private static final String VERIFICATION_EMAIL_CATEGORY = "email-verification";
+    private static final String PASSWORD_RESET_EMAIL_CATEGORY = "password-reset";
     private static final String VERIFICATION_EMAIL_TEMPLATE_PATH = "email/verification-email.html";
+    private static final String PASSWORD_RESET_EMAIL_TEMPLATE_PATH = "email/password-reset-email.html";
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
     private final String verificationEmailTemplate;
+    private final String passwordResetEmailTemplate;
 
     public SmtpEmailService(JavaMailSender mailSender, @Value("${app.email.from}") String fromAddress) {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
         this.verificationEmailTemplate = loadTemplate(VERIFICATION_EMAIL_TEMPLATE_PATH);
+        this.passwordResetEmailTemplate = loadTemplate(PASSWORD_RESET_EMAIL_TEMPLATE_PATH);
     }
 
     private static String loadTemplate(String classpathLocation) {
@@ -52,21 +56,38 @@ public class SmtpEmailService implements EmailService {
 
     @Override
     public void sendVerificationEmail(String toEmail, String verificationLink) {
+        send(toEmail, "Confirm your pushpage email address", VERIFICATION_EMAIL_CATEGORY,
+                verificationEmailTemplate.replace("{{verificationLink}}", verificationLink));
+    }
+
+    @Override
+    public void sendPasswordResetEmail(String toEmail, String resetLink, long expiresInMinutes) {
+        send(toEmail, "Reset your pushpage password", PASSWORD_RESET_EMAIL_CATEGORY,
+                passwordResetEmailTemplate
+                        .replace("{{resetLink}}", resetLink)
+                        .replace("{{expiresIn}}", describeDuration(expiresInMinutes)));
+    }
+
+    private void send(String toEmail, String subject, String category, String html) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
             helper.setFrom(fromAddress);
             helper.setTo(toEmail);
-            helper.setSubject("Confirm your pushpage email address");
-            helper.setText(buildHtml(verificationLink), true);
-            message.setHeader("X-MT-Category", VERIFICATION_EMAIL_CATEGORY);
+            helper.setSubject(subject);
+            helper.setText(html, true);
+            message.setHeader("X-MT-Category", category);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new IllegalStateException("Failed to send verification email to " + toEmail, e);
+            throw new IllegalStateException("Failed to send email to " + toEmail, e);
         }
     }
 
-    private String buildHtml(String verificationLink) {
-        return verificationEmailTemplate.replace("{{verificationLink}}", verificationLink);
+    private static String describeDuration(long minutes) {
+        if (minutes % 60 == 0) {
+            long hours = minutes / 60;
+            return hours + (hours == 1 ? " hour" : " hours");
+        }
+        return minutes + " minutes";
     }
 }

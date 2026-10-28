@@ -78,4 +78,14 @@ class JwtServiceTest {
         String token = other.generateToken(USER);
         assertThat(jwtService.validateToken(token)).isEmpty();
     }
+
+    @Test
+    void parseToken_carriesPasswordVersionOfTheUserItWasIssuedFor() {
+        User changed = new User(USER.id(), USER.email(), USER.apiKeyHash(), USER.passwordHash(), USER.createdAt(),
+                true, false, java.time.Instant.parse("2026-10-28T10:00:00.123Z"));
+
+        assertThat(jwtService.parseToken(jwtService.generateToken(USER)).orElseThrow().passwordVersion()).isZero();
+        assertThat(jwtService.parseToken(jwtService.generateToken(changed)).orElseThrow().passwordVersion())
+                .isEqualTo(JwtClaims.passwordVersionOf(changed));
+    }
 }

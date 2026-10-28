@@ -40,6 +40,11 @@ public class EmailVerificationHooks implements UserLifecycleHooks {
     }
 
     @Override
+    public void afterEmailOwnershipProven(User user) {
+        verificationService.markVerifiedManually(user.id());
+    }
+
+    @Override
     public void beforeLogin(User user) {
         if (!verificationService.isVerified(user.id())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,

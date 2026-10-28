@@ -24,6 +24,8 @@ public class JwtService {
     @Value("${app.jwt.expiration-hours:24}")
     private long expirationHours;
 
+    private static final String PASSWORD_VERSION_CLAIM = "pwd_v";
+
     private SecretKey signingKey;
 
     @PostConstruct
@@ -40,6 +42,7 @@ public class JwtService {
                 .subject(user.id())
                 .claim("email", user.email())
                 .claim("admin", user.admin())
+                .claim(PASSWORD_VERSION_CLAIM, JwtClaims.passwordVersionOf(user))
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(expirationHours, ChronoUnit.HOURS)))
                 .signWith(signingKey)
@@ -47,13 +50,21 @@ public class JwtService {
     }
 
     public Optional<String> validateToken(String token) {
+        return parseToken(token).map(JwtClaims::userId);
+    }
+
+    /** Verifies the signature and expiry, and returns who the token was issued to and under which password version. */
+    public Optional<JwtClaims> parseToken(String token) {
         try {
             Claims claims = Jwts.parser()
                     .verifyWith(signingKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            return Optional.of(claims.getSubject());
+            // Tokens issued before this claim existed have none, which is version 0 (never changed).
+            Object version = claims.get(PASSWORD_VERSION_CLAIM);
+            long passwordVersion = version instanceof Number n ? n.longValue() : 0L;
+            return Optional.of(new JwtClaims(claims.getSubject(), passwordVersion));
         } catch (Exception e) {
             return Optional.empty();
         }

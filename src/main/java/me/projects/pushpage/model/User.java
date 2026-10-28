@@ -9,5 +9,11 @@ public record User(
         String passwordHash,
         Instant createdAt,
         boolean active,
-        boolean admin
-) {}
+        boolean admin,
+        Instant passwordChangedAt
+) {
+    public User(String id, String email, String apiKeyHash, String passwordHash,
+                Instant createdAt, boolean active, boolean admin) {
+        this(id, email, apiKeyHash, passwordHash, createdAt, active, admin, null);
+    }
+}
