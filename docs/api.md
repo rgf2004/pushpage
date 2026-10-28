@@ -61,7 +61,7 @@ Create a new account. No authentication required.
 
 ### POST /api/auth/login
 
-> Rate-limited by nginx (`/api/auth/login` and `/api/auth/signup`): 10 requests/minute per IP, burst 5, then `429`. See [Security Hardening](configuration.md#security-hardening-nginx).
+> Rate-limited by nginx (`/api/auth/login`, `/signup`, `/forgot-password` and `/reset-password`): 10 requests/minute per IP, burst 5, then `429`. See [Security Hardening](configuration.md#security-hardening-nginx).
 
 Authenticate with email and password. Returns a short-lived JWT.
 
@@ -85,6 +85,36 @@ The JWT is valid for 24 hours (configurable via `app.jwt.expiration-hours`).
 |--------|--------|
 | `401` | Invalid credentials or user has no password (pre-migration API-key-only accounts) |
 | `401` | Account is deactivated |
+
+---
+
+### POST /api/auth/forgot-password
+
+*(Only exists when `EMAIL_ENABLED=true`.)* Emails a password reset link if the address belongs to an active account. Always returns `202`, whether or not the account exists, so registered addresses can't be discovered. Rate-limited per IP (`429` with `Retry-After`) and per account. See [`password-reset.md`](password-reset.md).
+
+**Request body:** `{ "email": "alice@example.com" }`
+
+**Response:** `202 Accepted`
+
+---
+
+### POST /api/auth/reset-password
+
+Sets a new password using a single-use token from a reset link (`/dashboard?reset_token=<token>`). Available in every mode. Invalidates all existing JWTs for the user; API keys keep working.
+
+**Request body:**
+
+```json
+{ "token": "<token from the link>", "password": "n3w-s3cur3pass" }
+```
+
+**Response:** `204 No Content`
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `400` | Token unknown, expired, already used, or the user is deactivated; or password < 8 characters |
 
 ---
 
@@ -266,7 +296,7 @@ Public, non-sensitive server settings the dashboard uses to adapt its UI (for ex
 {
   "features": {
     "plans": false,
-    "email_verification": true
+    "email": true
   }
 }
 ```
@@ -274,7 +304,7 @@ Public, non-sensitive server settings the dashboard uses to adapt its UI (for ex
 | Field | Meaning |
 |-------|---------|
 | `features.plans` | `PLANS_ENABLED` — daily publish quota and plan-based retention |
-| `features.email_verification` | `EMAIL_VERIFICATION_ENABLED` — sign-up requires email verification |
+| `features.email` | `EMAIL_ENABLED` — emails are sent: sign-up requires email verification and "Forgot password?" is available |
 
 ---
 
@@ -312,6 +342,25 @@ Mark a user as inactive. Their pages are retained but they can no longer authent
 **Path parameter:** `id` — 8-character user ID.
 
 **Response:** `204 No Content` on success, `404 Not Found` if the ID does not exist.
+
+---
+
+### POST /api/admin/users/{id}/reset-password
+
+Creates a one-time password reset link for the user, replacing any earlier one. Works with or without email: the admin hands the link to the user. The dashboard Users tab has a "Reset password" button for this.
+
+**Auth:** admin
+
+**Response `200`:**
+
+```json
+{
+  "reset_link": "https://pushpage.link/dashboard?reset_token=...",
+  "expires_at": "2026-10-28T11:00:00Z"
+}
+```
+
+**Error responses:** `404` user not found, `400` user is deactivated.
 
 ---
 

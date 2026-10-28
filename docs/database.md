@@ -36,6 +36,7 @@ pushpage uses **PostgreSQL** for persistence. Schema migrations are managed by F
 | `created_at` | TIMESTAMP | no | Timestamp of account creation |
 | `active` | BOOLEAN | no | `true` = active, `false` = deactivated (default: `true`) |
 | `admin` | BOOLEAN | no | `true` = admin, `false` = regular user (default: `false`) |
+| `password_changed_at` | TIMESTAMP | yes | Set when the password is reset. JWTs carry this value (`pwd_v` claim) and stop working once it changes. `NULL` until the first change. |
 
 **Indexes:**
 
@@ -43,6 +44,22 @@ pushpage uses **PostgreSQL** for persistence. Schema migrations are managed by F
 |------|--------|---------|
 | `idx_users_api_key_hash` | `api_key_hash` | Fast lookup on every authenticated request |
 | `idx_users_email_unique` | `email` | Unique partial index enforcing email uniqueness where `email IS NOT NULL` |
+
+### password_reset_tokens
+
+| Column | Type | Nullable | Description |
+|--------|------|----------|-------------|
+| `token_hash` | TEXT (PK) | no | SHA-256 hex digest of the reset token (the raw token is never stored) |
+| `user_id` | TEXT (FK → users.id, `ON DELETE CASCADE`) | no | The user the token resets |
+| `expires_at` | TIMESTAMP | no | Token is invalid at or after this time |
+| `created_at` | TIMESTAMP | no | When the token was issued |
+| `email_delivered` | BOOLEAN | no | `true` if the link was emailed to the user, which proves mailbox ownership on redemption |
+
+A user has at most one row (issuing a token replaces the old one). Rows are deleted on redemption, and expired rows are purged by a scheduled job.
+
+| Index | Column | Purpose |
+|-------|--------|---------|
+| `idx_password_reset_tokens_user_id` | `user_id` | Replace/delete a user's token |
 
 ## Migrations
 
