@@ -164,6 +164,7 @@ All endpoints are under `/api` (Spring Boot context path).
 | `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any). |
 | `POST` | `/api/me/tokens` | User | Generate / rotate API key → `{ api_key }`. Previous key is invalidated. |
 | `GET` | `/api/health` | None | Health check. |
+| `GET` | `/api/config` | None | Public frontend config: `{ features: { plans, email_verification } }`. Add new frontend-visible settings in `ClientConfigService`. |
 | `GET` | `/api/admin/users` | Admin | List all users. |
 | `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user. |
 | `PATCH` | `/api/admin/users/{id}/promote` | Admin | Grant admin role. |

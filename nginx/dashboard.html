@@ -866,7 +866,9 @@ async function signUp() {
         } else if (r.status === 201) {
             document.getElementById('login-email').value = email;
             document.getElementById('login-password').value = '';
-            toast('Account created — check your email to verify before signing in.');
+            toast(features.email_verification
+                ? 'Account created — check your email to verify before signing in.'
+                : 'Account created — you can now sign in.');
             showScreen('login');
         } else {
             errEl.textContent = 'Sign-up failed. Try again.';
@@ -1290,12 +1292,13 @@ document.getElementById('resend-verification-btn').addEventListener('click', asy
     btn.disabled = true;
     btn.textContent = 'Sending…';
     try {
-        await fetch('/api/auth/resend-verification', {
+        const r = await fetch('/api/auth/resend-verification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         });
-        toast('Verification email sent — check your inbox.');
+        if (r.ok) toast('Verification email sent — check your inbox.');
+        else toast('Could not send the verification email. Try again later.', 'error');
     } catch {
         toast('Network error.', 'error');
     }
@@ -1315,6 +1318,15 @@ document.getElementById('resend-verification-btn').addEventListener('click', asy
         window.history.replaceState({}, '', window.location.pathname);
     }
 })();
+
+// ── Server config (feature flags) ────────────────────────────────────────
+// Public settings from GET /api/config. Defaults to "no features" if the request
+// fails, so UI copy falls back to the neutral wording.
+let features = {};
+fetch('/api/config')
+    .then(r => r.ok ? r.json() : {})
+    .then(c => { features = c.features || {}; })
+    .catch(() => {});
 
 // ── Auto-login from sessionStorage ───────────────────────────────────────
 (async () => {
