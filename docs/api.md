@@ -252,6 +252,32 @@ Returns `200` when healthy, `503` when a critical subsystem is unavailable.
 
 ---
 
+## Config
+
+### GET /api/config
+
+Public, non-sensitive server settings the dashboard uses to adapt its UI (for example, whether to tell new users to verify their email). Add new frontend-visible settings in `ClientConfigService`; never expose secrets or per-user data here.
+
+**Auth:** none (public)
+
+**Response:**
+
+```json
+{
+  "features": {
+    "plans": false,
+    "email_verification": true
+  }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `features.plans` | `PLANS_ENABLED` — daily publish quota and plan-based retention |
+| `features.email_verification` | `EMAIL_VERIFICATION_ENABLED` — sign-up requires email verification |
+
+---
+
 ## Admin
 
 ### GET /api/admin/users

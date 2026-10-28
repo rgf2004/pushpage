@@ -23,6 +23,7 @@ All endpoints are under `/api` (Spring Boot context path). Most require an API k
 |--------|------|------|-------------|
 | `POST` | `/api/pages` | Optional | Publish HTML (JSON or file upload), returns `{ url, id }` |
 | `GET` | `/api/health` | None | Health check |
+| `GET` | `/api/config` | None | Public frontend config (enabled feature flags) |
 
 For the full API reference — page management, admin user endpoints, request/response schemas — see the Swagger UI: `https://pushpage.link/api/swagger-ui/index.html`
 
@@ -31,7 +32,7 @@ For the full API reference — page management, admin user endpoints, request/re
 ### Prerequisites
 
 - Docker and Docker Compose
-- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible. Set it to `http://localhost:8080` to get started quickly, or to a custom hostname if you have DNS set up for it. If you'd rather skip self-hosting, a managed public instance is available at **https://pushpage.link**.
+- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible. Set it to `http://localhost:8080` to get started quickly, or to a custom hostname if you have DNS set up for it. If you'd rather skip self-hosting, a managed public instance is available at **https://pushpage.link** — it runs this exact same open-source image, just with the `PLANS_ENABLED` and `EMAIL_VERIFICATION_ENABLED` feature flags turned on (see [`docs/configuration.md`](docs/configuration.md)) to enable subscription plans and email verification.
 
 ```env
 APP_SERVER_URL=http://localhost:8080

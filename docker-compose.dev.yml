@@ -4,11 +4,21 @@ services:
       context: .
       dockerfile: publisher/Dockerfile
     environment:
+      PLANS_ENABLED: ${PLANS_ENABLED:-false}
+      EMAIL_VERIFICATION_ENABLED: ${EMAIL_VERIFICATION_ENABLED:-false}
       APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
       DB_HOST: postgres
       DB_NAME: ${DB_NAME:-pushpage}
       DB_USER: ${DB_USER:-pushpage}
       DB_PASSWORD: ${DB_PASSWORD:-pushpage}
+      EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST:-}
+      EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT:-587}
+      EMAIL_SMTP_USERNAME: ${EMAIL_SMTP_USERNAME:-}
+      EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@pushpage.link}
+      EMAIL_VERIFICATION_TOKEN_TTL_HOURS: ${EMAIL_VERIFICATION_TOKEN_TTL_HOURS:-24}
+      EMAIL_VERIFICATION_RATE_LIMIT_PER_MINUTE: ${EMAIL_VERIFICATION_RATE_LIMIT_PER_MINUTE:-1}
+      EMAIL_RESEND_IP_RATE_LIMIT_RPM: ${EMAIL_RESEND_IP_RATE_LIMIT_RPM:-5}
     volumes:
       - pages_data:/var/www/pages
     depends_on:
