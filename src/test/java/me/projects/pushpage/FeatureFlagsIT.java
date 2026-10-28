@@ -1,13 +1,13 @@
 package me.projects.pushpage;
 
 import me.projects.pushpage.PostgresTestSupport;
-import me.projects.pushpage.emailverification.controller.EmailVerificationAdminController;
-import me.projects.pushpage.emailverification.controller.EmailVerificationController;
+import me.projects.pushpage.email.controller.EmailVerificationAdminController;
+import me.projects.pushpage.email.controller.EmailVerificationController;
 import me.projects.pushpage.plans.controller.PlanAdminController;
-import me.projects.pushpage.emailverification.repository.EmailVerificationRepository;
+import me.projects.pushpage.email.repository.EmailVerificationRepository;
 import me.projects.pushpage.plans.repository.PlanRepository;
 import me.projects.pushpage.service.FeatureUserSummaryEnricher;
-import me.projects.pushpage.emailverification.service.EmailVerificationHooks;
+import me.projects.pushpage.email.service.EmailVerificationHooks;
 import me.projects.pushpage.plans.service.QuotaService;
 import me.projects.pushpage.plans.service.RetentionService;
 import me.projects.pushpage.service.NoOpQuotaPolicy;
@@ -46,6 +46,9 @@ class FeatureFlagsIT {
             assertThat(ctx.getBeansOfType(PlanAdminController.class)).isEmpty();
             assertThat(ctx.getBeansOfType(EmailVerificationController.class)).isEmpty();
             assertThat(ctx.getBeansOfType(EmailVerificationAdminController.class)).isEmpty();
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.email.controller.ForgotPasswordController.class)).isEmpty();
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.email.service.PasswordResetEmailService.class)).isEmpty();
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.service.PasswordResetService.class)).hasSize(1);
         }
     }
 
@@ -70,7 +73,7 @@ class FeatureFlagsIT {
 
     @Nested
     @SpringBootTest
-    @TestPropertySource(properties = {"app.features.email-verification.enabled=true", "app.email.from=test@example.com", "app.email.verification-token-ttl-hours=24", "app.email.verification-rate-limit-per-minute=1", "app.email.resend-ip-rate-limit-per-minute=5", "spring.mail.host=localhost"})
+    @TestPropertySource(properties = {"app.features.email.enabled=true", "app.email.from=test@example.com", "app.email.verification-token-ttl-hours=24", "app.email.verification-rate-limit-per-minute=1", "app.email.resend-ip-rate-limit-per-minute=5", "spring.mail.host=localhost"})
     class EmailVerificationOnly extends PostgresTestSupport {
         @Autowired ApplicationContext ctx;
 
@@ -80,6 +83,8 @@ class FeatureFlagsIT {
             assertThat(ctx.getBean(UserSummaryEnricher.class)).isInstanceOf(FeatureUserSummaryEnricher.class);
             assertThat(ctx.getBeansOfType(EmailVerificationController.class)).hasSize(1);
             assertThat(ctx.getBeansOfType(EmailVerificationAdminController.class)).hasSize(1);
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.email.controller.ForgotPasswordController.class)).hasSize(1);
+            assertThat(ctx.getBeansOfType(me.projects.pushpage.email.service.PasswordResetEmailService.class)).hasSize(1);
             assertThat(ctx.getBean(QuotaPolicy.class)).isInstanceOf(NoOpQuotaPolicy.class);
             assertThat(ctx.getBean(RetentionPolicy.class)).isInstanceOf(NoOpRetentionPolicy.class);
             assertThat(ctx.getBeansOfType(PlanRepository.class)).isEmpty();

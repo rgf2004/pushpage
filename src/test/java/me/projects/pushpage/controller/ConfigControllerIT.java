@@ -49,6 +49,6 @@ class ConfigControllerIT extends PostgresTestSupport {
         mockMvc.perform(get("/config"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.features.plans").value(false))
-                .andExpect(jsonPath("$.features.email_verification").value(false));
+                .andExpect(jsonPath("$.features.email").value(false));
     }
 }

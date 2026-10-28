@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 public class UserService implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
+    public static final int MIN_PASSWORD_LENGTH = 8;
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     private static final BCryptPasswordEncoder BCRYPT = new BCryptPasswordEncoder();
@@ -70,7 +71,7 @@ public class UserService implements ApplicationRunner {
         if (request.email() == null || !EMAIL_PATTERN.matcher(request.email().trim()).matches()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valid email is required");
         }
-        if (request.password() == null || request.password().length() < 8) {
+        if (request.password() == null || request.password().length() < MIN_PASSWORD_LENGTH) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
         }
         if (userRepository.findByEmail(request.email().trim()).isPresent()) {

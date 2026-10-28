@@ -62,7 +62,7 @@ Both protections live in `nginx/default.conf`; there is nothing to configure in 
 |------------|----------|
 | Page sandbox | `/pages/*.html` is served with `Content-Security-Policy: sandbox allow-scripts allow-popups allow-forms allow-modals` (plus `nosniff` and `Referrer-Policy: no-referrer`). Published pages are untrusted user content on the same origin as the dashboard and API. The sandbox omits `allow-same-origin`, so a page's scripts run in an opaque origin and cannot read the dashboard's `sessionStorage` JWT or call `/api` as the viewer. Side effect: pages cannot use `localStorage`, `sessionStorage` or cookies. Never add `allow-same-origin`. |
 | Frame blocking | All other responses carry `X-Frame-Options: DENY` and `Content-Security-Policy: frame-ancestors 'none'`, so the dashboard cannot be framed. |
-| Auth rate limit | `POST /api/auth/login` and `/api/auth/signup` are limited to 10 requests/minute per client IP (burst 5) via `limit_req`; excess requests get `429`. If nginx runs behind another proxy or load balancer, configure `real_ip_header`/`set_real_ip_from` so the limit keys on the real client IP rather than the proxy's. |
+| Auth rate limit | `POST /api/auth/login`, `/signup`, `/forgot-password` and `/reset-password` are limited to 10 requests/minute per client IP (burst 5) via `limit_req`; excess requests get `429`. Login/signup share one bucket and forgot/reset-password another, so failed logins never block someone from resetting their password. If nginx runs behind another proxy or load balancer, configure `real_ip_header`/`set_real_ip_from` so the limit keys on the real client IP rather than the proxy's. |
 
 Serving pages from a separate domain would give stronger isolation, but the sandbox header achieves the same protection without a second domain.
 
@@ -80,7 +80,9 @@ Both are off by default and independent of each other.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PLANS_ENABLED` | Subscription plans: daily publish quota and plan-based page retention (`tier1`/`tier2`/`tier3`, set by an admin). Admin and guest requests are always exempt from quota, so a self-hosted instance where you're the only (admin) user is unaffected either way. See the "Subscription plans" section of `CLAUDE.md`. | `false` |
-| `EMAIL_VERIFICATION_ENABLED` | Require users to confirm their email address before they can log in. Needs working `EMAIL_SMTP_*` settings; see [`docs/email-verification.md`](email-verification.md). | `false` |
+| `EMAIL_ENABLED` | Turns on everything that sends email: the SMTP sender, mandatory sign-up email verification (users must confirm their address before they can log in), and self-service password reset by email. Needs working `EMAIL_SMTP_*` settings; see [`docs/email-verification.md`](email-verification.md) and [`docs/password-reset.md`](password-reset.md). | `false` |
+
+Password reset also works without email (admin-issued links, `ADMIN_RECOVERY`); its settings are in [`docs/password-reset.md`](password-reset.md#configuration).
 
 ## Database Variables
 

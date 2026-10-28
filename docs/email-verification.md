@@ -1,8 +1,13 @@
-# Sign-up email verification (`EMAIL_VERIFICATION_ENABLED`)
+# Email and sign-up verification (`EMAIL_ENABLED`)
 
-Gated behind the `EMAIL_VERIFICATION_ENABLED` environment variable
-(`me.projects.pushpage.emailverification.*`, default `false`). Deployments that don't set it are unaffected — signup/login behaves
-exactly as without this feature.
+Gated behind the `EMAIL_ENABLED` environment variable
+(`me.projects.pushpage.email.*`, default `false`). One flag turns on everything that sends
+email: the SMTP sender, the sign-up verification described here, and self-service password
+reset (see [`password-reset.md`](password-reset.md)). Deployments that don't set it are
+unaffected — signup/login behaves exactly as without this feature.
+
+> **Renamed from `EMAIL_VERIFICATION_ENABLED`.** Only `EMAIL_ENABLED` is read; if your
+> configuration still sets the old name, rename it or email stays off.
 
 ## Flow
 
@@ -85,8 +90,8 @@ adds friction without a matching safety benefit.
 
 ## Email delivery — provider-agnostic by design
 
-`EmailService` (`me.projects.pushpage.emailverification.email`) is a one-method interface
-(`sendVerificationEmail(toEmail, link)`). The only implementation, `SmtpEmailService`,
+`EmailService` (`me.projects.pushpage.email.sender`) is a small interface
+(`sendVerificationEmail(toEmail, link)` and `sendPasswordResetEmail(toEmail, link, expiresInMinutes)`). The only implementation, `SmtpEmailService`,
 sends over SMTP via `spring-boot-starter-mail`/`JavaMailSender`. SMTP is supported by
 every mainstream transactional email provider (Mailtrap, Resend, SES, Sendgrid,
 Postmark, ...), so switching providers is a matter of changing env vars — no new code.
@@ -97,7 +102,7 @@ category in Mailtrap's stats (open/click/bounce rate per category, useful for sp
 regression in one template). It's sent as a plain `X-` extension header, so any other
 SMTP provider just ignores it; nothing else about the integration depends on Mailtrap.
 
-### Env vars (only used when `EMAIL_VERIFICATION_ENABLED=true`)
+### Env vars (only used when `EMAIL_ENABLED=true`)
 
 | Variable | Description | Default |
 |----------|--------------|---------|
@@ -128,7 +133,7 @@ only these values.
 
 ## Activating
 
-Set `EMAIL_VERIFICATION_ENABLED=true` on the `publisher` service (see `docker-compose.yml`)
+Set `EMAIL_ENABLED=true` on the `publisher` service (see `docker-compose.yml`)
 and pass the `EMAIL_*` vars through. While it is `false`, none of this code runs —
 `UserLifecycleHooks` falls back to the no-op and signup/login behavior is exactly as
 without this feature.

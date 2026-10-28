@@ -16,19 +16,19 @@ import java.util.Map;
 public class ClientConfigService {
 
     private final boolean plansEnabled;
-    private final boolean emailVerificationEnabled;
+    private final boolean emailEnabled;
 
     public ClientConfigService(
             @Value("${app.features.plans.enabled:false}") boolean plansEnabled,
-            @Value("${app.features.email-verification.enabled:false}") boolean emailVerificationEnabled) {
+            @Value("${app.features.email.enabled:false}") boolean emailEnabled) {
         this.plansEnabled = plansEnabled;
-        this.emailVerificationEnabled = emailVerificationEnabled;
+        this.emailEnabled = emailEnabled;
     }
 
     public ClientConfigResponse getConfig() {
         Map<String, Boolean> features = new LinkedHashMap<>();
         features.put("plans", plansEnabled);
-        features.put("email_verification", emailVerificationEnabled);
+        features.put("email", emailEnabled);
         return new ClientConfigResponse(features);
     }
 }

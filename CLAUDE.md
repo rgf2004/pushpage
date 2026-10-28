@@ -52,21 +52,21 @@ push-page/
     ├── service/
     │   └── PublishService.java     # business logic
     ├── plans/                      # PLANS_ENABLED: Plan enum, PlanRepository, QuotaService, RetentionService, PlanAdminController
-    └── emailverification/          # EMAIL_VERIFICATION_ENABLED: hooks, service, repository, SMTP email, controllers
+    └── email/                      # EMAIL_ENABLED: sign-up verification hooks, forgot-password, SMTP sender (email/sender), controllers
 ```
 
 ### Optional features (feature flags)
 
 Two independent features are compiled into every build and switched on with environment
-variables (both default `false`). Each flag registers `@Primary` beans (in `plans` / `emailverification`) that override the
+variables (both default `false`). Each flag registers `@Primary` beans (in `plans` / `email`) that override the
 no-op defaults (`UserLifecycleHooks`, `QuotaPolicy`, `RetentionPolicy`,
-`UserSummaryEnricher`), using the `@ConditionalOnPlansEnabled` / `@ConditionalOnEmailVerificationEnabled` annotations
+`UserSummaryEnricher`), using the `@ConditionalOnPlansEnabled` / `@ConditionalOnEmailEnabled` annotations
 (one in each feature package).
 
 | Flag | Turns on |
 |------|----------|
 | `PLANS_ENABLED` | Daily publish quota, plan-based retention, `PATCH /api/admin/users/{id}/plan`. See "Subscription plans" below. |
-| `EMAIL_VERIFICATION_ENABLED` | Mandatory sign-up email verification (SMTP), verify/resend endpoints. See [`docs/email-verification.md`](docs/email-verification.md). |
+| `EMAIL_ENABLED` | Everything that sends email: SMTP sender, mandatory sign-up email verification, verify/resend endpoints, `forgot-password`. See [`docs/email-verification.md`](docs/email-verification.md) and [`docs/password-reset.md`](docs/password-reset.md). |
 
 Leaving both unset keeps the default behavior (unlimited, no verification), which is
 what most self-hosted deployments want. The managed `pushpage.link` instance sets both
@@ -92,7 +92,7 @@ Shared visual styles (`theme.css`) are already linked from all pages — new pag
 - **User pages are sandboxed.** `/pages/*.html` is untrusted user HTML on the same origin as the dashboard (which keeps its JWT in `sessionStorage`) and the API. The `location` serving it sets `Content-Security-Policy: sandbox allow-scripts allow-popups allow-forms allow-modals`. **Never add `allow-same-origin`**, and remember nginx `add_header` is not inherited into a location that defines its own `add_header`.
 - **Framing is denied** server-wide (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`); the pages location overrides this so pages stay embeddable.
 - **`/dashboard` is served with `Cache-Control: no-cache`** (via `expires -1`, deliberately not `add_header`, which would drop the server-level frame-blocking headers in that location) so browsers pick up a redeployed dashboard instead of reusing a stale copy.
-- **`/api/auth/login` and `/api/auth/signup`** have a `limit_req` zone (`auth`, 10 r/m per IP, burst 5, `429`). These locations repeat the `proxy_pass` block from `/api/`; keep them in sync.
+- **`/api/auth/login`, `/signup`, `/forgot-password` and `/reset-password`** have a `limit_req` zone (`auth`, 10 r/m per IP, burst 5, `429`), keyed per IP *and* bucket (`$auth_bucket`: login/signup vs forgot/reset-password) so failed logins can't block the reset flow. These locations repeat the `proxy_pass` block from `/api/`; keep them in sync.
 
 ## Git Workflow
 
@@ -132,12 +132,16 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 `app.jwt.expiration-hours` (default `24`) is set in `application.properties` and does not need a `.env` entry. See `docs/configuration.md` for details.
 
 | `PLANS_ENABLED` | Enable subscription plans: daily publish quota + plan-based retention. | `false` |
-| `EMAIL_VERIFICATION_ENABLED` | Require sign-up email verification (needs the `EMAIL_SMTP_*` settings). | `false` |
-| `EMAIL_SMTP_HOST` / `EMAIL_SMTP_PORT` / `EMAIL_SMTP_USERNAME` / `EMAIL_SMTP_PASSWORD` | SMTP credentials for sending verification emails. Only used when `EMAIL_VERIFICATION_ENABLED=true`. | — |
+| `EMAIL_ENABLED` | Enable email: sign-up verification and password-reset emails (needs the `EMAIL_SMTP_*` settings). | `false` |
+| `EMAIL_SMTP_HOST` / `EMAIL_SMTP_PORT` / `EMAIL_SMTP_USERNAME` / `EMAIL_SMTP_PASSWORD` | SMTP credentials for sending verification and password-reset emails. Only used when `EMAIL_ENABLED=true`. | — |
 | `EMAIL_FROM` | From address on the confirmation email. | `no-reply@pushpage.link` |
 | `EMAIL_VERIFICATION_TOKEN_TTL_HOURS` | How long a verification link stays valid. | `24` |
 | `EMAIL_VERIFICATION_RATE_LIMIT_PER_MINUTE` | Max verification emails per account per minute. | `1` |
 | `EMAIL_RESEND_IP_RATE_LIMIT_RPM` | Max resend-verification requests per IP per minute. | `5` |
+| `PASSWORD_RESET_TOKEN_TTL_MINUTES` | How long a password-reset link stays valid (emailed and admin-issued). | `60` |
+| `EMAIL_PASSWORD_RESET_RATE_LIMIT_PER_MINUTE` | Max password-reset emails per account per minute. | `1` |
+| `EMAIL_PASSWORD_RESET_IP_RATE_LIMIT_RPM` | Max forgot-password requests per IP per minute. | `5` |
+| `ADMIN_RECOVERY` | Log a one-time password-reset link for every active admin at startup (locked-out admin, no email). Temporary: unset after use. | `false` |
 
 ## Authentication
 
@@ -148,7 +152,7 @@ Two credential types are accepted:
 | API key | `X-Api-Key: pp_<key>` |
 | JWT Bearer | `Authorization: Bearer <jwt>` |
 
-JWTs are issued by `POST /api/auth/login` and are valid for 24 h. API keys are obtained via `POST /api/me/tokens` and are long-lived.
+JWTs are issued by `POST /api/auth/login` and are valid for 24 h. They carry a `pwd_v` claim (the user's `password_changed_at`), so a password reset invalidates every earlier JWT; API keys are unaffected. API keys are obtained via `POST /api/me/tokens` and are long-lived.
 
 On first run, if no users exist the service auto-creates an `admin@pushpage.link` account with a random alphanumeric password **and** a random API key, logs both prominently, and never shows them again. API keys are stored as SHA-256 hashes; passwords as BCrypt hashes.
 
@@ -165,14 +169,17 @@ All endpoints are under `/api` (Spring Boot context path).
 | `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any). |
 | `POST` | `/api/me/tokens` | User | Generate / rotate API key → `{ api_key }`. Previous key is invalidated. |
 | `GET` | `/api/health` | None | Health check. |
-| `GET` | `/api/config` | None | Public frontend config: `{ features: { plans, email_verification } }`. Add new frontend-visible settings in `ClientConfigService`. |
+| `GET` | `/api/config` | None | Public frontend config: `{ features: { plans, email } }`. Add new frontend-visible settings in `ClientConfigService`. |
 | `GET` | `/api/admin/users` | Admin | List all users. |
 | `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user. |
 | `PATCH` | `/api/admin/users/{id}/promote` | Admin | Grant admin role. |
 | `GET` | `/api/me` | User | Current user's email/role, and (with `PLANS_ENABLED`) `plan`, `daily_limit`, `daily_usage`. |
-| `GET` | `/api/auth/verify-email` | None | *(`EMAIL_VERIFICATION_ENABLED`)* Consumes a sign-up verification token, redirects to `/dashboard`. |
-| `POST` | `/api/auth/resend-verification` | None | *(`EMAIL_VERIFICATION_ENABLED`)* Resend the verification email. Always `204`; rate-limited per IP. |
-| `PATCH` | `/api/admin/users/{id}/verify-email` | Admin | *(`EMAIL_VERIFICATION_ENABLED`)* Manually mark a user's email verified. |
+| `GET` | `/api/auth/verify-email` | None | *(`EMAIL_ENABLED`)* Consumes a sign-up verification token, redirects to `/dashboard`. |
+| `POST` | `/api/auth/resend-verification` | None | *(`EMAIL_ENABLED`)* Resend the verification email. Always `204`; rate-limited per IP. |
+| `PATCH` | `/api/admin/users/{id}/verify-email` | Admin | *(`EMAIL_ENABLED`)* Manually mark a user's email verified. |
+| `POST` | `/api/auth/forgot-password` | None | *(`EMAIL_ENABLED`)* Email a password-reset link. Always `202` (no account enumeration); rate-limited per IP and account. |
+| `POST` | `/api/auth/reset-password` | None | Set a new password with a reset token (`{ token, password }`) → `204`. Single-use; invalidates the user's existing JWTs. Works with or without email. |
+| `POST` | `/api/admin/users/{id}/reset-password` | Admin | Create a one-time reset link → `{ reset_link, expires_at }`. Works with or without email. |
 | `PATCH` | `/api/admin/users/{id}/plan` | Admin | *(`PLANS_ENABLED`)* Set a user's plan (`tier1`/`tier2`/`tier3`). |
 
 Swagger UI: `{APP_SERVER_URL}/api/swagger-ui/index.html`
@@ -184,11 +191,13 @@ A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.h
 **Screens:**
 - **Login** — email + password → JWT; link to sign-up
 - **Sign-up** — email + password + Terms of Use checkbox (required) → account created → redirect to login. The checkbox links to `/terms`.
+- **Forgot password** (`EMAIL_ENABLED`) — email → "if an account exists…" message. Without email the login page says to ask an administrator.
+- **Reset password** — reached via `/dashboard?reset_token=…` (from an email or an admin); new password + confirmation. The token is removed from the URL immediately.
 
 **Tabs:**
 - **Pages** — lists the caller's pages, with delete and pagination
 - **Account** — displays email, role; Generate / Rotate API Key button (shows key once); plan badge + quota progress bar (`PLANS_ENABLED` only — hidden otherwise)
-- **Users** (admin only) — lists all users; Promote and Deactivate actions; plan column (`PLANS_ENABLED`), verified column and Verify button (`EMAIL_VERIFICATION_ENABLED`)
+- **Users** (admin only) — lists all users; Promote and Deactivate actions; plan column (`PLANS_ENABLED`), verified column and Verify button (`EMAIL_ENABLED`), and a Reset password button that shows a one-time link to hand to the user
 
 ## Subscription plans (`PLANS_ENABLED`)
 

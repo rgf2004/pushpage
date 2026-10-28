@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,6 +78,12 @@ public class UserRepository {
         jdbc.update("UPDATE users SET api_key_hash = ? WHERE id = ?", newHash, userId);
     }
 
+    /** Sets a new password hash and stamps {@code password_changed_at}, invalidating older JWTs. */
+    public void updatePassword(String userId, String passwordHash, Instant changedAt) {
+        jdbc.update("UPDATE users SET password_hash = ?, password_changed_at = ? WHERE id = ?",
+                passwordHash, Timestamp.from(changedAt), userId);
+    }
+
     public long count() {
         Long count = jdbc.queryForObject("SELECT COUNT(*) FROM users", Long.class);
         return count != null ? count : 0;
@@ -91,7 +98,9 @@ public class UserRepository {
                         rs.getString("password_hash"),
                         rs.getTimestamp("created_at").toInstant(),
                         rs.getBoolean("active"),
-                        rs.getBoolean("admin")
+                        rs.getBoolean("admin"),
+                        rs.getTimestamp("password_changed_at") == null
+                                ? null : rs.getTimestamp("password_changed_at").toInstant()
                 ),
                 args
         );

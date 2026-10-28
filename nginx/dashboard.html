@@ -62,6 +62,23 @@
 
         .auth-switch a:hover { text-decoration: underline; }
 
+        .forgot-row {
+            text-align: right;
+            margin: -6px 0 16px;
+            font-size: .8rem;
+            color: var(--text-muted);
+            display: none;
+        }
+
+        .forgot-row a {
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .forgot-row a:hover { text-decoration: underline; }
+
         /* ── Session toast ────────────────────────────────────────────── */
         #session-toast {
             position: fixed;
@@ -547,6 +564,8 @@
             <label for="login-password">Password</label>
             <input type="password" id="login-password" autocomplete="current-password">
         </div>
+        <div class="forgot-row" id="forgot-link-row"><a id="go-forgot">Forgot password?</a></div>
+        <div class="forgot-row" id="forgot-admin-hint">Forgot your password? Ask an administrator to reset it.</div>
         <button class="btn btn-primary" id="login-btn" style="width:100%">Sign in</button>
         <div class="auth-switch">
             Don't have an account? <a id="go-signup">Sign up</a>
@@ -576,6 +595,45 @@
         <button class="btn btn-primary" id="signup-btn" style="width:100%">Create account</button>
         <div class="auth-switch">
             Already have an account? <a id="go-login">Sign in</a>
+        </div>
+    </div>
+</div>
+
+<!-- ── Forgot-password screen (EMAIL_ENABLED) ─────────────────────────── -->
+<div id="forgot-screen" class="auth-screen" style="display:none">
+    <div class="auth-box">
+        <h2>Forgot password</h2>
+        <p>Enter your email and we'll send you a link to choose a new password.</p>
+        <div id="forgot-error" class="auth-error"></div>
+        <div class="field">
+            <label for="forgot-email">Email</label>
+            <input type="email" id="forgot-email" autocomplete="email" spellcheck="false">
+        </div>
+        <button class="btn btn-primary" id="forgot-btn" style="width:100%">Send reset link</button>
+        <div class="auth-switch">
+            <a id="forgot-back">Back to sign in</a>
+        </div>
+    </div>
+</div>
+
+<!-- ── Reset-password screen (reached from an emailed or admin-issued link) ── -->
+<div id="reset-screen" class="auth-screen" style="display:none">
+    <div class="auth-box">
+        <h2>Choose a new password</h2>
+        <p>Enter a new password for your account.</p>
+        <div id="reset-error" class="auth-error"></div>
+        <div class="field">
+            <label for="reset-password">New password</label>
+            <input type="password" id="reset-password" autocomplete="new-password">
+            <div class="hint">Minimum 8 characters.</div>
+        </div>
+        <div class="field">
+            <label for="reset-password-confirm">Confirm new password</label>
+            <input type="password" id="reset-password-confirm" autocomplete="new-password">
+        </div>
+        <button class="btn btn-primary" id="reset-btn" style="width:100%">Update password</button>
+        <div class="auth-switch">
+            <a id="reset-back">Back to sign in</a>
         </div>
     </div>
 </div>
@@ -742,6 +800,21 @@
     </div>
 </div>
 
+<!-- Admin-issued password reset link -->
+<div class="modal-overlay" id="reset-link-modal" style="display:none">
+    <div class="modal">
+        <h3>Password reset link</h3>
+        <p class="confirm-msg">Send this one-time link to:</p>
+        <p class="confirm-name" id="reset-link-username"></p>
+        <div class="api-key-revealed" id="reset-link-value"></div>
+        <p class="confirm-msg" id="reset-link-expiry"></p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="reset-link-close">Close</button>
+            <button class="btn btn-primary" id="reset-link-copy">Copy link</button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -799,7 +872,7 @@ function showModal(id) { document.getElementById(id).style.display = 'flex'; }
 function hideModal(id) { document.getElementById(id).style.display = 'none'; }
 
 function showScreen(name) {
-    ['login-screen', 'signup-screen', 'dashboard-screen'].forEach(id => {
+    ['login-screen', 'signup-screen', 'forgot-screen', 'reset-screen', 'dashboard-screen'].forEach(id => {
         const el = document.getElementById(id);
         el.style.display = (id === name + '-screen' || id === name) ? 'flex' : 'none';
     });
@@ -830,6 +903,104 @@ document.getElementById('go-login-hdr').addEventListener('click', e => {
     e.preventDefault();
     showScreen('login');
 });
+
+document.getElementById('go-forgot').addEventListener('click', () => {
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('forgot-error').style.display = 'none';
+    document.getElementById('forgot-email').value = document.getElementById('login-email').value;
+    showScreen('forgot');
+});
+document.getElementById('forgot-back').addEventListener('click', () => showScreen('login'));
+document.getElementById('reset-back').addEventListener('click', () => showScreen('login'));
+
+// ── Forgot password (EMAIL_ENABLED) ──────────────────────────────────────
+document.getElementById('forgot-email').addEventListener('keydown', e => {
+    if (e.key === 'Enter') forgotPassword();
+});
+document.getElementById('forgot-btn').addEventListener('click', forgotPassword);
+
+async function forgotPassword() {
+    const errEl = document.getElementById('forgot-error');
+    errEl.style.display = 'none';
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) { errEl.textContent = 'Email is required.'; errEl.style.display = 'block'; return; }
+
+    const btn = document.getElementById('forgot-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    try {
+        const r = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        if (r.status === 202) {
+            // Same message whether or not the account exists.
+            document.getElementById('login-email').value = email;
+            toast('If an account exists for that address, a reset link is on its way.');
+            showScreen('login');
+        } else if (r.status === 429) {
+            errEl.textContent = 'Too many requests. Please wait a minute and try again.';
+            errEl.style.display = 'block';
+        } else {
+            errEl.textContent = 'Could not send the reset link. Try again later.';
+            errEl.style.display = 'block';
+        }
+    } catch {
+        errEl.textContent = 'Could not reach the server.';
+        errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send reset link';
+    }
+}
+
+// ── Reset password (link from email or an admin) ──────────────────────────
+let resetToken = '';
+
+document.getElementById('reset-password-confirm').addEventListener('keydown', e => {
+    if (e.key === 'Enter') resetPassword();
+});
+document.getElementById('reset-btn').addEventListener('click', resetPassword);
+
+async function resetPassword() {
+    const errEl = document.getElementById('reset-error');
+    errEl.style.display = 'none';
+    const password = document.getElementById('reset-password').value;
+    const confirm = document.getElementById('reset-password-confirm').value;
+    if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return; }
+    if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+
+    const btn = document.getElementById('reset-btn');
+    btn.disabled = true;
+    btn.textContent = 'Updating…';
+    try {
+        const r = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: resetToken, password })
+        });
+        if (r.status === 204) {
+            resetToken = '';
+            document.getElementById('reset-password').value = '';
+            document.getElementById('reset-password-confirm').value = '';
+            toast('Password updated — sign in with your new password.');
+            showScreen('login');
+        } else if (r.status === 400) {
+            errEl.textContent = 'This reset link is invalid or has expired. Request a new one.';
+            errEl.style.display = 'block';
+        } else {
+            errEl.textContent = 'Could not update the password. Try again.';
+            errEl.style.display = 'block';
+        }
+    } catch {
+        errEl.textContent = 'Could not reach the server.';
+        errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Update password';
+    }
+}
 
 // ── Sign-up ──────────────────────────────────────────────────────────────
 document.getElementById('signup-password').addEventListener('keydown', e => {
@@ -866,7 +1037,7 @@ async function signUp() {
         } else if (r.status === 201) {
             document.getElementById('login-email').value = email;
             document.getElementById('login-password').value = '';
-            toast(features.email_verification
+            toast(features.email
                 ? 'Account created — check your email to verify before signing in.'
                 : 'Account created — you can now sign in.');
             showScreen('login');
@@ -916,7 +1087,7 @@ async function doLogin() {
             errEl.style.display = 'block';
             return;
         }
-        if (r.status === 403 && features.email_verification) {
+        if (r.status === 403 && features.email) {
             document.getElementById('verify-banner').style.display = 'block';
             return;
         }
@@ -1006,7 +1177,8 @@ async function loadDashboard() {
 
 // ── Logout ───────────────────────────────────────────────────────────────
 document.getElementById('logout-btn').addEventListener('click', () => {
-    ['confirm-modal', 'deactivate-modal', 'promote-modal'].forEach(hideModal);
+    ['confirm-modal', 'deactivate-modal', 'promote-modal', 'reset-link-modal'].forEach(hideModal);
+    document.getElementById('reset-link-value').textContent = '';
     sessionStorage.removeItem('pp_jwt');
     jwt = '';
     currentUser = null;
@@ -1161,7 +1333,7 @@ async function loadUsers() {
         }
 
         const showPlan = !!features.plans;
-        const showVerified = !!features.email_verification;
+        const showVerified = !!features.email;
         document.getElementById('th-plan').style.display = showPlan ? '' : 'none';
         document.getElementById('th-verified').style.display = showVerified ? '' : 'none';
 
@@ -1182,6 +1354,7 @@ async function loadUsers() {
                 <td>
                     <div class="user-actions">
                         ${showVerified && u.email_verified === false ? `<button class="btn btn-secondary btn-sm" data-verify="${esc(String(u.id))}">Verify</button>` : ''}
+                        ${isActive && !isSelf ? `<button class="btn btn-secondary btn-sm" data-reset="${esc(String(u.id))}" data-runame="${esc(u.email || u.id)}">Reset password</button>` : ''}
                         ${isActive && !u.admin && !isSelf ? `<button class="btn btn-secondary btn-sm" data-promote="${esc(String(u.id))}" data-puname="${esc(u.email || u.id)}">Promote</button>` : ''}
                         ${isActive && !isSelf ? `<button class="btn btn-danger btn-sm" data-uid="${esc(String(u.id))}" data-uname="${esc(u.email || u.id)}">Deactivate</button>` : ''}
                     </div>
@@ -1192,6 +1365,9 @@ async function loadUsers() {
 
         tbody.querySelectorAll('[data-verify]').forEach(btn => {
             btn.addEventListener('click', () => verifyEmail(btn.dataset.verify));
+        });
+        tbody.querySelectorAll('[data-reset]').forEach(btn => {
+            btn.addEventListener('click', () => createResetLink(btn.dataset.reset, btn.dataset.runame));
         });
         tbody.querySelectorAll('[data-promote]').forEach(btn => {
             btn.addEventListener('click', () => promptPromote(btn.dataset.promote, btn.dataset.puname));
@@ -1220,6 +1396,31 @@ async function verifyEmail(uid) {
         toast('Network error.', 'error');
     }
 }
+
+// ── Reset password link (admin) ──────────────────────────────────────────
+async function createResetLink(uid, uname) {
+    try {
+        const r = await api('/admin/users/' + uid + '/reset-password', { method: 'POST' });
+        if (!r.ok) { toast('Failed to create reset link.', 'error'); return; }
+        const d = await r.json();
+        document.getElementById('reset-link-username').textContent = uname;
+        document.getElementById('reset-link-value').textContent = d.reset_link;
+        document.getElementById('reset-link-expiry').textContent =
+            'Expires ' + new Date(d.expires_at).toLocaleString() + '. It can be used once and replaces any earlier link for this user.';
+        showModal('reset-link-modal');
+    } catch {
+        toast('Network error.', 'error');
+    }
+}
+
+document.getElementById('reset-link-close').addEventListener('click', () => {
+    document.getElementById('reset-link-value').textContent = '';
+    hideModal('reset-link-modal');
+});
+document.getElementById('reset-link-copy').addEventListener('click', () => {
+    const link = document.getElementById('reset-link-value').textContent;
+    navigator.clipboard.writeText(link).then(() => toast('Reset link copied.'), () => toast('Copy failed — select the link manually.', 'error'));
+});
 
 // ── Promote user ──────────────────────────────────────────────────────────
 function promptPromote(uid, uname) {
@@ -1319,6 +1520,17 @@ document.getElementById('resend-verification-btn').addEventListener('click', asy
     }
 })();
 
+// ── Reset link landing (/dashboard?reset_token=…, from an email or an admin) ──
+// The token is moved out of the address bar right away so it doesn't linger in history.
+let resetLinkPending = false;
+(() => {
+    const token = new URLSearchParams(window.location.search).get('reset_token');
+    if (!token) return;
+    resetToken = token;
+    resetLinkPending = true;
+    window.history.replaceState({}, '', window.location.pathname);
+})();
+
 // ── Server config (feature flags) ────────────────────────────────────────
 // Single source of truth for which optional features the server has enabled
 // (GET /api/config). Defaults to "no features" if the request fails. Anything that
@@ -1327,10 +1539,22 @@ let features = {};
 const configReady = fetch('/api/config')
     .then(r => r.ok ? r.json() : {})
     .then(c => { features = c.features || {}; })
-    .catch(() => {});
+    .catch(() => {})
+    .then(() => {
+        // Self-service reset needs email; without it, point users at an administrator.
+        document.getElementById('forgot-link-row').style.display = features.email ? 'block' : 'none';
+        document.getElementById('forgot-admin-hint').style.display = features.email ? 'none' : 'block';
+    });
 
 // ── Auto-login from sessionStorage ───────────────────────────────────────
 (async () => {
+    if (resetLinkPending) {
+        // Resetting is for someone locked out; ignore any stored session and show the form.
+        sessionStorage.removeItem('pp_jwt');
+        setHeaderAuth(false);
+        showScreen('reset');
+        return;
+    }
     const saved = sessionStorage.getItem('pp_jwt');
     if (saved) {
         jwt = saved;

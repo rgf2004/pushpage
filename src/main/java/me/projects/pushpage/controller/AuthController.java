@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import me.projects.pushpage.model.LoginRequest;
 import me.projects.pushpage.model.LoginResponse;
+import me.projects.pushpage.model.ResetPasswordRequest;
 import me.projects.pushpage.model.SignUpRequest;
+import me.projects.pushpage.service.PasswordResetService;
 import me.projects.pushpage.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,9 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final UserService userService;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, PasswordResetService passwordResetService) {
         this.userService = userService;
+        this.passwordResetService = passwordResetService;
     }
 
     @Operation(summary = "Sign up", description = "Create a new account. No authentication required.")
@@ -49,5 +53,17 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest request) {
         return userService.login(request);
+    }
+
+    @Operation(summary = "Reset password",
+            description = "Sets a new password using a single-use reset token (from the forgot-password email or an admin-issued link). Invalidates all existing sessions.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Password changed", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Invalid or expired token, or password too short", content = @Content)
+    })
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request.token(), request.password());
+        return ResponseEntity.noContent().build();
     }
 }

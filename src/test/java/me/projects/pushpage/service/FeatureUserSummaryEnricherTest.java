@@ -1,6 +1,6 @@
 package me.projects.pushpage.service;
 
-import me.projects.pushpage.emailverification.repository.EmailVerificationRepository;
+import me.projects.pushpage.email.repository.EmailVerificationRepository;
 import me.projects.pushpage.plans.repository.PlanRepository;
 import me.projects.pushpage.model.UserSummary;
 import org.junit.jupiter.api.BeforeEach;

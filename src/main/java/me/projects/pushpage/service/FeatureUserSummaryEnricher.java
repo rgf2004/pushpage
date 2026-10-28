@@ -1,7 +1,7 @@
 package me.projects.pushpage.service;
 
 import jakarta.annotation.PostConstruct;
-import me.projects.pushpage.emailverification.repository.EmailVerificationRepository;
+import me.projects.pushpage.email.repository.EmailVerificationRepository;
 import me.projects.pushpage.plans.repository.PlanRepository;
 import me.projects.pushpage.model.UserSummary;
 import me.projects.pushpage.service.UserSummaryEnricher;
@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @Service
 @Primary
-@ConditionalOnExpression("${app.features.plans.enabled:false} or ${app.features.email-verification.enabled:false}")
+@ConditionalOnExpression("${app.features.plans.enabled:false} or ${app.features.email.enabled:false}")
 public class FeatureUserSummaryEnricher implements UserSummaryEnricher {
 
     private static final Logger log = LoggerFactory.getLogger(FeatureUserSummaryEnricher.class);

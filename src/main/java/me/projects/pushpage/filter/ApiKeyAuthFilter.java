@@ -68,7 +68,8 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         if (apiKey != null) {
             user = userRepository.findByApiKeyHash(ApiKeyHasher.hash(apiKey));
         } else {
-            user = jwtService.validateToken(jwt).flatMap(userRepository::findById);
+            user = jwtService.parseToken(jwt).flatMap(claims ->
+                    userRepository.findById(claims.userId()).filter(claims::matchesCurrentPassword));
         }
 
         if (user.isEmpty() || !user.get().active()) {
