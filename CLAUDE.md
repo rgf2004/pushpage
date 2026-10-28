@@ -91,6 +91,7 @@ Shared visual styles (`theme.css`) are already linked from all pages — new pag
 
 - **User pages are sandboxed.** `/pages/*.html` is untrusted user HTML on the same origin as the dashboard (which keeps its JWT in `sessionStorage`) and the API. The `location` serving it sets `Content-Security-Policy: sandbox allow-scripts allow-popups allow-forms allow-modals`. **Never add `allow-same-origin`**, and remember nginx `add_header` is not inherited into a location that defines its own `add_header`.
 - **Framing is denied** server-wide (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`); the pages location overrides this so pages stay embeddable.
+- **`/dashboard` is served with `Cache-Control: no-cache`** (via `expires -1`, deliberately not `add_header`, which would drop the server-level frame-blocking headers in that location) so browsers pick up a redeployed dashboard instead of reusing a stale copy.
 - **`/api/auth/login` and `/api/auth/signup`** have a `limit_req` zone (`auth`, 10 r/m per IP, burst 5, `429`). These locations repeat the `proxy_pass` block from `/api/`; keep them in sync.
 
 ## Git Workflow
