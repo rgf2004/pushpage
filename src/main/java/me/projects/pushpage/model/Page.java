@@ -13,4 +13,8 @@ public record Page(
         @JsonProperty("expires_at") @JsonFormat(shape = JsonFormat.Shape.STRING) Instant expiresAt,
         String url,
         @JsonProperty("user_id") String userId
-) {}
+) {
+    public Page withUrl(String newUrl) {
+        return new Page(id, title, createdAt, deletedAt, expiresAt, newUrl, userId);
+    }
+}

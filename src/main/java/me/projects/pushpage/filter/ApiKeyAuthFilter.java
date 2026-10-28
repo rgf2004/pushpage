@@ -22,7 +22,7 @@ import java.util.Set;
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
     private static final Set<String> PUBLIC_PATH_PREFIXES = Set.of(
-            "/health", "/config", "/swagger-ui", "/v3/api-docs", "/api-docs", "/auth/"
+            "/health", "/config", "/swagger-ui", "/v3/api-docs", "/api-docs", "/auth/", "/viewer/"
     );
     private static final String ADMIN_PATH_PREFIX = "/admin";
     private static final Set<String> GUEST_ALLOWED = Set.of("POST /pages");

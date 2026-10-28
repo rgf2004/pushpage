@@ -76,6 +76,23 @@ class PageServiceTest {
     }
 
     @Test
+    void publishPage_shouldReturnRawPageUrlWhenViewerDisabled() {
+        PublishResponse response = pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
+
+        assertThat(response.url()).isEqualTo("http://localhost/" + response.id() + ".html");
+    }
+
+    @Test
+    void publishPage_shouldReturnViewerUrlWhenViewerEnabled() {
+        ReflectionTestUtils.setField(pageService, "viewerEnabled", true);
+        ReflectionTestUtils.setField(pageService, "serverUrl", "https://pp.test");
+
+        PublishResponse response = pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
+
+        assertThat(response.url()).isEqualTo("https://pp.test/p/" + response.id());
+    }
+
+    @Test
     void publishPage_shouldStoreHtmlFileOnDisk() {
         PublishResponse response = pageService.publish(new PublishRequest("<h1>Hello</h1>", "Test"));
 

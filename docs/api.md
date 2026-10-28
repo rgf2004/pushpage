@@ -128,6 +128,8 @@ Publish an HTML page and receive a shareable URL. Two content types are accepted
 
 Guest pages (no auth) expire after 30 minutes. Authenticated pages expire after `CLEANUP_RETENTION_DAYS` (default 30 days). Retention is computed by the `RetentionPolicy` extension point (`me.projects.pushpage.service.RetentionPolicy`); self-hosted deployments use the single global default for every user, cloud deployments may vary it by plan.
 
+The returned `url` is `https://<host>/pages/{id}.html`, or `https://<host>/p/{id}` (the branded viewer) when the server runs with `VIEWER_WRAPPER_ENABLED=true`. `GET /api/pages` follows the same rule. Clients should treat `url` as opaque and share it as returned.
+
 **Response headers (both variants):**
 
 | Header | Description |
@@ -233,6 +235,12 @@ Delete a published page. Users may only delete their own pages; admins can delet
 | `404` | Page not found |
 
 ---
+
+## Viewer
+
+### GET /api/viewer/{id}
+
+Returns the HTML viewer shell for a page: a slim pushpage header and an iframe of `/pages/{id}.html`. Public, no auth. `404` if the page does not exist or was deleted. Users reach it as `/p/{id}` (nginx rewrites it); it is always available, and `VIEWER_WRAPPER_ENABLED` decides whether publish responses point at it.
 
 ## User
 

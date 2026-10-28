@@ -6,6 +6,7 @@ services:
     environment:
       PLANS_ENABLED: ${PLANS_ENABLED:-false}
       EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      VIEWER_WRAPPER_ENABLED: ${VIEWER_WRAPPER_ENABLED:-false}
       APP_SERVER_URL: ${APP_SERVER_URL:-http://localhost:8080}
       DB_HOST: postgres
       DB_NAME: ${DB_NAME:-pushpage}
@@ -34,6 +35,8 @@ services:
     build:
       context: .
       dockerfile: nginx/Dockerfile
+    environment:
+      VIEWER_WRAPPER_ENABLED: ${VIEWER_WRAPPER_ENABLED:-false}
     ports:
       - "${NGINX_PORT:-8080}:80"
     volumes:

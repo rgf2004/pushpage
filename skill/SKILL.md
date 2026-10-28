@@ -89,7 +89,7 @@ Response (both variants):
 }
 ```
 
-Return the `url` to the user. That's the shareable link — they can open it in a browser, share it, or bookmark it.
+Return the `url` to the user exactly as returned. That's the shareable link (it may be a `/p/<id>` viewer link or a `/pages/<id>.html` link; do not rewrite it) — they can open it in a browser, share it, or bookmark it.
 
 ## Writing Good HTML for Pushpage
 

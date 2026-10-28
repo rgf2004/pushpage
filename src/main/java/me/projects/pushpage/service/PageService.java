@@ -37,6 +37,12 @@ public class PageService {
     @Value("${app.base-url}")
     private String baseUrl;
 
+    @Value("${app.server-url}")
+    private String serverUrl;
+
+    @Value("${app.features.viewer.enabled:false}")
+    private boolean viewerEnabled;
+
     @Value("${app.pages-dir}")
     private String pagesDir;
 
@@ -119,13 +125,18 @@ public class PageService {
         pageRepository.save(id, title, userId, expiresAt);
         healthService.invalidateCache();
 
-        String url = baseUrl + "/" + id + ".html";
-        return new PublishResponse(url, id, expiresAt);
+        return new PublishResponse(pageUrl(id), id, expiresAt);
     }
 
     public List<Page> listPages() {
         User currentUser = requireCurrentUser();
-        return pageRepository.findAll(baseUrl, currentUser.id(), currentUser.admin());
+        List<Page> pages = pageRepository.findAll(baseUrl, currentUser.id(), currentUser.admin());
+        return viewerEnabled ? pages.stream().map(p -> p.withUrl(pageUrl(p.id()))).toList() : pages;
+    }
+
+    /** Shareable URL: the branded viewer when enabled, otherwise the raw sandboxed page. */
+    private String pageUrl(String id) {
+        return viewerEnabled ? serverUrl + "/p/" + id : baseUrl + "/" + id + ".html";
     }
 
     public void deletePage(String id) {

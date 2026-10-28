@@ -32,7 +32,7 @@ For the full API reference — page management, admin user endpoints, request/re
 ### Prerequisites
 
 - Docker and Docker Compose
-- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible. Set it to `http://localhost:8080` to get started quickly, or to a custom hostname if you have DNS set up for it. If you'd rather skip self-hosting, a managed public instance is available at **https://pushpage.link** — it runs this exact same open-source image, just with the `PLANS_ENABLED` and `EMAIL_ENABLED` feature flags turned on (see [`docs/configuration.md`](docs/configuration.md)) to enable subscription plans and email (sign-up verification and password-reset emails).
+- A `.env` file in the project root. The one required variable is `APP_SERVER_URL`, which must match the URL where the service will be accessible. Set it to `http://localhost:8080` to get started quickly, or to a custom hostname if you have DNS set up for it. If you'd rather skip self-hosting, a managed public instance is available at **https://pushpage.link** — it runs this exact same open-source image, just with the `PLANS_ENABLED`, `EMAIL_ENABLED` and `VIEWER_WRAPPER_ENABLED` feature flags turned on (see [`docs/configuration.md`](docs/configuration.md)) to enable subscription plans, email (sign-up verification and password-reset emails) and the branded viewer (shared links open a page with a small pushpage header above your content).
 
 ```env
 APP_SERVER_URL=http://localhost:8080
@@ -111,7 +111,7 @@ Response:
 }
 ```
 
-Open the `url` in your browser — that's your published page.
+Open the `url` in your browser — that's your published page. With `VIEWER_WRAPPER_ENABLED=true` the URL looks like `https://pushpage.link/p/a1b2c3d4` and opens your page below a slim pushpage header (dismissible with the × button).
 
 `POST /api/pages` also works without an API key — guest pages auto-expire after 30 minutes and are not tied to any account, ideal for quick one-off shares.
 

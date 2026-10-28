@@ -57,8 +57,8 @@ push-page/
 
 ### Optional features (feature flags)
 
-Two independent features are compiled into every build and switched on with environment
-variables (both default `false`). Each flag registers `@Primary` beans (in `plans` / `email`) that override the
+Three independent features are compiled into every build and switched on with environment
+variables (all default `false`). Each flag registers `@Primary` beans (in `plans` / `email`) that override the
 no-op defaults (`UserLifecycleHooks`, `QuotaPolicy`, `RetentionPolicy`,
 `UserSummaryEnricher`), using the `@ConditionalOnPlansEnabled` / `@ConditionalOnEmailEnabled` annotations
 (one in each feature package).
@@ -68,7 +68,9 @@ no-op defaults (`UserLifecycleHooks`, `QuotaPolicy`, `RetentionPolicy`,
 | `PLANS_ENABLED` | Daily publish quota, plan-based retention, `PATCH /api/admin/users/{id}/plan`. See "Subscription plans" below. |
 | `EMAIL_ENABLED` | Everything that sends email: SMTP sender, mandatory sign-up email verification, verify/resend endpoints, `forgot-password`. See [`docs/email-verification.md`](docs/email-verification.md) and [`docs/password-reset.md`](docs/password-reset.md). |
 
-Leaving both unset keeps the default behavior (unlimited, no verification), which is
+| `VIEWER_WRAPPER_ENABLED` | Branded viewer: `POST /api/pages` and `GET /api/pages` return `/p/{id}` URLs, and nginx redirects direct browser navigations to `/pages/{id}.html` to the viewer. See "Branded viewer" below. |
+
+Leaving all unset keeps the default behavior (unlimited, no verification), which is
 what most self-hosted deployments want. The managed `pushpage.link` instance sets both
 to `true`.
 
@@ -90,6 +92,7 @@ Shared visual styles (`theme.css`) are already linked from all pages — new pag
 ### Security headers and rate limiting (nginx)
 
 - **User pages are sandboxed.** `/pages/*.html` is untrusted user HTML on the same origin as the dashboard (which keeps its JWT in `sessionStorage`) and the API. The `location` serving it sets `Content-Security-Policy: sandbox allow-scripts allow-popups allow-forms allow-modals`. **Never add `allow-same-origin`**, and remember nginx `add_header` is not inherited into a location that defines its own `add_header`.
+- **Branded viewer (`VIEWER_WRAPPER_ENABLED`).** `/p/{id}` is proxied to the publisher's `GET /api/viewer/{id}` (`ViewerController`, template `src/main/resources/viewer/viewer.html`), which renders the header and an iframe of `/pages/{id}.html`. The shell contains only the HTML-escaped title and the id, never the page's HTML. `proxy_intercept_errors` turns an unknown/deleted id into `404.html`. With the flag on, `/pages/{id}.html` answers a top-level navigation (`Sec-Fetch-Dest: document`) with a `302` to `/p/{id}`; the viewer's iframe (`iframe`), curl/fetch (`empty`) and browsers that send no header are served the page as before, so old links keep working. The nginx image renders `default.conf` from `/etc/nginx/templates/` at start (envsubst fills only `${VIEWER_WRAPPER_ENABLED}`), so any new `${...}` in that file is substituted if an env var of that name exists.
 - **Framing is denied** server-wide (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`); the pages location overrides this so pages stay embeddable.
 - **`/dashboard` is served with `Cache-Control: no-cache`** (via `expires -1`, deliberately not `add_header`, which would drop the server-level frame-blocking headers in that location) so browsers pick up a redeployed dashboard instead of reusing a stale copy.
 - **`/api/auth/login`, `/signup`, `/forgot-password` and `/reset-password`** have a `limit_req` zone (`auth`, 10 r/m per IP, burst 5, `429`), keyed per IP *and* bucket (`$auth_bucket`: login/signup vs forgot/reset-password) so failed logins can't block the reset flow. These locations repeat the `proxy_pass` block from `/api/`; keep them in sync.
@@ -133,6 +136,7 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 
 | `PLANS_ENABLED` | Enable subscription plans: daily publish quota + plan-based retention. | `false` |
 | `EMAIL_ENABLED` | Enable email: sign-up verification and password-reset emails (needs the `EMAIL_SMTP_*` settings). | `false` |
+| `VIEWER_WRAPPER_ENABLED` | Serve pages inside the branded viewer (`/p/{id}`: pushpage header + sandboxed iframe). Read by **both** the publisher and the nginx container (compose passes it to each). | `false` |
 | `EMAIL_SMTP_HOST` / `EMAIL_SMTP_PORT` / `EMAIL_SMTP_USERNAME` / `EMAIL_SMTP_PASSWORD` | SMTP credentials for sending verification and password-reset emails. Only used when `EMAIL_ENABLED=true`. | — |
 | `EMAIL_FROM` | From address on the confirmation email. | `no-reply@pushpage.link` |
 | `EMAIL_VERIFICATION_TOKEN_TTL_HOURS` | How long a verification link stays valid. | `24` |
@@ -169,6 +173,7 @@ All endpoints are under `/api` (Spring Boot context path).
 | `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any). |
 | `POST` | `/api/me/tokens` | User | Generate / rotate API key → `{ api_key }`. Previous key is invalidated. |
 | `GET` | `/api/health` | None | Health check. |
+| `GET` | `/api/viewer/{id}` | None | HTML viewer shell for a page (reached as `/p/{id}` through nginx). 404 if the page is unknown or deleted. |
 | `GET` | `/api/config` | None | Public frontend config: `{ features: { plans, email } }`. Add new frontend-visible settings in `ClientConfigService`. |
 | `GET` | `/api/admin/users` | Admin | List all users. |
 | `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user. |
