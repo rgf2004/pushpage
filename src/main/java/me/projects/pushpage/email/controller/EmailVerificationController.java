@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.controller;
+package me.projects.pushpage.email.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -6,11 +6,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import me.projects.pushpage.emailverification.model.ResendVerificationRequest;
-import me.projects.pushpage.emailverification.service.EmailVerificationService;
-import me.projects.pushpage.emailverification.service.ResendOutcome;
-import me.projects.pushpage.emailverification.service.VerifyResult;
-import me.projects.pushpage.emailverification.ConditionalOnEmailVerificationEnabled;
+import me.projects.pushpage.email.model.ResendVerificationRequest;
+import me.projects.pushpage.email.service.EmailVerificationService;
+import me.projects.pushpage.email.service.ResendOutcome;
+import me.projects.pushpage.email.service.VerifyResult;
+import me.projects.pushpage.email.ConditionalOnEmailEnabled;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +24,7 @@ import java.net.URI;
 
 @RestController
 @RequestMapping("/auth")
-@ConditionalOnEmailVerificationEnabled
+@ConditionalOnEmailEnabled
 @Tag(name = "Auth", description = "Email verification endpoints (EMAIL_VERIFICATION_ENABLED)")
 public class EmailVerificationController {
 

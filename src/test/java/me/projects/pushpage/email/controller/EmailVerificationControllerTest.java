@@ -1,9 +1,9 @@
-package me.projects.pushpage.emailverification.controller;
+package me.projects.pushpage.email.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
-import me.projects.pushpage.emailverification.model.ResendVerificationRequest;
-import me.projects.pushpage.emailverification.service.EmailVerificationService;
-import me.projects.pushpage.emailverification.service.ResendOutcome;
+import me.projects.pushpage.email.model.ResendVerificationRequest;
+import me.projects.pushpage.email.service.EmailVerificationService;
+import me.projects.pushpage.email.service.ResendOutcome;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

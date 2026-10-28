@@ -1,13 +1,13 @@
 package me.projects.pushpage;
 
 import me.projects.pushpage.PostgresTestSupport;
-import me.projects.pushpage.emailverification.controller.EmailVerificationAdminController;
-import me.projects.pushpage.emailverification.controller.EmailVerificationController;
+import me.projects.pushpage.email.controller.EmailVerificationAdminController;
+import me.projects.pushpage.email.controller.EmailVerificationController;
 import me.projects.pushpage.plans.controller.PlanAdminController;
-import me.projects.pushpage.emailverification.repository.EmailVerificationRepository;
+import me.projects.pushpage.email.repository.EmailVerificationRepository;
 import me.projects.pushpage.plans.repository.PlanRepository;
 import me.projects.pushpage.service.FeatureUserSummaryEnricher;
-import me.projects.pushpage.emailverification.service.EmailVerificationHooks;
+import me.projects.pushpage.email.service.EmailVerificationHooks;
 import me.projects.pushpage.plans.service.QuotaService;
 import me.projects.pushpage.plans.service.RetentionService;
 import me.projects.pushpage.service.NoOpQuotaPolicy;
@@ -70,7 +70,7 @@ class FeatureFlagsIT {
 
     @Nested
     @SpringBootTest
-    @TestPropertySource(properties = {"app.features.email-verification.enabled=true", "app.email.from=test@example.com", "app.email.verification-token-ttl-hours=24", "app.email.verification-rate-limit-per-minute=1", "app.email.resend-ip-rate-limit-per-minute=5", "spring.mail.host=localhost"})
+    @TestPropertySource(properties = {"app.features.email.enabled=true", "app.email.from=test@example.com", "app.email.verification-token-ttl-hours=24", "app.email.verification-rate-limit-per-minute=1", "app.email.resend-ip-rate-limit-per-minute=5", "spring.mail.host=localhost"})
     class EmailVerificationOnly extends PostgresTestSupport {
         @Autowired ApplicationContext ctx;
 

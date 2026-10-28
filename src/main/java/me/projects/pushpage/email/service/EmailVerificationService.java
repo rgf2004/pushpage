@@ -1,15 +1,15 @@
-package me.projects.pushpage.emailverification.service;
+package me.projects.pushpage.email.service;
 
 import io.github.bucket4j.ConsumptionProbe;
-import me.projects.pushpage.emailverification.email.EmailService;
-import me.projects.pushpage.emailverification.repository.EmailVerificationRepository;
+import me.projects.pushpage.email.sender.EmailService;
+import me.projects.pushpage.email.repository.EmailVerificationRepository;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.UserRepository;
 import me.projects.pushpage.service.RateLimitService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import me.projects.pushpage.emailverification.ConditionalOnEmailVerificationEnabled;
+import me.projects.pushpage.email.ConditionalOnEmailEnabled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@ConditionalOnEmailVerificationEnabled
+@ConditionalOnEmailEnabled
 public class EmailVerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailVerificationService.class);

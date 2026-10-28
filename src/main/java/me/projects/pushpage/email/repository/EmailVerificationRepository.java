@@ -1,6 +1,6 @@
-package me.projects.pushpage.emailverification.repository;
+package me.projects.pushpage.email.repository;
 
-import me.projects.pushpage.emailverification.ConditionalOnEmailVerificationEnabled;
+import me.projects.pushpage.email.ConditionalOnEmailEnabled;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
-@ConditionalOnEmailVerificationEnabled
+@ConditionalOnEmailEnabled
 public class EmailVerificationRepository {
 
     private final JdbcTemplate jdbc;

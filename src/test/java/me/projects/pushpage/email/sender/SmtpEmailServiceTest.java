@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.email;
+package me.projects.pushpage.email.sender;
 
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;

@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification;
+package me.projects.pushpage.email;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
@@ -8,10 +8,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Active only when {@code EMAIL_VERIFICATION_ENABLED=true} (sign-up email verification). */
+/** Active only when {@code EMAIL_ENABLED=true}: SMTP sending, sign-up verification and password-reset emails. */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@ConditionalOnProperty(name = "app.features.email-verification.enabled", havingValue = "true")
-public @interface ConditionalOnEmailVerificationEnabled {
+@ConditionalOnProperty(name = "app.features.email.enabled", havingValue = "true")
+public @interface ConditionalOnEmailEnabled {
 }

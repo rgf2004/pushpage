@@ -1,6 +1,6 @@
-package me.projects.pushpage.emailverification.controller;
+package me.projects.pushpage.email.controller;
 
-import me.projects.pushpage.emailverification.service.EmailVerificationService;
+import me.projects.pushpage.email.service.EmailVerificationService;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.UserRepository;
 import org.junit.jupiter.api.Test;

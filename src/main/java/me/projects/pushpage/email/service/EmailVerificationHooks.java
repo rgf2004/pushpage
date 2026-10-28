@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.service;
+package me.projects.pushpage.email.service;
 
 import jakarta.annotation.PostConstruct;
 import me.projects.pushpage.model.User;
@@ -6,7 +6,7 @@ import me.projects.pushpage.service.UserLifecycleHooks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
-import me.projects.pushpage.emailverification.ConditionalOnEmailVerificationEnabled;
+import me.projects.pushpage.email.ConditionalOnEmailEnabled;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 @Primary
-@ConditionalOnEmailVerificationEnabled
+@ConditionalOnEmailEnabled
 public class EmailVerificationHooks implements UserLifecycleHooks {
 
     private static final Logger log = LoggerFactory.getLogger(EmailVerificationHooks.class);

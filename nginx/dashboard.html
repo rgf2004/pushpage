@@ -866,7 +866,7 @@ async function signUp() {
         } else if (r.status === 201) {
             document.getElementById('login-email').value = email;
             document.getElementById('login-password').value = '';
-            toast(features.email_verification
+            toast(features.email
                 ? 'Account created — check your email to verify before signing in.'
                 : 'Account created — you can now sign in.');
             showScreen('login');
@@ -916,7 +916,7 @@ async function doLogin() {
             errEl.style.display = 'block';
             return;
         }
-        if (r.status === 403 && features.email_verification) {
+        if (r.status === 403 && features.email) {
             document.getElementById('verify-banner').style.display = 'block';
             return;
         }
@@ -1161,7 +1161,7 @@ async function loadUsers() {
         }
 
         const showPlan = !!features.plans;
-        const showVerified = !!features.email_verification;
+        const showVerified = !!features.email;
         document.getElementById('th-plan').style.display = showPlan ? '' : 'none';
         document.getElementById('th-verified').style.display = showVerified ? '' : 'none';
 

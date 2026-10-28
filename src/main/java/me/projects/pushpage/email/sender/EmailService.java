@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.email;
+package me.projects.pushpage.email.sender;
 
 /**
  * Provider-agnostic transactional email sender. Implementations should not assume

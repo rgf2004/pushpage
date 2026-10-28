@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.service;
+package me.projects.pushpage.email.service;
 
 /** Outcome of a resend request — carries what the controller needs to build the HTTP response, nothing more. */
 public record ResendOutcome(boolean rateLimited, long retryAfterSeconds) {

@@ -1,9 +1,9 @@
-package me.projects.pushpage.emailverification.email;
+package me.projects.pushpage.email.sender;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
-import me.projects.pushpage.emailverification.ConditionalOnEmailVerificationEnabled;
+import me.projects.pushpage.email.ConditionalOnEmailEnabled;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
  * providers is a matter of changing the {@code EMAIL_SMTP_*} env vars — no code change.
  */
 @Service
-@ConditionalOnEmailVerificationEnabled
+@ConditionalOnEmailEnabled
 public class SmtpEmailService implements EmailService {
 
     /**

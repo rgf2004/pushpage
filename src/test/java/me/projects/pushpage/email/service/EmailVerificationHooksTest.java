@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.service;
+package me.projects.pushpage.email.service;
 
 import me.projects.pushpage.model.User;
 import org.junit.jupiter.api.Test;

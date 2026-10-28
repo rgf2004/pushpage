@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.controller;
+package me.projects.pushpage.email.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -6,8 +6,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import me.projects.pushpage.emailverification.ConditionalOnEmailVerificationEnabled;
-import me.projects.pushpage.emailverification.service.EmailVerificationService;
+import me.projects.pushpage.email.ConditionalOnEmailEnabled;
+import me.projects.pushpage.email.service.EmailVerificationService;
 import me.projects.pushpage.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/admin")
-@ConditionalOnEmailVerificationEnabled
+@ConditionalOnEmailEnabled
 @Tag(name = "Admin", description = "Email verification admin actions (EMAIL_VERIFICATION_ENABLED)")
 public class EmailVerificationAdminController {
 

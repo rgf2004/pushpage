@@ -12,13 +12,13 @@ class ClientConfigServiceTest {
     void getConfig_reflectsFeatureFlags() {
         var config = new ClientConfigService(false, true).getConfig();
 
-        assertEquals(Map.of("plans", false, "email_verification", true), config.features());
+        assertEquals(Map.of("plans", false, "email", true), config.features());
     }
 
     @Test
     void getConfig_allDisabled() {
         var config = new ClientConfigService(false, false).getConfig();
 
-        assertEquals(Map.of("plans", false, "email_verification", false), config.features());
+        assertEquals(Map.of("plans", false, "email", false), config.features());
     }
 }

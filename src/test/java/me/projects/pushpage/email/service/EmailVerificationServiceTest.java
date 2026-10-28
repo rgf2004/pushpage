@@ -1,7 +1,7 @@
-package me.projects.pushpage.emailverification.service;
+package me.projects.pushpage.email.service;
 
-import me.projects.pushpage.emailverification.email.EmailService;
-import me.projects.pushpage.emailverification.repository.EmailVerificationRepository;
+import me.projects.pushpage.email.sender.EmailService;
+import me.projects.pushpage.email.repository.EmailVerificationRepository;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.UserRepository;
 import me.projects.pushpage.service.RateLimitService;

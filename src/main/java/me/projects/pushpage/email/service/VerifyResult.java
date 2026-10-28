@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.service;
+package me.projects.pushpage.email.service;
 
 public enum VerifyResult {
     SUCCESS,

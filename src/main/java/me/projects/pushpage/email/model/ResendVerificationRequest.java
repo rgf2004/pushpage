@@ -1,4 +1,4 @@
-package me.projects.pushpage.emailverification.model;
+package me.projects.pushpage.email.model;
 
 public record ResendVerificationRequest(String email) {
 }
