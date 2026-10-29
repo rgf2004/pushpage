@@ -76,7 +76,7 @@ Response:
 }
 ```
 
-Return the `url` to the user exactly as returned. That is the shareable link (it may be a `/p/<id>` viewer link or a `/pages/<id>.html` link; do not rewrite it). Do not paste the HTML into chat.
+Return the `url` to the user. That is the shareable link. Do not paste the HTML into chat.
 
 **File upload variant** (multipart/form-data):
 
