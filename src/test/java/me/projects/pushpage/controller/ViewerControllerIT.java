@@ -62,7 +62,10 @@ class ViewerControllerIT extends PostgresTestSupport {
                 .andExpect(content().contentTypeCompatibleWith("text/html"))
                 .andExpect(content().string(containsString("<iframe class=\"viewer-frame\" src=\"/pages/viewer01.html\"")))
                 .andExpect(content().string(containsString("<title>Quarterly report</title>")))
-                .andExpect(content().string(not(containsString("allow-same-origin"))));
+                .andExpect(content().string(not(containsString("allow-same-origin"))))
+                // #fragment is forwarded to the iframe, and the shell is briefly cacheable
+                .andExpect(content().string(containsString("frame.src = '/pages/viewer01.html' + location.hash")))
+                .andExpect(header().string("Cache-Control", "max-age=60"));
     }
 
     @Test

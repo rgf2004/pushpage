@@ -240,7 +240,7 @@ Delete a published page. Users may only delete their own pages; admins can delet
 
 ### GET /api/viewer/{id}
 
-Returns the HTML viewer shell for a page: a slim pushpage header and an iframe of `/pages/{id}.html`. Public, no auth. `404` if the page does not exist or was deleted. Users reach it as `/p/{id}` (nginx rewrites it); it is always available, and `VIEWER_WRAPPER_ENABLED` decides whether publish responses point at it.
+Returns the HTML viewer shell for a page: a slim pushpage header and an iframe of `/pages/{id}.html`. Public, no auth. `404` if the page does not exist or was deleted. Users reach it as `/p/{id}` (nginx rewrites it); the URL fragment is forwarded to the iframe, the response is cacheable for 60 seconds (`Cache-Control: max-age=60`), it is always available, and `VIEWER_WRAPPER_ENABLED` decides whether publish responses point at it.
 
 ## User
 

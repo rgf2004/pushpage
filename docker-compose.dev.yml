@@ -35,8 +35,6 @@ services:
     build:
       context: .
       dockerfile: nginx/Dockerfile
-    environment:
-      VIEWER_WRAPPER_ENABLED: ${VIEWER_WRAPPER_ENABLED:-false}
     ports:
       - "${NGINX_PORT:-8080}:80"
     volumes:

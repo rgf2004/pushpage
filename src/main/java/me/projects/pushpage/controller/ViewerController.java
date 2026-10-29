@@ -65,7 +65,7 @@ public class ViewerController {
                 .replace("{{META}}", metaTags(id, page.title()))
                 .replace("{{TITLE}}", title)
                 .replace("{{ID}}", id);
-        return ResponseEntity.ok().header("Cache-Control", "no-cache").body(html);
+        return ResponseEntity.ok().header("Cache-Control", "max-age=60").body(html);
     }
 
     private String metaTags(String id, String title) {

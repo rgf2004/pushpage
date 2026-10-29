@@ -33,8 +33,6 @@ services:
 
   nginx:
     image: rgf2004/pushpage-nginx:${IMAGE_TAG:-latest}
-    environment:
-      VIEWER_WRAPPER_ENABLED: ${VIEWER_WRAPPER_ENABLED:-false}
     ports:
       - "${NGINX_PORT:-8080}:80"
     volumes:

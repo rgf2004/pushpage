@@ -49,6 +49,13 @@
     <iframe class="viewer-frame" src="/pages/{{ID}}.html" title="{{TITLE}}"
             sandbox="allow-scripts allow-popups allow-forms allow-modals" referrerpolicy="no-referrer"></iframe>
     <script>
+        // Forward #fragment to the page so shared anchor links (/p/{id}#section) still scroll.
+        var frame = document.querySelector('.viewer-frame');
+        function syncHash() {
+            if (location.hash) { frame.src = '/pages/{{ID}}.html' + location.hash; }
+        }
+        syncHash();
+        window.addEventListener('hashchange', syncHash);
         document.getElementById('dismiss').addEventListener('click', function () {
             document.body.classList.add('bar-hidden');
         });
