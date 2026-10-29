@@ -32,7 +32,9 @@ push-page/
 │   ├── overlay/                # empty; downstream forks drop override files here (see below)
 │   └── static/
 │       ├── theme.css           # shared visual styles (header, footer, buttons, badges)
-│       └── favicon.svg         # "pp" wordmark favicon
+│       ├── favicon.svg         # "pp" wordmark favicon
+│       ├── favicon.ico         # same icon (16/32/48 px), served at /favicon.ico for pages that declare none
+│       └── pp-bar.html         # bar appended to every published page (add_after_body)
 ├── mcp/
 │   ├── server.py               # FastMCP server (streamable-http transport)
 │   ├── Dockerfile              # Python image for the MCP service
