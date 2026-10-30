@@ -1,7 +1,6 @@
 FROM nginx:alpine
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY nginx/20-realip.sh /docker-entrypoint.d/20-realip.sh
-RUN chmod +x /docker-entrypoint.d/*.sh
+COPY --chmod=755 nginx/20-realip.sh /docker-entrypoint.d/20-realip.sh
 # Placeholder so the include in default.conf always resolves, even if the entrypoint script is bypassed
 RUN touch /etc/nginx/realip.conf
 COPY nginx/index.html /usr/share/nginx/html/index.html
