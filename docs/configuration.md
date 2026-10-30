@@ -14,6 +14,8 @@ All variables are set in a `.env` file in the project root and passed to the con
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling. Should exceed `MAX_FILE_SIZE`. | `10MB` |
 | `RATE_LIMIT_USER_RPM` | Max publish requests per minute for authenticated users. Admin users are exempt. `429 Too Many Requests` is returned when exceeded. | `10` |
 | `RATE_LIMIT_GUEST_RPM` | Max publish requests per minute per IP for unauthenticated (guest) requests. | `5` |
+| `TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of reverse proxies, tunnels or load balancers in front of nginx. nginx takes the client IP from `REAL_IP_HEADER` only for requests from these addresses. Empty disables it. See [Running behind a proxy](#running-behind-a-proxy-or-tunnel). | _(empty)_ |
+| `REAL_IP_HEADER` | Header that carries the client IP when `TRUSTED_PROXIES` is set. | `X-Forwarded-For` |
 
 ## Guest Publishing
 
@@ -56,16 +58,34 @@ Never use a short, predictable, or human-typed string — the secret protects al
 
 ## Security Hardening (nginx)
 
-Both protections live in `nginx/default.conf`; there is nothing to configure in `.env`.
+These protections live in `nginx/default.conf`; the only related `.env` settings are `TRUSTED_PROXIES` and `REAL_IP_HEADER` (see [Running behind a proxy](#running-behind-a-proxy-or-tunnel)).
 
 | Protection | Behavior |
 |------------|----------|
 | Page sandbox | `/pages/*.html` is served with `Content-Security-Policy: sandbox allow-scripts allow-popups allow-forms allow-modals` (plus `nosniff` and `Referrer-Policy: no-referrer`). Published pages are untrusted user content on the same origin as the dashboard and API. The sandbox omits `allow-same-origin`, so a page's scripts run in an opaque origin and cannot read the dashboard's `sessionStorage` JWT or call `/api` as the viewer. Side effect: pages cannot use `localStorage`, `sessionStorage` or cookies. Never add `allow-same-origin`. |
 | Page bar | nginx injects a slim pushpage bar (with a dismiss button) at the top of every published page as it is served, by appending `nginx/static/pp-bar.html` after the page (`add_after_body`). It is always on. The page remains sandboxed by the same CSP, and its own `<head>` (title, Open Graph tags) and URL are unchanged. A page's own scripts can remove it. |
 | Frame blocking | All other responses carry `X-Frame-Options: DENY` and `Content-Security-Policy: frame-ancestors 'none'`, so the dashboard cannot be framed. |
-| Auth rate limit | `POST /api/auth/login`, `/signup`, `/forgot-password` and `/reset-password` are limited to 10 requests/minute per client IP (burst 5) via `limit_req`; excess requests get `429`. Login/signup share one bucket and forgot/reset-password another, so failed logins never block someone from resetting their password. If nginx runs behind another proxy or load balancer, configure `real_ip_header`/`set_real_ip_from` so the limit keys on the real client IP rather than the proxy's. |
+| Auth rate limit | `POST /api/auth/login`, `/signup`, `/forgot-password` and `/reset-password` are limited to 10 requests/minute per client IP (burst 5) via `limit_req`; excess requests get `429`. Login/signup share one bucket and forgot/reset-password another, so failed logins never block someone from resetting their password. If nginx runs behind another proxy, tunnel or load balancer, set `TRUSTED_PROXIES` so the limit keys on the real client IP rather than the proxy's. |
+| Hidden files | Any path with a dot-prefixed segment (`/.env`, `/.git/config`, `/.aws/credentials`, ...) returns `404` and is not logged, except `/.well-known`. This is defense in depth against scanners; the files are not in the image anyway. |
 
 Serving pages from a separate domain would give stronger isolation, but the sandbox header achieves the same protection without a second domain.
+
+### Running behind a proxy or tunnel
+
+Behind a reverse proxy, load balancer or tunnel (for example Cloudflare Tunnel), every request reaches nginx from the proxy's address. The per-IP auth rate limit then counts all visitors together, and the publisher's per-IP guest limit sees the proxy's address. Set:
+
+```
+TRUSTED_PROXIES=10.0.0.5          # the proxy/tunnel host(s), comma-separated IPs or CIDRs
+REAL_IP_HEADER=X-Forwarded-For    # default; use CF-Connecting-IP for Cloudflare
+```
+
+| Setup | `TRUSTED_PROXIES` | `REAL_IP_HEADER` |
+|-------|-------------------|------------------|
+| No proxy (default) | _(empty)_ | _(unused)_ |
+| Generic proxy / load balancer | its IP or subnet | `X-Forwarded-For` (or `X-Real-IP`) |
+| Cloudflare Tunnel (`cloudflared` on another host) | the `cloudflared` host's IP | `CF-Connecting-IP` |
+
+List **only** proxies you control. The header is trusted when the request comes from one of them; if an address you do not control is listed, clients behind it can spoof their IP and dodge the rate limits. Invalid entries make the nginx container fail at startup rather than being ignored. The settings are applied by `nginx/20-realip.sh` when the container starts, so restart nginx after changing them.
 
 ## Flyway Migrations
 

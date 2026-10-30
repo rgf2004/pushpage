@@ -191,7 +191,7 @@ For the full tool reference, alternative connection methods (including `mcp-remo
 
 ## Security
 
-Published pages are served with a `Content-Security-Policy: sandbox` header (without `allow-same-origin`), so scripts in a page cannot access the dashboard session or call the API on a viewer's behalf. The dashboard cannot be framed, and login/signup are rate-limited per IP by nginx. Details in [`docs/configuration.md`](docs/configuration.md#security-hardening-nginx).
+Published pages are served with a `Content-Security-Policy: sandbox` header (without `allow-same-origin`), so scripts in a page cannot access the dashboard session or call the API on a viewer's behalf. The dashboard cannot be framed, and login/signup are rate-limited per IP by nginx, and dot-prefixed paths such as `/.env` are never served. Behind a reverse proxy or tunnel, set `TRUSTED_PROXIES` (and `REAL_IP_HEADER`) so rate limits use the real client IP. Details in [`docs/configuration.md`](docs/configuration.md#security-hardening-nginx).
 
 ## Database
 
