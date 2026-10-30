@@ -36,6 +36,9 @@ services:
       dockerfile: nginx/Dockerfile
     ports:
       - "${NGINX_PORT:-8080}:80"
+    environment:
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      REAL_IP_HEADER: ${REAL_IP_HEADER:-X-Forwarded-For}
     volumes:
       - pages_data:/var/www/pages:ro
     depends_on:
