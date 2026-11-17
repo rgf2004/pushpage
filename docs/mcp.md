@@ -48,6 +48,17 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
   --header "Authorization: Bearer pp_your_key_here"
 ```
 
+### Local stdio mode
+
+For clients that launch MCP servers as local processes (and for registries that start the server to inspect it), `mcp/server.py` also runs over **stdio**. Pass `--stdio` (or set `PUSHPAGE_MCP_TRANSPORT=stdio`); the key then comes from the environment because there are no HTTP headers:
+
+```bash
+pip install -r mcp/requirements.txt
+PUSHPAGE_API_KEY=pp_your_key_here PUSHPAGE_URL=https://pushpage.link python mcp/server.py --stdio
+```
+
+`PUSHPAGE_URL` defaults to `https://pushpage.link`. `AUTHORIZATION` (`Bearer pp_...`) is accepted as an alternative to `PUSHPAGE_API_KEY`. In the default HTTP mode the key is still read only from each request's headers.
+
 ### Storing your API key
 
 Avoid pasting the key into config files you might commit or share. Recommended setup:

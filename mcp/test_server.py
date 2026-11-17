@@ -56,6 +56,22 @@ class TestServerRegistration(unittest.TestCase):
             key = self.server._api_key()
         self.assertEqual(key, "pp_test123")
 
+    def test_api_key_from_env_when_no_http_request(self):
+        """stdio mode: no HTTP request, so the key comes from the environment."""
+        with patch("server.get_http_request", side_effect=RuntimeError("no request")):
+            with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_env"}):
+                self.assertEqual(self.server._api_key(), "pp_env")
+            with patch.dict(os.environ, {"AUTHORIZATION": "Bearer pp_auth"}, clear=False):
+                os.environ.pop("PUSHPAGE_API_KEY", None)
+                self.assertEqual(self.server._api_key(), "pp_auth")
+
+    def test_http_request_key_wins_over_env(self):
+        mock_request = MagicMock()
+        mock_request.headers = {"x-api-key": "pp_header"}
+        with patch("server.get_http_request", return_value=mock_request):
+            with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_env"}):
+                self.assertEqual(self.server._api_key(), "pp_header")
+
 
 if __name__ == "__main__":
     unittest.main()

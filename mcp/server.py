@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 import httpx
 import uvicorn
@@ -21,11 +22,28 @@ mcp = FastMCP(
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _api_key() -> str:
-    request = get_http_request()
+    """API key for the current call.
+
+    HTTP transport: taken from the request headers (each client sends its own).
+    stdio transport (no HTTP request): taken from PUSHPAGE_API_KEY, or from
+    AUTHORIZATION (``Bearer <key>``), set by the client launching the process.
+    """
+    try:
+        request = get_http_request()
+    except RuntimeError:
+        return _env_api_key()
     headers = dict(request.headers)
     auth = headers.get("authorization", "")
     key = auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else ""
     return key or headers.get("x-api-key", "").strip()
+
+
+def _env_api_key() -> str:
+    key = os.environ.get("PUSHPAGE_API_KEY", "").strip()
+    if key:
+        return key
+    auth = os.environ.get("AUTHORIZATION", "").strip()
+    return auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else auth
 
 
 def _client() -> httpx.Client:
@@ -135,5 +153,9 @@ class ApiKeyMiddleware:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    if "--stdio" in sys.argv[1:] or os.environ.get("PUSHPAGE_MCP_TRANSPORT", "http").lower() == "stdio":
+        # Local/stdio mode: launched by an MCP client; the key comes from the environment.
+        mcp.run(transport="stdio")
+        raise SystemExit(0)
     app = ApiKeyMiddleware(mcp.http_app(path="/mcp", transport="streamable-http"))
     uvicorn.run(app, host="0.0.0.0", port=8000)
