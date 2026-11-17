@@ -57,7 +57,7 @@ pip install -r mcp/requirements.txt
 PUSHPAGE_API_KEY=pp_your_key_here PUSHPAGE_URL=https://pushpage.link python mcp/server.py --stdio
 ```
 
-`PUSHPAGE_URL` defaults to `https://pushpage.link`. `AUTHORIZATION` (`Bearer pp_...`) is accepted as an alternative to `PUSHPAGE_API_KEY`. In the default HTTP mode the key is still read only from each request's headers.
+`PUSHPAGE_URL` defaults to `https://pushpage.link`. `AUTHORIZATION` or `Authorization` (`Bearer pp_...`) is accepted as an alternative to `PUSHPAGE_API_KEY`. In the default HTTP mode the key is still read only from each request's headers.
 
 ### Storing your API key
 

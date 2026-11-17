@@ -42,7 +42,8 @@ def _env_api_key() -> str:
     key = os.environ.get("PUSHPAGE_API_KEY", "").strip()
     if key:
         return key
-    auth = os.environ.get("AUTHORIZATION", "").strip()
+    # Env var names are case-sensitive on Linux; some launchers (e.g. Glama) pass "Authorization".
+    auth = (os.environ.get("AUTHORIZATION") or os.environ.get("Authorization") or "").strip()
     return auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else auth
 
 
@@ -56,14 +57,30 @@ def _client() -> httpx.Client:
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
 
-@mcp.tool()
+@mcp.tool(annotations={"title": "Publish HTML page", "readOnlyHint": False,
+                       "destructiveHint": False, "idempotentHint": False,
+                       "openWorldHint": False})
 def publish_page(html: str, title: str | None = None) -> dict:
-    """Publish an HTML page and return its shareable URL.
+    """Publish a self-contained HTML document as a public page and return its shareable URL.
 
-    Returns {url, id, expires_at}. title is optional — when omitted it is
-    extracted from the HTML <title> tag, or falls back to 'Untitled'.
-    expires_at is an ISO-8601 timestamp indicating when the page will be
-    automatically deleted.
+    Use this to share rich output (reports, dashboards, prototypes) as a link instead of
+    pasting it into chat. Each call creates a NEW page with a new id; it never updates an
+    existing one (delete the old page with delete_page if you are replacing it).
+    The page is served publicly at the returned URL, sandboxed (scripts run, but cannot
+    access the pushpage dashboard or API), so do not include secrets.
+
+    Args:
+        html: Complete HTML document (inline CSS/JS; external resources are fine).
+            Maximum size is set by the service (1 MB by default).
+        title: Optional display title shown in list_pages. If omitted it is taken from
+            the HTML <title> tag, falling back to 'Untitled'.
+
+    Returns:
+        {url, id, expires_at} on success: the public URL, the page id (pass it to
+        delete_page), and the ISO-8601 time the page is deleted automatically (set by the
+        account's retention plan). On failure: {error, status_code, detail}, e.g. 401 for
+        a missing or invalid API key, 400 if html is empty, 413 if the HTML is too large, 429 if
+        the daily quota or rate limit is exceeded.
     """
     with _client() as client:
         payload = {"html": html}
@@ -78,11 +95,18 @@ def publish_page(html: str, title: str | None = None) -> dict:
         return {"url": data["url"], "id": data["id"], "expires_at": data["expires_at"]}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"title": "List my pages", "readOnlyHint": True,
+                       "destructiveHint": False, "idempotentHint": True,
+                       "openWorldHint": False})
 def list_pages() -> list[dict]:
-    """List all pages published by the current user.
+    """List the pages published with the current API key's account, including expiry.
 
-    Returns a list of page objects, each with id, title, url, and created_at.
+    Read-only. Takes no arguments. Admin accounts see every user's pages.
+
+    Returns:
+        A list of page objects, each with id, title, url, created_at and expires_at
+        (ISO-8601). Use an id with delete_page. On failure a one-element list
+        [{error, status_code, detail}], e.g. status 401 for a missing or invalid key.
     """
     with _client() as client:
         r = client.get("/api/pages")
@@ -93,11 +117,22 @@ def list_pages() -> list[dict]:
         return r.json()
 
 
-@mcp.tool()
+@mcp.tool(annotations={"title": "Delete a page", "readOnlyHint": False,
+                       "destructiveHint": True, "idempotentHint": False,
+                       "openWorldHint": False})
 def delete_page(id: str) -> dict:
-    """Delete a page by its id.
+    """Permanently delete one of your published pages, making its URL stop working.
 
-    Use the id from publish_page or list_pages.
+    This cannot be undone. You can only delete your own pages (admin accounts can delete
+    any page).
+
+    Args:
+        id: The page id returned by publish_page or listed by list_pages (for example
+            'a1b2c3d4'), not the full URL.
+
+    Returns:
+        {deleted: true, id} on success. On failure {error, status_code, detail}, e.g. 404
+        if the id does not exist, 403 if the page is not yours, 401 if the key is invalid.
     """
     with _client() as client:
         r = client.delete(f"/api/pages/{id}")
@@ -108,9 +143,18 @@ def delete_page(id: str) -> dict:
         return {"deleted": True, "id": id}
 
 
-@mcp.tool()
+@mcp.tool(annotations={"title": "Service health", "readOnlyHint": True,
+                       "destructiveHint": False, "idempotentHint": True,
+                       "openWorldHint": False})
 def health() -> dict:
-    """Check whether the pushpage service is reachable and healthy."""
+    """Check whether the pushpage service is reachable and healthy.
+
+    Read-only. Takes no arguments and does not require a valid API key.
+
+    Returns:
+        The service status object, e.g. {status: 'UP', version, uptimeSeconds, livePages,
+        storage}. On failure {error, status_code, detail}.
+    """
     with _client() as client:
         r = client.get("/api/health")
         try:
