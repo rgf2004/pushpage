@@ -48,6 +48,30 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
   --header "Authorization: Bearer pp_your_key_here"
 ```
 
+### Storing your API key
+
+Avoid pasting the key into config files you might commit or share. Recommended setup:
+
+```bash
+mkdir -p ~/.config/pushpage
+umask 077 && printf '%s' 'pp_your_key_here' > ~/.config/pushpage/credentials
+chmod 600 ~/.config/pushpage/credentials   # owner read/write only
+```
+
+This is the file the agent skill and the curl examples read. For MCP clients that expand environment variables, keep the key out of the config:
+
+```bash
+# in ~/.zshrc / ~/.bashrc
+export PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials)
+```
+
+- **Claude Code** (`.mcp.json`): `"headers": { "X-Api-Key": "${PUSHPAGE_API_KEY}" }`
+- **Cursor** (`mcp.json`): `"headers": { "X-Api-Key": "${env:PUSHPAGE_API_KEY}" }`
+- **`mcp-remote`**: put `"env": { "PUSHPAGE_API_KEY": "pp_..." }` next to `args` and use `"--header", "X-Api-Key:${PUSHPAGE_API_KEY}"`.
+- **Claude Desktop** does not expand variables in `headers`; the key must be written into `claude_desktop_config.json` (or use `mcp-remote` above). Keep that file private and never commit it.
+
+Keys are shown only once. Rotating a key in the dashboard invalidates the old one, so update the file after rotating.
+
 ### Cursor / other clients
 
 Refer to your client's documentation for remote HTTP MCP configuration. The server uses the **streamable-http** transport and does not require any SSE negotiation.

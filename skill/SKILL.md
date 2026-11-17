@@ -43,7 +43,7 @@ Default: `https://pushpage.link`. For self-hosted deployments, use the value of 
    > Please provide your pushpage API key. You can get one from the Account tab on the pushpage dashboard (`{BASE_URL}/dashboard`). If you don't have an account, ask an admin.
 3. Once the user supplies the key, save it and proceed:
    ```bash
-   mkdir -p ~/.config/pushpage && echo "pp_the_key_here" > ~/.config/pushpage/credentials
+   mkdir -p ~/.config/pushpage && umask 077 && printf '%s' "pp_the_key_here" > ~/.config/pushpage/credentials && chmod 600 ~/.config/pushpage/credentials
    ```
 
 Pass the key in every curl request as `X-Api-Key: $PUSHPAGE_API_KEY`.

@@ -475,6 +475,18 @@
                 <strong>Store your key securely.</strong> The raw key is shown exactly once — it is stored only as a SHA-256 hash. If you lose it, rotate to generate a new one.
             </div>
 
+            <h3>Storing your API key</h3>
+            <p>Keep the key in a private file rather than in scripts or shared config. The pushpage agent skill and the examples on this page read it from <code>~/.config/pushpage/credentials</code>:</p>
+
+<pre><code><span class="token-hl">mkdir</span> -p ~/.config/pushpage
+<span class="token-hl">umask</span> 077 &amp;&amp; printf <span class="token-str">'%s'</span> <span class="token-str">'pp_your_key_here'</span> &gt; ~/.config/pushpage/credentials
+<span class="token-hl">chmod</span> 600 ~/.config/pushpage/credentials
+
+<span class="token-cmt"># load it into your shell (e.g. in ~/.zshrc)</span>
+<span class="token-hl">export</span> PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials)</code></pre>
+
+            <p>Never commit the key to git. For MCP clients that support environment variables in headers (Claude Code, Cursor), reference <code>$PUSHPAGE_API_KEY</code> instead of pasting the key; see <a href="#mcp">MCP server</a>.</p>
+
             <h3>JWT tokens</h3>
             <p>JWTs are short-lived (24 h by default) and are the credential used by the browser dashboard. They are issued by logging in with email and password.</p>
 
@@ -851,6 +863,9 @@ Copy these credentials now. They will NOT appear again.
     }
   }
 }</code></pre>
+
+            <h3>Keeping the key out of your config</h3>
+            <p>Store the key in <code>~/.config/pushpage/credentials</code> (<code>chmod 600</code>) and export it as <code>PUSHPAGE_API_KEY</code>. Claude Code supports <code>"X-Api-Key": "${PUSHPAGE_API_KEY}"</code> in <code>.mcp.json</code> and Cursor supports <code>"${env:PUSHPAGE_API_KEY}"</code>. Claude Desktop does not expand variables in <code>headers</code>, so use the key directly there (or the <code>mcp-remote</code> bridge with an <code>env</code> block) and keep the file private.</p>
 
             <h3>Available tools</h3>
             <div class="docs-table-wrap">
