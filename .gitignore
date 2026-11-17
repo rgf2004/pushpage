@@ -39,3 +39,6 @@ pages/
 .claude/
 .env
 mcp/__pycache__/
+mcp/pushpage_mcp/__pycache__/
+mcp/dist/
+mcp/*.egg-info/

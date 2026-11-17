@@ -1,0 +1,48 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.rgf2004/pushpage",
+  "title": "pushpage",
+  "description": "Publish HTML from your AI agent and get a shareable link back.",
+  "websiteUrl": "https://pushpage.link",
+  "repository": {
+    "url": "https://github.com/rgf2004/pushpage",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "version": "0.0.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "pushpage-mcp",
+      "version": "0.0.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "PUSHPAGE_API_KEY",
+          "description": "Your pushpage API key (pp_...), from the Account tab of the dashboard.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "PUSHPAGE_URL",
+          "description": "Base URL of the pushpage instance. Defaults to https://pushpage.link.",
+          "isRequired": false
+        }
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://pushpage.link/mcp",
+      "headers": [
+        {
+          "name": "X-Api-Key",
+          "description": "Your pushpage API key (pp_...).",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
