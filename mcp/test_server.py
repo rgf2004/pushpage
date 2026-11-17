@@ -65,6 +65,14 @@ class TestServerRegistration(unittest.TestCase):
                 os.environ.pop("PUSHPAGE_API_KEY", None)
                 self.assertEqual(self.server._api_key(), "pp_auth")
 
+    def test_api_key_from_mixed_case_authorization_env(self):
+        """Launchers such as Glama pass the variable as 'Authorization'."""
+        with patch("server.get_http_request", side_effect=RuntimeError("no request")):
+            with patch.dict(os.environ, {"Authorization": "Bearer pp_mixed"}, clear=False):
+                for k in ("PUSHPAGE_API_KEY", "AUTHORIZATION"):
+                    os.environ.pop(k, None)
+                self.assertEqual(self.server._api_key(), "pp_mixed")
+
     def test_http_request_key_wins_over_env(self):
         mock_request = MagicMock()
         mock_request.headers = {"x-api-key": "pp_header"}

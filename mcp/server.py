@@ -42,7 +42,8 @@ def _env_api_key() -> str:
     key = os.environ.get("PUSHPAGE_API_KEY", "").strip()
     if key:
         return key
-    auth = os.environ.get("AUTHORIZATION", "").strip()
+    # Env var names are case-sensitive on Linux; some launchers (e.g. Glama) pass "Authorization".
+    auth = (os.environ.get("AUTHORIZATION") or os.environ.get("Authorization") or "").strip()
     return auth[len("Bearer "):].strip() if auth.lower().startswith("bearer ") else auth
 
 
