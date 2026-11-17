@@ -108,6 +108,12 @@ jobs:
 
       - name: Commit next snapshot version
         run: |
+          # A patch release after a minor one computes the same next snapshot that main
+          # already has (e.g. 1.7.1 -> 1.8.0-SNAPSHOT after 1.7.0). Nothing to commit then.
+          if git diff --quiet -- pom.xml; then
+            echo "pom.xml already at ${{ env.NEXT_SNAPSHOT }}; skipping version bump PR"
+            exit 0
+          fi
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="chore/bump-version-${{ env.NEXT_SNAPSHOT }}"
