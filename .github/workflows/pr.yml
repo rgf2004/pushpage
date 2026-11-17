@@ -50,3 +50,10 @@ jobs:
 
       - name: Run tests
         run: pytest mcp/test_server.py -v
+
+      - name: Build the PyPI package
+        working-directory: mcp
+        run: |
+          pip install build twine
+          python -m build
+          twine check dist/*

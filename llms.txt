@@ -138,6 +138,22 @@ Replace `<your-api-key>` with the key from `~/.config/pushpage/credentials`. Res
 
 Create the credentials file with owner-only permissions: `mkdir -p ~/.config/pushpage && umask 077 && printf '%s' 'pp_...' > ~/.config/pushpage/credentials && chmod 600 ~/.config/pushpage/credentials`. Claude Desktop does not expand environment variables in `headers`; Claude Code (`${PUSHPAGE_API_KEY}`) and Cursor (`${env:PUSHPAGE_API_KEY}`) do, so prefer that to pasting the key. Never commit the key to git.
 
+### Run locally (stdio) with uvx
+
+If you prefer a local process over the hosted endpoint and have [uv](https://docs.astral.sh/uv/) installed:
+
+```json
+{
+  "mcpServers": {
+    "pushpage": {
+      "command": "uvx",
+      "args": ["pushpage-mcp"],
+      "env": { "PUSHPAGE_API_KEY": "<your-api-key>" }
+    }
+  }
+}
+```
+
 ### Other MCP clients
 
 Any client that supports streamable-http MCP servers can connect to `https://pushpage.link/mcp` with the `X-Api-Key` header. Consult your client's documentation for the exact config format.
