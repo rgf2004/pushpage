@@ -189,6 +189,8 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
 
 **Storing your key:** keep it in `~/.config/pushpage/credentials` (`chmod 600`) and, where your client supports it (Claude Code, Cursor), reference it as an environment variable instead of pasting it into config. Details in [`docs/mcp.md`](docs/mcp.md#storing-your-api-key).
 
+The MCP server can also run locally over stdio (`python mcp/server.py --stdio` with `PUSHPAGE_API_KEY` set); see [`docs/mcp.md`](docs/mcp.md#local-stdio-mode).
+
 For the full tool reference, alternative connection methods (including `mcp-remote` for HTTP-only or older clients), and troubleshooting, see [`docs/mcp.md`](docs/mcp.md).
 
 ## Security
