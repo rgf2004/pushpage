@@ -36,7 +36,9 @@ push-page/
 │       ├── favicon.ico         # same icon (16/32/48 px), served at /favicon.ico for pages that declare none
 │       └── pp-bar.html         # bar appended to every published page (add_after_body)
 ├── mcp/
-│   ├── server.py               # FastMCP server (streamable-http transport)
+│   ├── pushpage_mcp/server.py  # FastMCP server (tools, guest mode, stdio/HTTP entry point)
+│   ├── server.py               # shim: `python server.py` serves streamable-http (Docker); `pushpage-mcp` (PyPI) defaults to stdio
+│   ├── pyproject.toml          # PyPI package `pushpage-mcp` (published on v* tags by .github/workflows/pypi.yml)
 │   ├── Dockerfile              # Python image for the MCP service
 │   └── requirements.txt
 └── src/main/java/me/projects/pushpage/
@@ -162,6 +164,8 @@ Two credential types are accepted:
 JWTs are issued by `POST /api/auth/login` and are valid for 24 h. They carry a `pwd_v` claim (the user's `password_changed_at`), so a password reset invalidates every earlier JWT; API keys are unaffected. API keys are obtained via `POST /api/me/tokens` and are long-lived.
 
 On first run, if no users exist the service auto-creates an `admin@pushpage.link` account with a random alphanumeric password **and** a random API key, logs both prominently, and never shows them again. API keys are stored as SHA-256 hashes; passwords as BCrypt hashes.
+
+**MCP guest mode.** The MCP server (`mcp/pushpage_mcp/server.py`) does not require a key. Without one it calls `POST /api/pages` as a guest (the wrapper omits `X-Api-Key` entirely, because the API rejects an empty value, and forwards the real client IP from nginx's `X-Real-IP` so the per-IP guest limit is per client, not per MCP container). Guest `publish_page` results carry `guest_mode`, `message` and `signup_url` (built from `PUSHPAGE_PUBLIC_URL`, set from `APP_SERVER_URL` in the compose files); guest `list_pages` / `delete_page` return a "Sign in required" result without calling the API. A key that is present but invalid still fails with `401`, never downgraded to guest.
 
 ## API
 

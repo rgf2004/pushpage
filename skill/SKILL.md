@@ -21,7 +21,7 @@ Pushpage is a service that accepts HTML and returns a public URL. Use it in two 
 | Delete | `delete_page(id)` | `DELETE /api/pages/{id}` |
 | Health | `health()` | `GET /api/health` |
 
-The MCP handles authentication transparently — no key reading or header wiring needed. Only fall through to the direct API (curl) when the MCP tool is not available.
+The MCP handles authentication transparently — no key reading or header wiring needed. If it was connected without a key it runs in guest mode: `publish_page` still works (the page expires after 30 minutes) and the result contains `guest_mode: true` and a `message`. When you see that, include the message's sign-up/sign-in guidance in your reply so the user knows how to get an API key (`list_pages` and `delete_page` need one). Only fall through to the direct API (curl) when the MCP tool is not available.
 
 ## Base URL
 
@@ -31,7 +31,7 @@ Default: `https://pushpage.link`. For self-hosted deployments, use the value of 
 
 ## Authentication
 
-**MCP:** no key handling needed — the MCP client passes the key transparently.
+**MCP:** no key handling needed — the MCP client passes the key transparently, or none for guest mode (30-minute pages; relay the sign-up message in the tool result).
 
 **curl fallback only:**
 

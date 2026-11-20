@@ -112,5 +112,109 @@ class TestEntryPoint(unittest.TestCase):
         run.assert_called_once_with(transport="stdio")
 
 
+class _FakeResponse:
+    def __init__(self, data=None, status=200):
+        self._data, self.status_code, self.text = data or {}, status, "body"
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            err = self._HTTPStatusError("boom")
+            err.response = self
+            raise err
+
+    def json(self):
+        return self._data
+
+
+class TestGuestMode(unittest.TestCase):
+    """Keyless (guest) sessions: no key header sent, sign-up guidance returned."""
+
+    def setUp(self):
+        self.server = _load_server()
+        self.created = []
+
+        class HTTPStatusError(Exception):
+            pass
+
+        self.server.httpx.HTTPStatusError = HTTPStatusError
+        _FakeResponse._HTTPStatusError = HTTPStatusError
+        self.response = _FakeResponse({"url": "https://x/pages/a.html", "id": "a", "expires_at": "t"})
+        outer = self
+
+        class FakeClient:
+            def __init__(self, **kwargs):
+                outer.created.append(kwargs)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def post(self, *a, **k):
+                return outer.response
+
+            get = delete = post
+
+        self.server.httpx.Client = FakeClient
+        patcher = patch("pushpage_mcp.server.get_http_request", side_effect=RuntimeError("no request"))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        for k in ("PUSHPAGE_API_KEY", "AUTHORIZATION", "Authorization"):
+            os.environ.pop(k, None)
+
+    def test_guest_publish_omits_key_header_and_explains_guest_mode(self):
+        out = self.server.publish_page("<h1>hi</h1>")
+        self.assertNotIn("X-Api-Key", self.created[0]["headers"])
+        self.assertTrue(out["guest_mode"])
+        self.assertIn("30 minutes", out["message"])
+        self.assertIn("/dashboard", out["message"])
+        self.assertTrue(out["signup_url"].endswith("/dashboard"))
+        self.assertEqual(out["id"], "a")
+
+    def test_keyed_publish_sends_key_and_has_no_guest_fields(self):
+        with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_real"}):
+            out = self.server.publish_page("<h1>hi</h1>")
+        self.assertEqual(self.created[0]["headers"]["X-Api-Key"], "pp_real")
+        self.assertNotIn("guest_mode", out)
+        self.assertNotIn("message", out)
+
+    def test_guest_rate_limit_error_suggests_signup(self):
+        self.response = _FakeResponse(status=429)
+        out = self.server.publish_page("<h1>hi</h1>")
+        self.assertEqual(out["status_code"], 429)
+        self.assertTrue(out["guest_mode"])
+        self.assertIn("Sign up or sign in", out["message"])
+
+    def test_invalid_key_error_is_not_downgraded_to_guest(self):
+        self.response = _FakeResponse(status=401)
+        with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_bad"}):
+            out = self.server.publish_page("<h1>hi</h1>")
+        self.assertEqual(out["status_code"], 401)
+        self.assertNotIn("guest_mode", out)
+
+    def test_guest_list_and_delete_ask_to_sign_in_without_calling_the_api(self):
+        listed = self.server.list_pages()
+        deleted = self.server.delete_page("abc")
+        self.assertEqual(self.created, [])
+        self.assertTrue(listed[0]["guest_mode"])
+        self.assertTrue(deleted["guest_mode"])
+        self.assertIn("Sign up or sign in", deleted["message"])
+
+    def test_client_ip_is_forwarded_over_http(self):
+        request = MagicMock()
+        request.headers = {"x-real-ip": "203.0.113.9"}
+        request.client.host = "172.18.0.5"
+        with patch("pushpage_mcp.server.get_http_request", return_value=request):
+            self.server.publish_page("<h1>hi</h1>")
+        headers = self.created[0]["headers"]
+        self.assertEqual(headers["X-Real-IP"], "203.0.113.9")
+        self.assertEqual(headers["X-Forwarded-For"], "203.0.113.9")
+
+    def test_public_url_used_in_signup_link(self):
+        self.server._public_url = "https://my.example"
+        self.assertEqual(self.server.list_pages()[0]["signup_url"], "https://my.example/dashboard")
+
+
 if __name__ == "__main__":
     unittest.main()
