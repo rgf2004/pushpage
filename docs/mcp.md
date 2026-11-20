@@ -15,12 +15,18 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 
 ## Authentication
 
-Each MCP client supplies its own pushpage API key. The server accepts it via either header:
+There are two modes:
+
+**Guest mode (no key).** Connect with just the URL, no header. `publish_page` works and creates an anonymous page that is deleted after 30 minutes (the same limits as `POST /api/pages` without a key, rate-limited per client IP). The result includes `guest_mode: true`, a `message` and a `signup_url`, which tell the user to sign up or sign in to the dashboard to get an API key. `list_pages` and `delete_page` need an account, so in guest mode they return a "Sign in required" result with the same message and make no API call. `health` works.
+
+**Account mode (with a key).** Each MCP client supplies its own pushpage API key via either header:
 
 - `Authorization: Bearer <key>`
 - `X-Api-Key: <key>`
 
-Requests with no key are rejected with `401` before they reach any tool.
+Pages then follow your plan's retention, and `list_pages` / `delete_page` work. An invalid or expired key is rejected by the API with `401`; it is never silently downgraded to guest mode.
+
+`PUSHPAGE_PUBLIC_URL` (set from `APP_SERVER_URL` in the compose files; default `https://pushpage.link`) is the address used in the sign-up links in guest messages.
 
 ## Connecting
 
