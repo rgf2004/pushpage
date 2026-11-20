@@ -19,8 +19,8 @@
       "environmentVariables": [
         {
           "name": "PUSHPAGE_API_KEY",
-          "description": "Your pushpage API key (pp_...), from the Account tab of the dashboard.",
-          "isRequired": true,
+          "description": "Optional. Your pushpage API key (pp_...) from the dashboard. Without it the server runs in guest mode: publish_page works, pages expire after 30 minutes.",
+          "isRequired": false,
           "isSecret": true
         },
         {
@@ -38,8 +38,8 @@
       "headers": [
         {
           "name": "X-Api-Key",
-          "description": "Your pushpage API key (pp_...).",
-          "isRequired": true,
+          "description": "Optional. Your pushpage API key (pp_...). Omit it to use guest mode (publish only, pages expire after 30 minutes).",
+          "isRequired": false,
           "isSecret": true
         }
       ]
