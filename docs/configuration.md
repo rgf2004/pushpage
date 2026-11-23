@@ -85,6 +85,8 @@ REAL_IP_HEADER=X-Forwarded-For    # default; use CF-Connecting-IP for Cloudflare
 | Generic proxy / load balancer | its IP or subnet | `X-Forwarded-For` (or `X-Real-IP`) |
 | Cloudflare Tunnel (`cloudflared` on another host) | the `cloudflared` host's IP | `CF-Connecting-IP` |
 
+nginx passes the client address to the publisher by **overwriting** `X-Forwarded-For` (and `X-Real-IP`) with `$remote_addr`, never by appending to a header the client sent, so a client cannot choose its own per-IP rate-limit bucket by sending `X-Forwarded-For`. This relies on the settings above being correct: without `TRUSTED_PROXIES` behind a proxy, all visitors count as the proxy's address.
+
 List **only** proxies you control. The header is trusted when the request comes from one of them; if an address you do not control is listed, clients behind it can spoof their IP and dodge the rate limits. Invalid entries make the nginx container fail at startup rather than being ignored. The settings are applied by `nginx/20-realip.sh` when the container starts, so restart nginx after changing them.
 
 ## Flyway Migrations
