@@ -15,6 +15,8 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 
 ## Authentication
 
+The dashboard's **Account** tab shows ready-to-copy setup commands for Claude Code, Cursor, Claude Desktop and the local `uvx` server, with your API key filled in right after you generate it.
+
 There are two modes:
 
 **Guest mode (no key).** Connect with just the URL, no header. `publish_page` works and creates an anonymous page that is deleted after 30 minutes (the same limits as `POST /api/pages` without a key, rate-limited per client IP). The result includes `guest_mode: true`, a `message` and a `signup_url`, which tell the user to sign up or sign in to the dashboard to get an API key. `list_pages` and `delete_page` need an account, so in guest mode they return a "Sign in required" result with the same message and make no API call. `health` works.
