@@ -165,7 +165,7 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 docker compose up -d
 ```
 
-Once running, the server is available at `https://pushpage.link/mcp` (or `{APP_SERVER_URL}/mcp` for self-hosted instances). Each client supplies their own pushpage API key via the `Authorization` header.
+Once running, the server is available at `https://pushpage.link/mcp` (or `{APP_SERVER_URL}/mcp` for self-hosted instances). You can try it with no key: without one the server runs in **guest mode** (`publish_page` works, pages expire after 30 minutes, and the result tells the user to sign up or sign in at the dashboard). With a pushpage API key (sent in the `Authorization` or `X-Api-Key` header) you get permanent retention per plan, `list_pages` and `delete_page`.
 
 **Claude Desktop `claude_desktop_config.json`:**
 ```json

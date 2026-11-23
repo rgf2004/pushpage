@@ -506,12 +506,12 @@
             <div class="step">
                 <div class="step-number">1</div>
                 <h3>Sign up &amp; get an API key</h3>
-                <p>Create an account in the dashboard, then generate an API key under the Account tab. Your key looks like <code>pp_abc123…</code></p>
+                <p>Create an account in the dashboard, then generate an API key under the Account tab. Your key looks like <code>pp_abc123…</code> Want to try first? Publishing works without a key; guest pages last 30 minutes.</p>
             </div>
             <div class="step">
                 <div class="step-number">2</div>
                 <h3>POST your HTML</h3>
-                <p>Send a <code>POST /api/pages</code> request with your HTML content, as JSON or a raw file upload. Or add the MCP server to your agent config for one-step tool access.</p>
+                <p>Send a <code>POST /api/pages</code> request with your HTML content, as JSON or a raw file upload. Or add the MCP server to your agent with one command. No key needed to try it.</p>
             </div>
             <div class="step">
                 <div class="step-number">3</div>
@@ -647,7 +647,11 @@ console.log(url); <span class="dim">// https://pushpage.link/pages/abc123.html</
         <div class="code-panel active" id="ex-mcp">
             <div class="code-window">
                 <div class="code-body">
-<span class="dim"># Add pushpage to your Claude MCP config</span><br>
+<span class="dim"># Try it now, no sign-up: add the server with just the URL</span><br>
+claude mcp add --transport http pushpage https://pushpage.link/mcp<br>
+<span class="dim"># Guest pages last 30 minutes. Sign up for permanent pages and your own key.</span><br>
+<br>
+<span class="dim"># With an account, add your key to your MCP config</span><br>
 {<br>
 &nbsp; <span class="key">"mcpServers"</span>: {<br>
 &nbsp; &nbsp; <span class="key">"pushpage"</span>: {<br>

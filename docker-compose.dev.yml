@@ -50,6 +50,7 @@ services:
       context: ./mcp
     environment:
       PUSHPAGE_URL: http://publisher:8080
+      PUSHPAGE_PUBLIC_URL: ${APP_SERVER_URL:-http://localhost:8080}
     depends_on:
       - publisher
     restart: unless-stopped

@@ -15,12 +15,25 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 
 ## Authentication
 
-Each MCP client supplies its own pushpage API key. The server accepts it via either header:
+There are two modes:
+
+**Guest mode (no key).** Connect with just the URL, no header. `publish_page` works and creates an anonymous page that is deleted after 30 minutes (the same limits as `POST /api/pages` without a key, rate-limited per client IP). The result includes `guest_mode: true`, a `message` and a `signup_url`, which tell the user to sign up or sign in to the dashboard to get an API key. `list_pages` and `delete_page` need an account, so in guest mode they return a "Sign in required" result with the same message and make no API call. `health` works.
+
+**Account mode (with a key).** Each MCP client supplies its own pushpage API key via either header:
 
 - `Authorization: Bearer <key>`
 - `X-Api-Key: <key>`
 
-Requests with no key are rejected with `401` before they reach any tool.
+Pages then follow your plan's retention, and `list_pages` / `delete_page` work. An invalid or expired key is rejected by the API with `401`; it is never silently downgraded to guest mode.
+
+### `PUSHPAGE_PUBLIC_URL` vs `PUSHPAGE_URL`
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `PUSHPAGE_URL` | Where the MCP server sends its API calls (an internal address between containers, e.g. `http://publisher:8080`). | `https://pushpage.link` |
+| `PUSHPAGE_PUBLIC_URL` | The address shown to users in guest-mode messages and `signup_url` (`<address>/dashboard`). Must be reachable from a browser. | `https://pushpage.link` |
+
+In the compose files `PUSHPAGE_PUBLIC_URL` is set from `APP_SERVER_URL`, so a self-hosted deployment needs no extra setup. If you run the local `uvx` server against your own instance, set both: `PUSHPAGE_URL` to point at it and `PUSHPAGE_PUBLIC_URL` to its public address, otherwise the sign-up links still point to pushpage.link.
 
 ## Connecting
 
@@ -64,7 +77,7 @@ The server is published to PyPI as [`pushpage-mcp`](https://pypi.org/project/pus
 }
 ```
 
-Claude Code: `claude mcp add pushpage -e PUSHPAGE_API_KEY=pp_your_key_here -- uvx pushpage-mcp`. Set `PUSHPAGE_URL` to use a self-hosted instance. `pushpage-mcp --http [--host H] [--port P]` serves streamable-http instead (the Docker image runs `server.py`, which defaults to HTTP on `0.0.0.0:8000`).
+Claude Code: `claude mcp add pushpage -e PUSHPAGE_API_KEY=pp_your_key_here -- uvx pushpage-mcp`. Set `PUSHPAGE_URL` (and `PUSHPAGE_PUBLIC_URL`, for the sign-up links in guest messages) to use a self-hosted instance. `pushpage-mcp --http [--host H] [--port P]` serves streamable-http instead (the Docker image runs `server.py`, which defaults to HTTP on `0.0.0.0:8000`).
 
 Releases: pushing a `v*` tag runs `.github/workflows/pypi.yml`, which stamps the version from the tag and publishes with PyPI trusted publishing. `server.json` describes the package and the hosted endpoint for the official MCP Registry (`mcp-publisher publish`).
 
