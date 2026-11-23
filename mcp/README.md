@@ -29,7 +29,7 @@ Claude Code:
 claude mcp add pushpage -e PUSHPAGE_API_KEY=pp_your_key_here -- uvx pushpage-mcp
 ```
 
-Requires [uv](https://docs.astral.sh/uv/). Set `PUSHPAGE_URL` to use a self-hosted instance (default `https://pushpage.link`).
+Requires [uv](https://docs.astral.sh/uv/). To use a self-hosted instance, set `PUSHPAGE_URL` to its API address and `PUSHPAGE_PUBLIC_URL` to its public address (used for the sign-up links in guest mode). Both default to `https://pushpage.link`.
 
 ## No install: hosted endpoint
 
