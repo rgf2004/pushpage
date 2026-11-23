@@ -48,6 +48,26 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
   --header "Authorization: Bearer pp_your_key_here"
 ```
 
+### Run locally with `uvx` (PyPI package)
+
+The server is published to PyPI as [`pushpage-mcp`](https://pypi.org/project/pushpage-mcp/). With [uv](https://docs.astral.sh/uv/) installed, MCP clients can launch it over stdio with no clone or Docker:
+
+```json
+{
+  "mcpServers": {
+    "pushpage": {
+      "command": "uvx",
+      "args": ["pushpage-mcp"],
+      "env": { "PUSHPAGE_API_KEY": "pp_your_key_here" }
+    }
+  }
+}
+```
+
+Claude Code: `claude mcp add pushpage -e PUSHPAGE_API_KEY=pp_your_key_here -- uvx pushpage-mcp`. Set `PUSHPAGE_URL` to use a self-hosted instance. `pushpage-mcp --http [--host H] [--port P]` serves streamable-http instead (the Docker image runs `server.py`, which defaults to HTTP on `0.0.0.0:8000`).
+
+Releases: pushing a `v*` tag runs `.github/workflows/pypi.yml`, which stamps the version from the tag and publishes with PyPI trusted publishing. `server.json` describes the package and the hosted endpoint for the official MCP Registry (`mcp-publisher publish`).
+
 ### Local stdio mode
 
 For clients that launch MCP servers as local processes (and for registries that start the server to inspect it), `mcp/server.py` also runs over **stdio**. Pass `--stdio` (or set `PUSHPAGE_MCP_TRANSPORT=stdio`); the key then comes from the environment because there are no HTTP headers:

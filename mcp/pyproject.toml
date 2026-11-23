@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pushpage-mcp"
+dynamic = ["version"]
+description = "MCP server for pushpage: let AI agents publish HTML as shareable URLs."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "rgf2004" }]
+keywords = ["mcp", "model-context-protocol", "ai-agents", "html", "publishing"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+    "fastmcp>=4.1.8",
+    "httpx>=0.28.1",
+    "uvicorn>=0.54.0",
+]
+
+[project.urls]
+Homepage = "https://pushpage.link"
+Repository = "https://github.com/rgf2004/pushpage"
+Documentation = "https://github.com/rgf2004/pushpage/blob/main/docs/mcp.md"
+
+[project.scripts]
+pushpage-mcp = "pushpage_mcp.server:cli"
+
+[tool.hatch.version]
+path = "pushpage_mcp/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pushpage_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = ["pushpage_mcp", "README.md", "LICENSE", "pyproject.toml"]
