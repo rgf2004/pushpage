@@ -419,8 +419,8 @@
                     <span>Go to <a href="/dashboard">/dashboard</a>, click <em>Sign up</em>, and enter your email and password.</span>
                 </li>
                 <li>
-                    <strong>Generate an API key</strong>
-                    <span>After signing in, open the <strong>Account</strong> tab and click <strong>Generate / Rotate API Key</strong>. Copy the key — it is shown only once.</span>
+                    <strong>Create an API key</strong>
+                    <span>After signing in, open the <strong>Account</strong> tab, give the key a name (for example the agent that will use it) and click <strong>Create API key</strong>. Copy the key — it is shown only once.</span>
                 </li>
                 <li>
                     <strong>Publish your first page</strong>
@@ -455,24 +455,26 @@
                 <table class="docs-table">
                     <thead><tr><th>Method</th><th>Header</th><th>Notes</th></tr></thead>
                     <tbody>
-                        <tr><td>API key</td><td><code>X-Api-Key: pp_&lt;key&gt;</code></td><td>Long-lived. Ideal for scripts, CI, and agents. Obtain via <code>POST /api/me/tokens</code>.</td></tr>
+                        <tr><td>API key</td><td><code>X-Api-Key: pp_&lt;key&gt;</code></td><td>Long-lived. Ideal for scripts, CI, and agents. Create named keys in the dashboard or via <code>POST /api/me/keys</code>.</td></tr>
                         <tr><td>JWT Bearer</td><td><code>Authorization: Bearer &lt;jwt&gt;</code></td><td>Short-lived (24 h). Issued by <code>POST /api/auth/login</code>. Used by the dashboard.</td></tr>
                     </tbody>
                 </table>
             </div>
 
             <h3>API keys</h3>
-            <p>API keys begin with <code>pp_</code> and are long-lived — they don't expire unless you rotate them. Only one active key per user exists at a time. Rotating a key invalidates the previous one immediately.</p>
-            <p>Generate or rotate your API key:</p>
+            <p>API keys begin with <code>pp_</code> and are long-lived — they don't expire until you revoke them. An account can have several keys (up to 10), each with a name, so give every agent or tool its own. Creating a key never affects your other keys, and revoking one key stops only that key.</p>
+            <p>Create a key (key management needs your signed-in session, so use the dashboard or your JWT, not an API key):</p>
 
-<pre><code><span class="token-hl">curl</span> -s -X POST https://pushpage.link/api/me/tokens \
-  -H <span class="token-str">"Authorization: Bearer &lt;your-jwt&gt;"</span>
+<pre><code><span class="token-hl">curl</span> -s -X POST https://pushpage.link/api/me/keys \
+  -H <span class="token-str">"Authorization: Bearer &lt;your-jwt&gt;"</span> \
+  -H <span class="token-str">"Content-Type: application/json"</span> \
+  -d <span class="token-str">'{"name":"Claude Code on my laptop"}'</span>
 
-<span class="token-cmt"># Response</span>
-{ <span class="token-key">"api_key"</span>: <span class="token-str">"pp_abc123..."</span> }</code></pre>
+<span class="token-cmt"># Response: 201</span>
+{ <span class="token-key">"id"</span>: <span class="token-str">"a1b2c3d4"</span>, <span class="token-key">"name"</span>: <span class="token-str">"Claude Code on my laptop"</span>, <span class="token-key">"api_key"</span>: <span class="token-str">"pp_abc123..."</span>, ... }</code></pre>
 
             <div class="callout warn">
-                <strong>Store your key securely.</strong> The raw key is shown exactly once — it is stored only as a SHA-256 hash. If you lose it, rotate to generate a new one.
+                <strong>Store your key securely.</strong> The raw key is shown exactly once — it is stored only as a SHA-256 hash. If you lose a key, revoke it and create a new one; your other keys are unaffected.
             </div>
 
             <h3>Storing your API key</h3>
@@ -587,7 +589,7 @@ Copy these credentials now. They will NOT appear again.
             <p>Lists all pages you've published, with their URL, creation date, and expiry date. You can delete individual pages.</p>
 
             <h3>Account tab</h3>
-            <p>Displays your email and role. You can generate or rotate your API key here. The key is shown once — copy it before closing the dialog.</p>
+            <p>Displays your email and role, and lists your API keys (name, key prefix, last used). You can create a named key and revoke any key here. A new key is shown once — copy it before leaving the page.</p>
 
             <h3>Users tab (admin only)</h3>
             <p>Lists all registered users. Admins can promote users to admin or deactivate accounts. Deactivated users retain their pages but can no longer authenticate.</p>
@@ -677,14 +679,29 @@ Copy these credentials now. They will NOT appear again.
             <h3>Account</h3>
 
             <div class="endpoint">
-                <span class="method post">POST</span>
-                <span class="endpoint-path">/api/me/tokens</span>
-                <span class="endpoint-auth">User</span>
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api/me/keys</span>
+                <span class="endpoint-auth">User (JWT)</span>
             </div>
-            <p>Generate or rotate your API key. The previous key is invalidated immediately. Returns the raw key once.</p>
+            <p>List your API keys: <code>id</code>, <code>name</code>, <code>key_prefix</code>, <code>created_at</code> and <code>last_used_at</code>. Raw keys are never returned. Key management needs a signed-in session; a request authenticated with an API key gets <code>403</code>.</p>
 
-<pre><code><span class="token-cmt"># Response: 200</span>
-{ <span class="token-key">"api_key"</span>: <span class="token-str">"pp_abc123..."</span> }</code></pre>
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/api/me/keys</span>
+                <span class="endpoint-auth">User (JWT)</span>
+            </div>
+            <p>Create a named key (<code>{"name": "..."}</code>, required, up to 60 characters). Returns the raw key once. Other keys are not affected. Up to 10 keys per account (<code>409</code> beyond).</p>
+
+<pre><code><span class="token-cmt"># Response: 201</span>
+{ <span class="token-key">"id"</span>: <span class="token-str">"a1b2c3d4"</span>, <span class="token-key">"name"</span>: <span class="token-str">"Claude Code on my laptop"</span>, <span class="token-key">"api_key"</span>: <span class="token-str">"pp_abc123..."</span>,
+  <span class="token-key">"key_prefix"</span>: <span class="token-str">"pp_abc123"</span>, <span class="token-key">"created_at"</span>: <span class="token-str">"2026-11-23T10:00:00Z"</span> }</code></pre>
+
+            <div class="endpoint">
+                <span class="method delete">DELETE</span>
+                <span class="endpoint-path">/api/me/keys/{id}</span>
+                <span class="endpoint-auth">User (JWT)</span>
+            </div>
+            <p>Revoke one key immediately. Your other keys keep working. <code>204</code> on success, <code>404</code> if the key is not yours.</p>
         </section>
 
         <section class="docs-section" id="api-admin">

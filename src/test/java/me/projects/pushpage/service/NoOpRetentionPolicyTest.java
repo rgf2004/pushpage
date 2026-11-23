@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.within;
 
 class NoOpRetentionPolicyTest {
 
-    static final User USER = new User("user1", null, "pp_key", null, Instant.now(), true, false);
+    static final User USER = new User("user1", null, null, Instant.now(), true, false);
 
     private final NoOpRetentionPolicy policy = new NoOpRetentionPolicy();
 

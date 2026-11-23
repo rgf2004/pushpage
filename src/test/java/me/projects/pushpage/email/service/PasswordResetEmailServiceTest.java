@@ -42,7 +42,7 @@ class PasswordResetEmailServiceTest {
     // Real instance: the limiter is part of the behaviour under test.
     private final RateLimitService rateLimitService = new RateLimitService();
 
-    private final User alice = new User("u1", "alice@example.com", "k", "h", Instant.now(), true, false);
+    private final User alice = new User("u1", "alice@example.com", "h", Instant.now(), true, false);
 
     /** Runs the send inline so tests can assert on it; production sends on a separate thread. */
     private final Executor inline = Runnable::run;
@@ -94,7 +94,7 @@ class PasswordResetEmailServiceTest {
     @Test
     void deactivatedAccount_looksIdenticalAndSendsNothing() {
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(
-                new User("u1", "alice@example.com", "k", "h", Instant.now(), false, false)));
+                new User("u1", "alice@example.com", "h", Instant.now(), false, false)));
 
         ResendOutcome outcome = service.requestReset("alice@example.com", "10.0.0.1");
 

@@ -1,5 +1,7 @@
 package me.projects.pushpage.repository;
 
+import me.projects.pushpage.TestUsers;
+
 import me.projects.pushpage.model.Page;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,10 +43,7 @@ abstract class AbstractPageRepositoryTest {
         repository = new PageRepository(jdbc);
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
-                TEST_USER_ID, "test-key-123", Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, TEST_USER_ID, null, false, null);
     }
 
     // --- save / existsById ---
@@ -110,10 +109,7 @@ abstract class AbstractPageRepositoryTest {
 
     @Test
     void findAll_userSeesOnlyOwnPages() {
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
-                "otheruser1", "other-key", Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, "otheruser1", null, false, null);
         repository.save("id1", "My page", TEST_USER_ID, Instant.now().plus(30, ChronoUnit.DAYS));
         repository.save("id2", "Other's page", "otheruser1", Instant.now().plus(30, ChronoUnit.DAYS));
 

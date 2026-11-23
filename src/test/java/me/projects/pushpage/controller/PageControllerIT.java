@@ -1,5 +1,7 @@
 package me.projects.pushpage.controller;
 
+import me.projects.pushpage.TestUsers;
+
 import me.projects.pushpage.PostgresTestSupport;
 import me.projects.pushpage.filter.ApiKeyAuthFilter;
 import me.projects.pushpage.filter.RateLimitFilter;
@@ -62,10 +64,7 @@ class PageControllerIT extends PostgresTestSupport {
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).addFilters(apiKeyAuthFilter, rateLimitFilter).build();
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, true)",
-                TEST_USER_ID, ApiKeyHasher.hash(TEST_API_KEY), Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, TEST_USER_ID, null, true, TEST_API_KEY);
     }
 
     @Test
@@ -302,10 +301,7 @@ class PageControllerIT extends PostgresTestSupport {
 
     @Test
     void publish_asGuest_pageVisibleToAdminButNotRegularUser() throws Exception {
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
-                "regularguest1", ApiKeyHasher.hash("pp_regular-guest-key"), Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, "regularguest1", null, false, "pp_regular-guest-key");
 
         mockMvc.perform(post("/pages")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -347,10 +343,7 @@ class PageControllerIT extends PostgresTestSupport {
 
     @Test
     void listPages_scopedToCurrentUser() throws Exception {
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
-                "otheruser1", ApiKeyHasher.hash("pp_other-api-key"), Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, "otheruser1", null, false, "pp_other-api-key");
 
         mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
@@ -379,10 +372,7 @@ class PageControllerIT extends PostgresTestSupport {
 
     @Test
     void deletePage_byNonOwner_returns403() throws Exception {
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
-                "otheruser2", ApiKeyHasher.hash("pp_other-api-key-2"), Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, "otheruser2", null, false, "pp_other-api-key-2");
 
         String response = mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
@@ -401,10 +391,7 @@ class PageControllerIT extends PostgresTestSupport {
 
     @Test
     void adminEndpoints_withNonAdminKey_return403() throws Exception {
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
-                "regularuser1", ApiKeyHasher.hash("pp_regular-api-key"), Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, "regularuser1", null, false, "pp_regular-api-key");
 
         mockMvc.perform(get("/admin/users")
                         .header("X-Api-Key", "pp_regular-api-key"))
@@ -433,16 +420,18 @@ class PageControllerIT extends PostgresTestSupport {
 
         String jwt = loginResponse.replaceAll(".*\"jwt\":\"([^\"]+)\".*", "$1");
 
-        // rotate API key using JWT
-        String tokenResponse = mockMvc.perform(post("/me/tokens")
-                        .header("Authorization", "Bearer " + jwt))
-                .andExpect(status().isOk())
+        // create an API key using the JWT
+        String tokenResponse = mockMvc.perform(post("/me/keys")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"alice laptop\"}"))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.api_key").exists())
                 .andReturn().getResponse().getContentAsString();
 
         String apiKey = tokenResponse.replaceAll(".*\"api_key\":\"([^\"]+)\".*", "$1");
 
-        // publish with the rotated API key
+        // publish with the new API key
         mockMvc.perform(post("/pages")
                         .header("X-Api-Key", apiKey)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -615,10 +604,7 @@ class PageControllerIT extends PostgresTestSupport {
     @Test
     void login_preExistingUserWithNoPassword_returns401() throws Exception {
         // user inserted without password_hash (simulates pre-migration admin-created user)
-        jdbc.update(
-                "INSERT INTO users (id, email, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, false)",
-                "legacyu1", "legacy@example.com", ApiKeyHasher.hash("pp_legacy-key"), Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, "legacyu1", "legacy@example.com", false, "pp_legacy-key");
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -633,44 +619,140 @@ class PageControllerIT extends PostgresTestSupport {
                 .andExpect(status().isOk());
     }
 
-    @Test
-    void rotateApiToken_withJwt_thenOldKeyIsInvalid() throws Exception {
+    private String signUpAndLogin(String email) throws Exception {
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"email": "charlie@example.com", "password": "password123"}
-                                """))
+                        .content("{\"email\": \"" + email + "\", \"password\": \"password123\"}"))
                 .andExpect(status().isCreated());
-
-        String jwt = mockMvc.perform(post("/auth/login")
+        return mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"email": "charlie@example.com", "password": "password123"}
-                                """))
+                        .content("{\"email\": \"" + email + "\", \"password\": \"password123\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString()
                 .replaceAll(".*\"jwt\":\"([^\"]+)\".*", "$1");
+    }
 
-        // get first key
-        String firstKey = mockMvc.perform(post("/me/tokens")
-                        .header("Authorization", "Bearer " + jwt))
+    private String createKey(String jwt, String name) throws Exception {
+        return mockMvc.perform(post("/me/keys")
+                        .header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\": \"" + name + "\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    private static String field(String json, String name) {
+        return json.replaceAll(".*\"" + name + "\":\"([^\"]+)\".*", "$1");
+    }
+
+    @Test
+    void newAccount_hasNoApiKeysUntilOneIsCreated() throws Exception {
+        String jwt = signUpAndLogin("dana@example.com");
+
+        mockMvc.perform(get("/me/keys").header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString()
-                .replaceAll(".*\"api_key\":\"([^\"]+)\".*", "$1");
+                .andExpect(content().json("[]"));
+    }
 
-        // rotate again — get second key
-        String secondKey = mockMvc.perform(post("/me/tokens")
-                        .header("Authorization", "Bearer " + jwt))
+    @Test
+    void createKey_returnsRawKeyOnce_andItAuthenticates() throws Exception {
+        String jwt = signUpAndLogin("erin@example.com");
+
+        String created = createKey(jwt, "Claude Code on laptop");
+        String rawKey = field(created, "api_key");
+
+        assertThat(rawKey).startsWith("pp_");
+        assertThat(field(created, "name")).isEqualTo("Claude Code on laptop");
+        assertThat(field(created, "key_prefix")).isEqualTo(rawKey.substring(0, 8));
+        mockMvc.perform(get("/pages").header("X-Api-Key", rawKey)).andExpect(status().isOk());
+
+        // listing never contains the raw key
+        String listing = mockMvc.perform(get("/me/keys").header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString()
-                .replaceAll(".*\"api_key\":\"([^\"]+)\".*", "$1");
+                .andExpect(jsonPath("$[0].name").value("Claude Code on laptop"))
+                .andExpect(jsonPath("$[0].key_prefix").value(rawKey.substring(0, 8)))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(listing).doesNotContain(rawKey);
+    }
 
-        // first key is now invalid
-        mockMvc.perform(get("/pages").header("X-Api-Key", firstKey))
+    @Test
+    void creatingASecondKey_doesNotInvalidateTheFirst() throws Exception {
+        String jwt = signUpAndLogin("frank@example.com");
+        String firstKey = field(createKey(jwt, "laptop"), "api_key");
+        String secondKey = field(createKey(jwt, "ci"), "api_key");
+
+        mockMvc.perform(get("/pages").header("X-Api-Key", firstKey)).andExpect(status().isOk());
+        mockMvc.perform(get("/pages").header("X-Api-Key", secondKey)).andExpect(status().isOk());
+    }
+
+    @Test
+    void revokeKey_invalidatesOnlyThatKey() throws Exception {
+        String jwt = signUpAndLogin("gina@example.com");
+        String first = createKey(jwt, "laptop");
+        String second = createKey(jwt, "ci");
+
+        mockMvc.perform(delete("/me/keys/" + field(first, "id")).header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/pages").header("X-Api-Key", field(first, "api_key")))
                 .andExpect(status().isUnauthorized());
-
-        // second key works
-        mockMvc.perform(get("/pages").header("X-Api-Key", secondKey))
+        mockMvc.perform(get("/pages").header("X-Api-Key", field(second, "api_key")))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void revokeKey_ofAnotherUser_returns404() throws Exception {
+        String jwtA = signUpAndLogin("hank@example.com");
+        String keyA = createKey(jwtA, "hank key");
+        String jwtB = signUpAndLogin("ivy@example.com");
+
+        mockMvc.perform(delete("/me/keys/" + field(keyA, "id")).header("Authorization", "Bearer " + jwtB))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/pages").header("X-Api-Key", field(keyA, "api_key")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void keyManagement_withAnApiKey_isForbidden() throws Exception {
+        String jwt = signUpAndLogin("jack@example.com");
+        String rawKey = field(createKey(jwt, "laptop"), "api_key");
+
+        // a leaked key must not be able to mint or list keys; that needs a signed-in session
+        mockMvc.perform(post("/me/keys").header("X-Api-Key", rawKey)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\": \"sneaky\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/me/keys").header("X-Api-Key", rawKey)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createKey_withBlankOrTooLongName_returns400() throws Exception {
+        String jwt = signUpAndLogin("kate@example.com");
+
+        mockMvc.perform(post("/me/keys").header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\": \"   \"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/me/keys").header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\": \"" + "x".repeat(61) + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createKey_beyondTheLimit_returns409() throws Exception {
+        String jwt = signUpAndLogin("liam@example.com");
+        for (int i = 0; i < 10; i++) {
+            createKey(jwt, "key " + i);
+        }
+
+        mockMvc.perform(post("/me/keys").header("Authorization", "Bearer " + jwt)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\": \"one too many\"}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void oldRotateEndpoint_isGone() throws Exception {
+        String jwt = signUpAndLogin("mona@example.com");
+
+        mockMvc.perform(post("/me/tokens").header("Authorization", "Bearer " + jwt))
+                .andExpect(status().is4xxClientError());
     }
 }

@@ -20,8 +20,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class QuotaServiceTest {
 
-    static final User ADMIN = new User("admin1", "admin@example.com", "pp_key", "hash", Instant.now(), true, true);
-    static final User USER = new User("user1", "user@example.com", "pp_key2", "hash", Instant.now(), true, false);
+    static final User ADMIN = new User("admin1", "admin@example.com", "hash", Instant.now(), true, true);
+    static final User USER = new User("user1", "user@example.com", "hash", Instant.now(), true, false);
 
     @Mock
     PlanRepository planRepository;

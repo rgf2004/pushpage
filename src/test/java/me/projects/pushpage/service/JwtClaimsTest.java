@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JwtClaimsTest {
 
     private static User userWithPasswordChangedAt(Instant changedAt) {
-        return new User("u1", "a@b.co", "k", "h", Instant.now(), true, false, changedAt);
+        return new User("u1", "a@b.co", "h", Instant.now(), true, false, changedAt);
     }
 
     @Test

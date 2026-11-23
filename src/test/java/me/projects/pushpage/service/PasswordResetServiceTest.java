@@ -39,7 +39,7 @@ class PasswordResetServiceTest {
 
     private PasswordResetService service;
 
-    private final User alice = new User("u1", "alice@example.com", "keyhash", "oldhash", Instant.now(), true, false);
+    private final User alice = new User("u1", "alice@example.com", "oldhash", Instant.now(), true, false);
 
     @BeforeEach
     void setUp() {
@@ -136,7 +136,7 @@ class PasswordResetServiceTest {
 
     @Test
     void resetPassword_deactivatedUser_isRejected() {
-        User inactive = new User("u1", "alice@example.com", "k", "h", Instant.now(), false, false);
+        User inactive = new User("u1", "alice@example.com", "h", Instant.now(), false, false);
         when(resetRepository.redeem(anyString(), any())).thenReturn(Optional.of(new RedeemedToken("u1", true)));
         when(userRepository.findById("u1")).thenReturn(Optional.of(inactive));
 
@@ -158,7 +158,7 @@ class PasswordResetServiceTest {
     @Test
     void issueTokenForAdmin_deactivatedUser_isRejected() {
         when(userRepository.findById("u1")).thenReturn(Optional.of(
-                new User("u1", "a@b.co", "k", "h", Instant.now(), false, false)));
+                new User("u1", "a@b.co", "h", Instant.now(), false, false)));
 
         assertThatThrownBy(() -> service.issueTokenForAdmin("u1"))
                 .isInstanceOf(ResponseStatusException.class)
