@@ -109,7 +109,7 @@ To update an existing page, delete it and publish a new one — pushpage does no
 ### Health check (no auth required)
 
 ```bash
-curl -s https://pushpage.link/api/health   # -> {"status":"UP"}
+curl -s https://pushpage.link/api/health
 ```
 
 ## MCP server

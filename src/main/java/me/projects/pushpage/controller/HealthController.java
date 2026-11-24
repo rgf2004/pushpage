@@ -25,9 +25,9 @@ public class HealthController {
     }
 
     @Operation(summary = "Health check",
-            description = "Public. Returns only the service status: HTTP 200 with {\"status\":\"UP\"} when healthy, "
+            description = "Public. Returns the service status: HTTP 200 with {\"status\":\"UP\"} when healthy, "
                     + "503 with {\"status\":\"DOWN\"} when a critical subsystem (database or storage) is unavailable. "
-                    + "Runtime statistics are available to admins at GET /api/admin/health.")
+                    + "Runtime statistics: GET /api/admin/health (admin).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Service is healthy",
                     content = @Content(schema = @Schema(implementation = PublicHealthResponse.class))),

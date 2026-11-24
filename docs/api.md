@@ -287,7 +287,7 @@ Revoke one of your keys. Anything using it stops working immediately; your other
 
 ### GET /api/health
 
-Public health check. Returns only whether the service is up; operational details are not exposed to anonymous callers (see `/api/admin/health`).
+Public health check: reports whether the service is up.
 
 **Auth:** none (public)
 

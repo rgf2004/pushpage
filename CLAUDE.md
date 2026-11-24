@@ -197,7 +197,7 @@ All endpoints are under `/api` (Spring Boot context path).
 | `GET` | `/api/me/keys` | User (JWT) | List your API keys: `id`, `name`, `key_prefix`, `created_at`, `last_used_at` (never the raw key). |
 | `POST` | `/api/me/keys` | User (JWT) | Create a named API key (`{ name }`, ≤60 chars) → `201 { id, name, api_key, key_prefix, created_at }`; raw key returned once. Other keys are unaffected. Max `API_KEYS_MAX_PER_USER` (409 beyond). |
 | `DELETE` | `/api/me/keys/{id}` | User (JWT) | Revoke one key (404 if not yours). |
-| `GET` | `/api/health` | None | Health check: returns only `{ "status": "UP" }` (200) or `{ "status": "DOWN" }` (503). |
+| `GET` | `/api/health` | None | Health check: `{ "status": "UP" }` (200) or `{ "status": "DOWN" }` (503). |
 | `GET` | `/api/admin/health` | Admin | Full runtime details: version, uptime, live/deleted page counts, oldest/newest page, storage. Shown on the dashboard's Users tab. |
 | `GET` | `/api/config` | None | Public frontend config: `{ features: { plans, email } }`. Add new frontend-visible settings in `ClientConfigService`. |
 | `GET` | `/api/admin/users` | Admin | List all users. |

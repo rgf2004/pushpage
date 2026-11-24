@@ -45,7 +45,6 @@ public class HealthService {
     @PostConstruct
     void init() {
         startTime = Instant.now();
-        // The public health endpoint no longer reports the version, so deploys are confirmed from the logs.
         log.info("pushpage {} started", buildProperties.getVersion());
     }
 

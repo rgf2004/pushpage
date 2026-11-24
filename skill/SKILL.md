@@ -155,7 +155,7 @@ curl -s -X DELETE https://pushpage.link/api/pages/{id} \
 
 **MCP (preferred):** `health()`
 
-**curl fallback** (returns `{"status":"UP"}` only):
+**curl fallback:**
 ```bash
 curl -s https://pushpage.link/api/health
 ```
