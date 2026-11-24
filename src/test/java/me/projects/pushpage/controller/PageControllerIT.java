@@ -5,6 +5,7 @@ import me.projects.pushpage.TestUsers;
 import me.projects.pushpage.PostgresTestSupport;
 import me.projects.pushpage.filter.ApiKeyAuthFilter;
 import me.projects.pushpage.filter.RateLimitFilter;
+import me.projects.pushpage.service.RateLimitService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -57,11 +58,15 @@ class PageControllerIT extends PostgresTestSupport {
     @Autowired
     RateLimitFilter rateLimitFilter;
 
+    @Autowired
+    RateLimitService rateLimitService;
+
     MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).addFilters(apiKeyAuthFilter, rateLimitFilter).build();
+        rateLimitService.clearBuckets();
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
         TestUsers.insert(jdbc, TEST_USER_ID, null, true, TEST_API_KEY);

@@ -18,6 +18,9 @@ public class RateLimitService {
     @Value("${app.rate-limit.guest-requests-per-minute:5}")
     private int guestRequestsPerMinute;
 
+    @Value("${app.rate-limit.signup-requests-per-minute:5}")
+    private int signupRequestsPerMinute;
+
     private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     public ConsumptionProbe tryConsume(String key, int capacity) {
@@ -31,6 +34,10 @@ public class RateLimitService {
 
     public int getGuestRequestsPerMinute() {
         return guestRequestsPerMinute;
+    }
+
+    public int getSignupRequestsPerMinute() {
+        return signupRequestsPerMinute;
     }
 
     public void clearBuckets() {

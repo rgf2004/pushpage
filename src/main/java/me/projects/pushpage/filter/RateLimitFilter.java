@@ -21,7 +21,8 @@ import java.time.Instant;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String PUBLISH_PATH = "/pages";
-    private static final String PUBLISH_METHOD = "POST";
+    private static final String SIGNUP_PATH = "/auth/signup";
+    private static final String POST = "POST";
 
     private final AuthContext authContext;
     private final RateLimitService rateLimitService;
@@ -35,7 +36,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-        if (!isRateLimitedRequest(request)) {
+        String path = requestPath(request);
+        if (!POST.equalsIgnoreCase(request.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
+        if (path.equals(SIGNUP_PATH)) {
+            enforce(request, response, chain, "signup:ip:" + resolveClientIp(request),
+                    rateLimitService.getSignupRequestsPerMinute());
+            return;
+        }
+        if (!path.equals(PUBLISH_PATH)) {
             chain.doFilter(request, response);
             return;
         }
@@ -56,6 +67,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 ? rateLimitService.getGuestRequestsPerMinute()
                 : rateLimitService.getUserRequestsPerMinute();
 
+        enforce(request, response, chain, key, limit);
+    }
+
+    private void enforce(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
+                         String key, int limit) throws ServletException, IOException {
         ConsumptionProbe probe = rateLimitService.tryConsume(key, limit);
         long remaining = probe.getRemainingTokens();
         long resetEpoch = Instant.now().plusNanos(probe.getNanosToWaitForRefill()).getEpochSecond();
@@ -74,11 +90,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    private boolean isRateLimitedRequest(HttpServletRequest request) {
+    private String requestPath(HttpServletRequest request) {
         String contextPath = request.getContextPath();
         String uri = request.getRequestURI();
-        String path = uri.startsWith(contextPath) ? uri.substring(contextPath.length()) : uri;
-        return PUBLISH_METHOD.equalsIgnoreCase(request.getMethod()) && path.equals(PUBLISH_PATH);
+        return uri.startsWith(contextPath) ? uri.substring(contextPath.length()) : uri;
     }
 
     private void addRateLimitHeaders(HttpServletResponse response, long limit, long remaining, long resetEpoch) {

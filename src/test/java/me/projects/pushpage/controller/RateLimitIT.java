@@ -33,7 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "app.rate-limit.user-requests-per-minute=2",
-        "app.rate-limit.guest-requests-per-minute=1"
+        "app.rate-limit.guest-requests-per-minute=1",
+        "app.rate-limit.signup-requests-per-minute=2"
 })
 class RateLimitIT extends PostgresTestSupport {
 
@@ -183,5 +184,45 @@ class RateLimitIT extends PostgresTestSupport {
         mockMvc.perform(post("/pages").header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isTooManyRequests());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions signup(String email, String ip) throws Exception {
+        return mockMvc.perform(post("/auth/signup")
+                .header("X-Forwarded-For", ip)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\": \"" + email + "\", \"password\": \"securepass1\"}"));
+    }
+
+    @Test
+    void signup_exceedingLimit_returns429WithRetryAfter() throws Exception {
+        signup("rl-a1@example.com", "203.0.113.10").andExpect(status().isCreated());
+        signup("rl-a2@example.com", "203.0.113.10").andExpect(status().isCreated());
+
+        signup("rl-a3@example.com", "203.0.113.10")
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(header().string("X-RateLimit-Limit", "2"));
+    }
+
+    @Test
+    void signup_limitIsPerIp_otherIpIsUnaffected() throws Exception {
+        signup("rl-b1@example.com", "203.0.113.20").andExpect(status().isCreated());
+        signup("rl-b2@example.com", "203.0.113.20").andExpect(status().isCreated());
+        signup("rl-b3@example.com", "203.0.113.20").andExpect(status().isTooManyRequests());
+
+        signup("rl-b4@example.com", "203.0.113.21").andExpect(status().isCreated());
+    }
+
+    @Test
+    void signup_limitIsSeparateFromPublishLimit() throws Exception {
+        signup("rl-c1@example.com", "203.0.113.30").andExpect(status().isCreated());
+        signup("rl-c2@example.com", "203.0.113.30").andExpect(status().isCreated());
+        signup("rl-c3@example.com", "203.0.113.30").andExpect(status().isTooManyRequests());
+
+        // the same IP can still publish as a guest (publish bucket untouched)
+        mockMvc.perform(post("/pages").header("X-Forwarded-For", "203.0.113.30")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"html\": \"<h1>Hello</h1>\", \"title\": \"Test\"}"))
+                .andExpect(status().isOk());
     }
 }
