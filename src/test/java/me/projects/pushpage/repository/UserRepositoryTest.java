@@ -1,5 +1,7 @@
 package me.projects.pushpage.repository;
 
+import me.projects.pushpage.TestUsers;
+
 import me.projects.pushpage.PostgresTestSupport;
 import me.projects.pushpage.model.UserSummary;
 import org.flywaydb.core.Flyway;
@@ -93,10 +95,7 @@ class UserRepositoryTest {
     }
 
     void insertUser(String id, String email) {
-        jdbc.update(
-                "INSERT INTO users (id, email, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, ?, true, false)",
-                id, email, "hash-" + id, Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, id, email, false, null);
     }
 
     void insertPage(String id, String userId, Instant expiresAt) {

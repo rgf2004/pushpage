@@ -8,7 +8,7 @@ Most endpoints require authentication. Two credential types are accepted:
 
 | Method | Header | Notes |
 |--------|--------|-------|
-| API key | `X-Api-Key: pp_<key>` | Long-lived. Obtain via `POST /me/tokens`. |
+| API key | `X-Api-Key: pp_<key>` | Long-lived. Create named keys via `POST /me/keys` (needs a signed-in session). |
 | JWT Bearer | `Authorization: Bearer <jwt>` | Short-lived (24 h). Obtain via `POST /auth/login`. |
 
 Missing or invalid credentials return `401 Unauthorized`. Calling an admin endpoint without admin privileges returns `403 Forbidden`.
@@ -236,17 +236,50 @@ Delete a published page. Users may only delete their own pages; admins can delet
 
 ## User
 
-### POST /api/me/tokens
+### GET /api/me/keys
 
-Generate or rotate the caller's API key. The previous key is invalidated immediately. The raw key is returned once — store it securely.
+List the caller's API keys: name, key prefix, creation time and last-used time. Raw keys are never returned.
 
-**Auth:** any user (JWT or API key)
+**Auth:** JWT only. Requests authenticated with an API key get `403`, so a leaked key cannot manage keys.
 
 **Response `200`:**
 
 ```json
-{ "api_key": "pp_abc123..." }
+[
+  { "id": "a1b2c3d4", "name": "Claude Code on laptop", "key_prefix": "pp_ab12cd",
+    "created_at": "2026-11-20T10:00:00Z", "last_used_at": "2026-11-23T08:15:00Z" }
+]
 ```
+
+`last_used_at` is `null` for a key that has never been used, and is updated at most every few minutes.
+
+### POST /api/me/keys
+
+Create a named API key. The raw key is returned once — store it securely. Other keys are not affected.
+
+**Auth:** JWT only.
+
+**Request:**
+
+```json
+{ "name": "Claude Code on laptop" }
+```
+
+`name` is required and at most 60 characters (`400` otherwise). An account can hold at most `API_KEYS_MAX_PER_USER` keys (default 10); beyond that the response is `409`.
+
+**Response `201`:**
+
+```json
+{ "id": "a1b2c3d4", "name": "Claude Code on laptop", "api_key": "pp_abc123...", "key_prefix": "pp_abc123", "created_at": "2026-11-23T10:00:00Z" }
+```
+
+### DELETE /api/me/keys/{id}
+
+Revoke one of your keys. Anything using it stops working immediately; your other keys keep working.
+
+**Auth:** JWT only.
+
+**Response:** `204` on success, `404` if the key does not exist or belongs to someone else.
 
 ---
 

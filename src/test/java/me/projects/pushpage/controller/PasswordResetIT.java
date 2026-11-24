@@ -1,5 +1,7 @@
 package me.projects.pushpage.controller;
 
+import me.projects.pushpage.TestUsers;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import me.projects.pushpage.PostgresTestSupport;
 import me.projects.pushpage.filter.ApiKeyAuthFilter;
@@ -60,8 +62,7 @@ class PasswordResetIT extends PostgresTestSupport {
         jdbc.execute("DELETE FROM password_reset_tokens");
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
-        jdbc.update("INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, true)",
-                "pwadmin1", ApiKeyHasher.hash(ADMIN_KEY), Timestamp.from(Instant.now()));
+        TestUsers.insert(jdbc, "pwadmin1", null, true, ADMIN_KEY);
         mockMvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
                 .content(body(USER_EMAIL, OLD_PASSWORD))).andExpect(status().isCreated());
         userId = jdbc.queryForObject("SELECT id FROM users WHERE email = ?", String.class, USER_EMAIL);

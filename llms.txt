@@ -34,7 +34,7 @@ If the file is missing or empty, stop and tell the user:
 > ```bash
 > mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
 > ```
-> You can find your key in the pushpage dashboard under Account → Generate API Key, or in the startup logs of a self-hosted instance.
+> You can create a key in the pushpage dashboard under Account → API keys (give each agent its own named key), or find the "Bootstrap key" in the startup logs of a self-hosted instance.
 
 Pass the key in every authenticated request as `X-Api-Key: $PUSHPAGE_API_KEY`.
 
@@ -50,7 +50,7 @@ curl -s -X POST https://pushpage.link/api/auth/signup \
   -d '{"email": "user@example.com", "password": "choose-a-strong-password"}'
 ```
 
-Returns `201 No Content` on success. The user can then log in at `https://pushpage.link/dashboard` to generate an API key.
+Returns `201 No Content` on success. The user can then log in at `https://pushpage.link/dashboard` to create an API key (Account → API keys).
 
 ## Primary operation — publish HTML
 

@@ -2,12 +2,10 @@ package me.projects.pushpage.service;
 
 import me.projects.pushpage.model.LoginRequest;
 import me.projects.pushpage.model.LoginResponse;
-import me.projects.pushpage.model.RotateTokenResponse;
 import me.projects.pushpage.model.SignUpRequest;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.model.UserSummary;
 import me.projects.pushpage.repository.UserRepository;
-import me.projects.pushpage.util.ApiKeyHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -39,9 +37,12 @@ public class UserService implements ApplicationRunner {
     private final JwtService jwtService;
     private final UserLifecycleHooks lifecycleHooks;
     private final UserSummaryEnricher summaryEnricher;
+    private final ApiKeyService apiKeyService;
 
     public UserService(UserRepository userRepository, JwtService jwtService,
-                       UserLifecycleHooks lifecycleHooks, UserSummaryEnricher summaryEnricher) {
+                       UserLifecycleHooks lifecycleHooks, UserSummaryEnricher summaryEnricher,
+                       ApiKeyService apiKeyService) {
+        this.apiKeyService = apiKeyService;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.lifecycleHooks = lifecycleHooks;
@@ -53,11 +54,10 @@ public class UserService implements ApplicationRunner {
         if (userRepository.count() > 0) {
             return;
         }
-        String rawKey = generateRawKey();
         String rawPassword = generateRawPassword();
         String id = generateId();
-        userRepository.save(new User(id, ADMIN_EMAIL, ApiKeyHasher.hash(rawKey),
-                BCRYPT.encode(rawPassword), Instant.now(), true, true));
+        userRepository.save(new User(id, ADMIN_EMAIL, BCRYPT.encode(rawPassword), Instant.now(), true, true));
+        String rawKey = apiKeyService.createForBootstrap(id, "Bootstrap key");
         log.warn("==============================================================");
         log.warn("No users found — bootstrap admin created.");
         log.warn("Email    : {}", ADMIN_EMAIL);
@@ -78,9 +78,7 @@ public class UserService implements ApplicationRunner {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
         String id = generateId();
-        String rawKey = generateRawKey();
-        User user = new User(id, request.email().trim(),
-                ApiKeyHasher.hash(rawKey), BCRYPT.encode(request.password()),
+        User user = new User(id, request.email().trim(), BCRYPT.encode(request.password()),
                 Instant.now(), true, false);
         userRepository.save(user);
         lifecycleHooks.afterSignUp(user);
@@ -105,12 +103,6 @@ public class UserService implements ApplicationRunner {
         return new LoginResponse(jwtService.generateToken(user));
     }
 
-    public RotateTokenResponse rotateApiToken(User currentUser) {
-        String rawKey = generateRawKey();
-        userRepository.updateApiKeyHash(currentUser.id(), ApiKeyHasher.hash(rawKey));
-        return new RotateTokenResponse(rawKey);
-    }
-
     public List<UserSummary> listUsers() {
         return summaryEnricher.enrich(userRepository.findAll());
     }
@@ -129,10 +121,6 @@ public class UserService implements ApplicationRunner {
 
     private String generateId() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-    }
-
-    private String generateRawKey() {
-        return "pp_" + UUID.randomUUID().toString().replace("-", "");
     }
 
     private String generateRawPassword() {

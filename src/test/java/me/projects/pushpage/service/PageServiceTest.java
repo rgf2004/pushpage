@@ -32,8 +32,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PageServiceTest {
 
-    static final User ADMIN_USER = new User("admin1", null, "pp_key", null, Instant.now(), true, true);
-    static final User REGULAR_USER = new User("user1", null, "pp_key2", null, Instant.now(), true, false);
+    static final User ADMIN_USER = new User("admin1", null, null, Instant.now(), true, true);
+    static final User REGULAR_USER = new User("user1", null, null, Instant.now(), true, false);
 
     @Mock
     private PageRepository pageRepository;

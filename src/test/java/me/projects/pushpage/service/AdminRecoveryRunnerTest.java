@@ -36,7 +36,7 @@ class AdminRecoveryRunnerTest {
     }
 
     private static User user(String id, boolean admin) {
-        return new User(id, id + "@example.com", "k", "h", Instant.now(), true, admin);
+        return new User(id, id + "@example.com", "h", Instant.now(), true, admin);
     }
 
     @Test

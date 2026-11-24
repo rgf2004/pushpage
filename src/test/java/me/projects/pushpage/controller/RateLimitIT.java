@@ -1,5 +1,7 @@
 package me.projects.pushpage.controller;
 
+import me.projects.pushpage.TestUsers;
+
 import me.projects.pushpage.PostgresTestSupport;
 import me.projects.pushpage.filter.ApiKeyAuthFilter;
 import me.projects.pushpage.filter.RateLimitFilter;
@@ -71,14 +73,8 @@ class RateLimitIT extends PostgresTestSupport {
         rateLimitService.clearBuckets();
         jdbc.execute("DELETE FROM pages");
         jdbc.execute("DELETE FROM users");
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
-                TEST_USER_ID, ApiKeyHasher.hash(TEST_API_KEY), Timestamp.from(Instant.now())
-        );
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, true)",
-                ADMIN_USER_ID, ApiKeyHasher.hash(ADMIN_API_KEY), Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, TEST_USER_ID, null, false, TEST_API_KEY);
+        TestUsers.insert(jdbc, ADMIN_USER_ID, null, true, ADMIN_API_KEY);
     }
 
     @Test
@@ -117,10 +113,7 @@ class RateLimitIT extends PostgresTestSupport {
 
     @Test
     void publish_rateLimitScopedPerUser_differentUsersBucketedSeparately() throws Exception {
-        jdbc.update(
-                "INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES (?, ?, ?, true, false)",
-                "rl-other-user", ApiKeyHasher.hash("pp_rl-other-key"), Timestamp.from(Instant.now())
-        );
+        TestUsers.insert(jdbc, "rl-other-user", null, false, "pp_rl-other-key");
 
         String body = """
                 {"html": "<h1>Hello</h1>", "title": "Test"}

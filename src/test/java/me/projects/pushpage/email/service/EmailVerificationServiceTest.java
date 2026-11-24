@@ -39,7 +39,7 @@ class EmailVerificationServiceTest {
 
     private EmailVerificationService service;
 
-    private final User user = new User("id1", "alice@example.com", "pp_key", "hash", Instant.now(), true, false);
+    private final User user = new User("id1", "alice@example.com", "hash", Instant.now(), true, false);
 
     private EmailVerificationService newService() {
         return newService(1, 5);
@@ -101,7 +101,7 @@ class EmailVerificationServiceTest {
     @Test
     void sendVerificationEmail_rateLimitIsPerUser_doesNotAffectOtherUsers() {
         service = newService(1);
-        User otherUser = new User("id2", "bob@example.com", "pp_key2", "hash", Instant.now(), true, false);
+        User otherUser = new User("id2", "bob@example.com", "hash", Instant.now(), true, false);
 
         service.sendVerificationEmail(user);
         service.sendVerificationEmail(otherUser);

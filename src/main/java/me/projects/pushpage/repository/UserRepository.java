@@ -21,8 +21,8 @@ public class UserRepository {
 
     public void save(User user) {
         jdbc.update(
-                "INSERT INTO users (id, email, api_key_hash, password_hash, created_at, active, admin) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                user.id(), user.email(), user.apiKeyHash(), user.passwordHash(),
+                "INSERT INTO users (id, email, password_hash, created_at, active, admin) VALUES (?, ?, ?, ?, ?, ?)",
+                user.id(), user.email(), user.passwordHash(),
                 Timestamp.from(user.createdAt()),
                 user.active(),
                 user.admin()
@@ -30,7 +30,8 @@ public class UserRepository {
     }
 
     public Optional<User> findByApiKeyHash(String apiKeyHash) {
-        return queryForUser("SELECT * FROM users WHERE api_key_hash = ?", apiKeyHash);
+        return queryForUser(
+                "SELECT u.* FROM users u JOIN api_keys k ON k.user_id = u.id WHERE k.key_hash = ?", apiKeyHash);
     }
 
     public Optional<User> findById(String id) {
@@ -74,10 +75,6 @@ public class UserRepository {
         return rows > 0;
     }
 
-    public void updateApiKeyHash(String userId, String newHash) {
-        jdbc.update("UPDATE users SET api_key_hash = ? WHERE id = ?", newHash, userId);
-    }
-
     /** Sets a new password hash and stamps {@code password_changed_at}, invalidating older JWTs. */
     public void updatePassword(String userId, String passwordHash, Instant changedAt) {
         jdbc.update("UPDATE users SET password_hash = ?, password_changed_at = ? WHERE id = ?",
@@ -94,7 +91,6 @@ public class UserRepository {
                 (rs, i) -> new User(
                         rs.getString("id"),
                         rs.getString("email"),
-                        rs.getString("api_key_hash"),
                         rs.getString("password_hash"),
                         rs.getTimestamp("created_at").toInstant(),
                         rs.getBoolean("active"),

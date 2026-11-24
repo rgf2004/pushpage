@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import me.projects.pushpage.config.AuthContext;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.UserRepository;
+import me.projects.pushpage.service.ApiKeyService;
 import me.projects.pushpage.service.JwtService;
 import me.projects.pushpage.util.ApiKeyHasher;
 import org.springframework.core.annotation.Order;
@@ -25,13 +26,17 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             "/health", "/config", "/swagger-ui", "/v3/api-docs", "/api-docs", "/auth/"
     );
     private static final String ADMIN_PATH_PREFIX = "/admin";
+    private static final String KEY_MANAGEMENT_PATH_PREFIX = "/me/keys";
     private static final Set<String> GUEST_ALLOWED = Set.of("POST /pages");
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final AuthContext authContext;
+    private final ApiKeyService apiKeyService;
 
-    public ApiKeyAuthFilter(UserRepository userRepository, JwtService jwtService, AuthContext authContext) {
+    public ApiKeyAuthFilter(UserRepository userRepository, JwtService jwtService, AuthContext authContext,
+                            ApiKeyService apiKeyService) {
+        this.apiKeyService = apiKeyService;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.authContext = authContext;
@@ -65,8 +70,10 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         }
 
         Optional<User> user;
+        String apiKeyHash = null;
         if (apiKey != null) {
-            user = userRepository.findByApiKeyHash(ApiKeyHasher.hash(apiKey));
+            apiKeyHash = ApiKeyHasher.hash(apiKey);
+            user = userRepository.findByApiKeyHash(apiKeyHash);
         } else {
             user = jwtService.parseToken(jwt).flatMap(claims ->
                     userRepository.findById(claims.userId()).filter(claims::matchesCurrentPassword));
@@ -75,6 +82,16 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         if (user.isEmpty() || !user.get().active()) {
             sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired credentials");
             return;
+        }
+
+        if (apiKeyHash != null && path.startsWith(KEY_MANAGEMENT_PATH_PREFIX)) {
+            // A leaked key must not be able to mint replacement keys: key management needs a signed-in session.
+            sendError(response, HttpServletResponse.SC_FORBIDDEN,
+                    "API keys can only be managed from a signed-in session (the dashboard), not with an API key");
+            return;
+        }
+        if (apiKeyHash != null) {
+            apiKeyService.recordUse(apiKeyHash);
         }
 
         authContext.setCurrentUser(user.get());

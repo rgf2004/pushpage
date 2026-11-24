@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class RetentionServiceTest {
 
-    static final User USER = new User("user1", "user@example.com", "pp_key", "hash", Instant.now(), true, false);
+    static final User USER = new User("user1", "user@example.com", "hash", Instant.now(), true, false);
 
     @Mock
     PlanRepository planRepository;

@@ -24,7 +24,7 @@ class EmailVerificationHooksTest {
     @InjectMocks
     private EmailVerificationHooks hooks;
 
-    private final User user = new User("id1", "alice@example.com", "pp_key", "hash", Instant.now(), true, false);
+    private final User user = new User("id1", "alice@example.com", "hash", Instant.now(), true, false);
 
     @Test
     void afterSignUp_sendsVerificationEmail() {

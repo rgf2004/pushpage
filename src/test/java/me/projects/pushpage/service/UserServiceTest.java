@@ -42,6 +42,9 @@ class UserServiceTest {
     @Mock
     private UserSummaryEnricher summaryEnricher;
 
+    @Mock
+    private ApiKeyService apiKeyService;
+
     @InjectMocks
     private UserService userService;
 
@@ -90,7 +93,7 @@ class UserServiceTest {
 
     @Test
     void signUp_withDuplicateEmail_throwsConflict() {
-        User existing = new User("id1", "alice@example.com", "pp_key", "hash", Instant.now(), true, false);
+        User existing = new User("id1", "alice@example.com", "hash", Instant.now(), true, false);
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> userService.signUp(new SignUpRequest("alice@example.com", "securepass")))
@@ -123,6 +126,15 @@ class UserServiceTest {
     }
 
     @Test
+    void signUp_doesNotCreateAnApiKey() {
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+
+        userService.signUp(new SignUpRequest("dave@example.com", "securepass"));
+
+        verifyNoInteractions(apiKeyService);
+    }
+
+    @Test
     void signUp_withInvalidEmail_doesNotInvokeAfterSignUpHook() {
         assertThatThrownBy(() -> userService.signUp(new SignUpRequest("not-an-email", "securepass")))
                 .isInstanceOf(ResponseStatusException.class);
@@ -134,7 +146,7 @@ class UserServiceTest {
     @Test
     void login_withValidCredentials_returnsJwt() {
         String hash = BCRYPT.encode("correctpass");
-        User user = new User("id1", "alice@example.com", "pp_key", hash, Instant.now(), true, false);
+        User user = new User("id1", "alice@example.com", hash, Instant.now(), true, false);
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
         when(jwtService.generateToken(user)).thenReturn("jwt-token");
 
@@ -147,7 +159,7 @@ class UserServiceTest {
     @Test
     void login_whenBeforeLoginHookThrows_propagatesAndSkipsJwtGeneration() {
         String hash = BCRYPT.encode("correctpass");
-        User user = new User("id1", "alice@example.com", "pp_key", hash, Instant.now(), true, false);
+        User user = new User("id1", "alice@example.com", hash, Instant.now(), true, false);
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
         doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Please verify your email"))
                 .when(lifecycleHooks).beforeLogin(user);
@@ -162,7 +174,7 @@ class UserServiceTest {
     @Test
     void login_withWrongPassword_throwsUnauthorized() {
         String hash = BCRYPT.encode("correctpass");
-        User user = new User("id1", "alice@example.com", "pp_key", hash, Instant.now(), true, false);
+        User user = new User("id1", "alice@example.com", hash, Instant.now(), true, false);
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.login(new LoginRequest("alice@example.com", "wrongpass")))
@@ -184,7 +196,7 @@ class UserServiceTest {
     @Test
     void login_withInactiveUser_throwsUnauthorizedWithDeactivatedMessage() {
         String hash = BCRYPT.encode("pass");
-        User user = new User("id1", "alice@example.com", "pp_key", hash, Instant.now(), false, false);
+        User user = new User("id1", "alice@example.com", hash, Instant.now(), false, false);
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.login(new LoginRequest("alice@example.com", "pass")))
@@ -197,7 +209,7 @@ class UserServiceTest {
 
     @Test
     void login_withUserHavingNoPasswordHash_throwsUnauthorized() {
-        User user = new User("id1", "legacy@example.com", "pp_key", null, Instant.now(), true, false);
+        User user = new User("id1", "legacy@example.com", null, Instant.now(), true, false);
         when(userRepository.findByEmail("legacy@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.login(new LoginRequest("legacy@example.com", "anypass")))

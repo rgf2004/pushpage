@@ -15,10 +15,10 @@ class JwtServiceTest {
     private JwtService jwtService;
 
     private static final User USER = new User(
-            "abc12345", "alice@example.com", "pp_key", null, Instant.now(), true, false
+            "abc12345", "alice@example.com", null, Instant.now(), true, false
     );
     private static final User ADMIN = new User(
-            "def67890", "admin@pushpage.link", "pp_adminkey", null, Instant.now(), true, true
+            "def67890", "admin@pushpage.link", null, Instant.now(), true, true
     );
 
     @BeforeEach
@@ -81,7 +81,7 @@ class JwtServiceTest {
 
     @Test
     void parseToken_carriesPasswordVersionOfTheUserItWasIssuedFor() {
-        User changed = new User(USER.id(), USER.email(), USER.apiKeyHash(), USER.passwordHash(), USER.createdAt(),
+        User changed = new User(USER.id(), USER.email(), USER.passwordHash(), USER.createdAt(),
                 true, false, java.time.Instant.parse("2026-10-28T10:00:00.123Z"));
 
         assertThat(jwtService.parseToken(jwtService.generateToken(USER)).orElseThrow().passwordVersion()).isZero();

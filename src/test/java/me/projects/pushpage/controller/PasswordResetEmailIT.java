@@ -132,7 +132,7 @@ class PasswordResetEmailIT extends PostgresTestSupport {
 
     @Test
     void adminIssuedLink_doesNotMarkTheEmailVerified() throws Exception {
-        jdbc.update("INSERT INTO users (id, api_key_hash, created_at, active, admin) VALUES ('adm00001', 'h', now(), true, true)");
+        jdbc.update("INSERT INTO users (id, created_at, active, admin) VALUES ('adm00001', now(), true, true)");
         String userId = jdbc.queryForObject("SELECT id FROM users WHERE email = ?", String.class, EMAIL);
         // an admin-delivered token proves nothing about the mailbox
         var issued = wac.getBean(me.projects.pushpage.service.PasswordResetService.class)

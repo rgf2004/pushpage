@@ -127,7 +127,7 @@ export PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials)
 - **`mcp-remote`**: put `"env": { "PUSHPAGE_API_KEY": "pp_..." }` next to `args` and use `"--header", "X-Api-Key:${PUSHPAGE_API_KEY}"`.
 - **Claude Desktop** does not expand variables in `headers`; the key must be written into `claude_desktop_config.json` (or use `mcp-remote` above). Keep that file private and never commit it.
 
-Keys are shown only once. Rotating a key in the dashboard invalidates the old one, so update the file after rotating.
+Keys are shown only once, when you create them. Create a separate key for each agent or tool in the dashboard's Account tab, so you can revoke one without affecting the others.
 
 ### Cursor / other clients
 

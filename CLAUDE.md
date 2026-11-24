@@ -129,6 +129,7 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
 | `RATE_LIMIT_USER_RPM` | Max publish requests per minute for authenticated users. Admin users are exempt. | `10` |
 | `RATE_LIMIT_GUEST_RPM` | Max publish requests per minute per IP for unauthenticated (guest) requests. | `5` |
+| `API_KEYS_MAX_PER_USER` | Max named API keys an account can hold. | `10` |
 | `TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of reverse proxies or tunnels in front of nginx whose forwarded client IP nginx should trust. Empty = off. | — |
 | `REAL_IP_HEADER` | Header carrying the client IP when `TRUSTED_PROXIES` is set (`CF-Connecting-IP` for Cloudflare). | `X-Forwarded-For` |
 | `JWT_SECRET` | **Required.** Secret for signing JWTs (HS256, min 32 chars). App fails fast at startup if missing. | — |
@@ -161,9 +162,9 @@ Two credential types are accepted:
 | API key | `X-Api-Key: pp_<key>` |
 | JWT Bearer | `Authorization: Bearer <jwt>` |
 
-JWTs are issued by `POST /api/auth/login` and are valid for 24 h. They carry a `pwd_v` claim (the user's `password_changed_at`), so a password reset invalidates every earlier JWT; API keys are unaffected. API keys are obtained via `POST /api/me/tokens` and are long-lived.
+JWTs are issued by `POST /api/auth/login` and are valid for 24 h. They carry a `pwd_v` claim (the user's `password_changed_at`), so a password reset invalidates every earlier JWT; API keys are unaffected. An account has any number of named API keys (up to `API_KEYS_MAX_PER_USER`), created with `POST /api/me/keys` and revoked individually; they are long-lived. Key management (`/api/me/keys`) requires a JWT session: `ApiKeyAuthFilter` answers `403` when it is attempted with an API key, so a leaked key cannot mint replacements. Keys live in the `api_keys` table (SHA-256 hash, `key_prefix`, `last_used_at` written at most every 5 minutes per key); sign-up no longer creates a key.
 
-On first run, if no users exist the service auto-creates an `admin@pushpage.link` account with a random alphanumeric password **and** a random API key, logs both prominently, and never shows them again. API keys are stored as SHA-256 hashes; passwords as BCrypt hashes.
+On first run, if no users exist the service auto-creates an `admin@pushpage.link` account with a random alphanumeric password **and** a random API key, logs both prominently (the key is named "Bootstrap key"), and never shows them again. API keys are stored as SHA-256 hashes; passwords as BCrypt hashes.
 
 **MCP guest mode.** The MCP server (`mcp/pushpage_mcp/server.py`) does not require a key. Without one it calls `POST /api/pages` as a guest (the wrapper omits `X-Api-Key` entirely, because the API rejects an empty value, and forwards the real client IP from nginx's `X-Real-IP` so the per-IP guest limit is per client, not per MCP container). Guest `publish_page` results carry `guest_mode`, `message` and `signup_url` (built from `PUSHPAGE_PUBLIC_URL`, set from `APP_SERVER_URL` in the compose files); guest `list_pages` / `delete_page` return a "Sign in required" result without calling the API. A key that is present but invalid still fails with `401`, never downgraded to guest.
 
@@ -180,7 +181,9 @@ All endpoints are under `/api` (Spring Boot context path).
 | `POST` | `/api/pages` | Optional | Publish HTML → `{ url, id, expires_at }`. Accepts `application/json` (`{ html, title? }`) or `multipart/form-data` (`file=@report.html`). Guest pages expire in 30 min. Authenticated pages expire per `RetentionPolicy` (default `CLEANUP_RETENTION_DAYS`). |
 | `GET` | `/api/pages` | User | List pages scoped to caller (admin sees all). |
 | `DELETE` | `/api/pages/{id}` | User | Delete own page (admin can delete any). |
-| `POST` | `/api/me/tokens` | User | Generate / rotate API key → `{ api_key }`. Previous key is invalidated. |
+| `GET` | `/api/me/keys` | User (JWT) | List your API keys: `id`, `name`, `key_prefix`, `created_at`, `last_used_at` (never the raw key). |
+| `POST` | `/api/me/keys` | User (JWT) | Create a named API key (`{ name }`, ≤60 chars) → `201 { id, name, api_key, key_prefix, created_at }`; raw key returned once. Other keys are unaffected. Max `API_KEYS_MAX_PER_USER` (409 beyond). |
+| `DELETE` | `/api/me/keys/{id}` | User (JWT) | Revoke one key (404 if not yours). |
 | `GET` | `/api/health` | None | Health check. |
 | `GET` | `/api/config` | None | Public frontend config: `{ features: { plans, email } }`. Add new frontend-visible settings in `ClientConfigService`. |
 | `GET` | `/api/admin/users` | Admin | List all users. |
@@ -209,7 +212,7 @@ A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.h
 
 **Tabs:**
 - **Pages** — lists the caller's pages, with delete and pagination
-- **Account** — displays email, role; Generate / Rotate API Key button (shows key once); plan badge + quota progress bar (`PLANS_ENABLED` only — hidden otherwise); **Connect your AI agent (MCP)** section with copyable setup commands for Claude Code, Cursor, Claude Desktop (`mcp-remote`) and the local `uvx pushpage-mcp` server. They are built in the browser (`mcpSnippet()` in `dashboard.html`) with the key generated in this session filled in (kept only in memory, cleared on sign-out/reload), show a `pp_your_key_here` placeholder before that, use `location.origin` for the endpoint (self-hosted instances also get `PUSHPAGE_URL` / `PUSHPAGE_PUBLIC_URL` in the local command), and include a no-key guest-mode command
+- **Account** — displays email, role; **API keys** list (name, key prefix, created, last used, Revoke with confirmation) and a create form (a required name; the raw key is shown once); plan badge + quota progress bar (`PLANS_ENABLED` only — hidden otherwise); **Connect your AI agent (MCP)** section with copyable setup commands for Claude Code, Cursor, Claude Desktop (`mcp-remote`) and the local `uvx pushpage-mcp` server. They are built in the browser (`mcpSnippet()` in `dashboard.html`) with the key created in this session filled in (kept only in memory, cleared on sign-out/reload), show a `pp_your_key_here` placeholder before that, use `location.origin` for the endpoint (self-hosted instances also get `PUSHPAGE_URL` / `PUSHPAGE_PUBLIC_URL` in the local command), and include a no-key guest-mode command
 - **Users** (admin only) — lists all users; Promote and Deactivate actions; plan column (`PLANS_ENABLED`), verified column and Verify button (`EMAIL_ENABLED`), and a Reset password button that shows a one-time link to hand to the user
 
 ## Subscription plans (`PLANS_ENABLED`)

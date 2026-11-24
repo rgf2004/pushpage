@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EmailVerificationAdminControllerTest {
 
-    static final User USER = new User("u1", "u@example.com", "k", "h", Instant.now(), true, false);
+    static final User USER = new User("u1", "u@example.com", "h", Instant.now(), true, false);
 
     @Mock EmailVerificationService verificationService;
     @Mock UserRepository userRepository;

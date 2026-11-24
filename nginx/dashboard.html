@@ -392,6 +392,36 @@
             box-shadow: 0 0 0 3px rgba(37,99,235,.08);
         }
 
+        /* ── API key list (Account tab) ──────────────────────────────── */
+        .key-list { margin-bottom: 12px; }
+        .key-row {
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 14px;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 10px 14px;
+        }
+        .key-row-main { min-width: 0; }
+        .key-row-name { font-size: .88rem; font-weight: 600; word-break: break-word; }
+        .key-row-meta { color: var(--text-muted); font-size: .76rem; }
+        .key-row-meta code { font-family: var(--font-mono); }
+        .key-empty { color: var(--text-muted); font-size: .82rem; margin-bottom: 4px; }
+        .key-create-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .key-create-row input {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            flex: 1 1 220px;
+            font-size: .85rem;
+            padding: 6px 10px;
+        }
+
         /* ── MCP setup (Account tab) ─────────────────────────────────── */
         .mcp-setup {
             background: var(--bg-input);
@@ -752,22 +782,27 @@
             </div>
 
             <div class="api-key-section">
-                <h3>API Key</h3>
-                <p>Generate an API key for programmatic access. Rotating it invalidates the previous key immediately.</p>
+                <h3>API keys</h3>
+                <p>Give each agent or tool its own key. Creating a key never affects your other keys, and you can revoke one key without touching the rest. A key is shown only once, when you create it.</p>
                 <div id="acc-key-box" style="display:none">
-                    <div class="key-reveal-label">Your API key — copy it now</div>
+                    <div class="key-reveal-label">Your new API key — copy it now</div>
                     <div class="api-key-revealed" id="acc-key-value"></div>
                     <button class="btn btn-secondary btn-sm" id="acc-copy-key-btn">Copy key</button>
                     <p style="margin-top:10px;font-size:.82rem;color:var(--text-muted)">
-                        This key will not appear again. Generating a new key will invalidate this one.
+                        This key will not appear again. You can always create another one.
                     </p>
                 </div>
-                <button class="btn btn-secondary btn-sm" id="rotate-key-btn" style="margin-top:4px">Generate / Rotate API Key</button>
+                <div id="api-keys-list" class="key-list" aria-live="polite"></div>
+                <form class="key-create-row" id="create-key-form">
+                    <input type="text" id="new-key-name" maxlength="60" required autocomplete="off"
+                           placeholder="Name, e.g. Claude Code on my laptop" aria-label="Name for the new API key">
+                    <button class="btn btn-primary btn-sm" id="create-key-btn" type="submit">Create API key</button>
+                </form>
             </div>
 
             <div class="mcp-setup" id="mcp-setup">
                 <h3>Connect your AI agent (MCP)</h3>
-                <p id="mcp-status" class="mcp-status">Generate an API key above and these commands fill in with it automatically.</p>
+                <p id="mcp-status" class="mcp-status">Create an API key above and these commands fill in with it automatically.</p>
                 <div class="mcp-clients" id="mcp-clients" role="tablist" aria-label="MCP client">
                     <button type="button" class="mcp-client-btn active" data-client="claude-code">Claude Code</button>
                     <button type="button" class="mcp-client-btn" data-client="cursor">Cursor</button>
@@ -831,6 +866,19 @@
         <div class="modal-actions">
             <button class="btn btn-secondary" id="confirm-cancel">Cancel</button>
             <button class="btn btn-danger" id="confirm-delete">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm revoke API key -->
+<div class="modal-overlay" id="revoke-key-modal" style="display:none">
+    <div class="modal">
+        <h3>Revoke API key?</h3>
+        <p class="confirm-msg">Anything using this key stops working immediately. Your other keys are not affected:</p>
+        <p class="confirm-name" id="revoke-key-name"></p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="revoke-key-cancel">Cancel</button>
+            <button class="btn btn-danger" id="revoke-key-confirm">Revoke</button>
         </div>
     </div>
 </div>
@@ -1206,6 +1254,7 @@ async function loadDashboard() {
     document.getElementById('acc-key-box').style.display = 'none';
     mcpKey = null;
     renderMcpSetup();
+    loadApiKeys();
     const roleEl = document.getElementById('acc-role');
     roleEl.textContent = isAdmin ? 'admin' : 'user';
     roleEl.className = 'role-badge' + (isAdmin ? ' admin' : '');
@@ -1245,7 +1294,7 @@ async function loadDashboard() {
 
 // ── Logout ───────────────────────────────────────────────────────────────
 document.getElementById('logout-btn').addEventListener('click', () => {
-    ['confirm-modal', 'deactivate-modal', 'promote-modal', 'reset-link-modal'].forEach(hideModal);
+    ['confirm-modal', 'deactivate-modal', 'promote-modal', 'reset-link-modal', 'revoke-key-modal'].forEach(hideModal);
     document.getElementById('reset-link-value').textContent = '';
     mcpKey = null;
     renderMcpSetup();
@@ -1366,17 +1415,92 @@ document.getElementById('confirm-delete').addEventListener('click', async () => 
     }
 });
 
-// ── Account tab — API key rotation ────────────────────────────────────────
-document.getElementById('rotate-key-btn').addEventListener('click', async () => {
+// ── Account tab — API keys ────────────────────────────────────────────────
+let pendingRevokeKey = null;
+
+function fmtLastUsed(iso) {
+    if (!iso) return 'never used';
+    const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (mins < 5) return 'used just now';
+    if (mins < 60) return 'used ' + mins + ' min ago';
+    if (mins < 1440) return 'used ' + Math.round(mins / 60) + ' h ago';
+    return 'used ' + fmtDate(iso);
+}
+
+async function loadApiKeys() {
+    const list = document.getElementById('api-keys-list');
     try {
-        const r = await api('/me/tokens', { method: 'POST' });
-        if (!r.ok) { toast('Failed to generate API key.', 'error'); return; }
+        const r = await api('/me/keys');
+        if (!r.ok) { list.innerHTML = '<div class="key-empty">Could not load your API keys.</div>'; return; }
+        const keys = await r.json();
+        if (!keys.length) {
+            list.innerHTML = '<div class="key-empty">You have no API keys yet. Create one below.</div>';
+            return;
+        }
+        list.innerHTML = keys.map(k => `
+            <div class="key-row" id="key-row-${esc(k.id)}">
+                <div class="key-row-main">
+                    <div class="key-row-name">${esc(k.name)}</div>
+                    <div class="key-row-meta"><code>${esc(k.key_prefix)}…</code> · created ${fmtDate(k.created_at)} · ${esc(fmtLastUsed(k.last_used_at))}</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" data-revoke-id="${esc(k.id)}" data-revoke-name="${esc(k.name)}">Revoke</button>
+            </div>`).join('');
+    } catch {
+        list.innerHTML = '<div class="key-empty">Network error loading your API keys.</div>';
+    }
+}
+
+document.getElementById('create-key-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('new-key-name');
+    const name = input.value.trim();
+    if (!name) return;
+    const btn = document.getElementById('create-key-btn');
+    btn.disabled = true;
+    try {
+        const r = await api('/me/keys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        if (!r.ok) {
+            const d = await r.json().catch(() => ({}));
+            toast(d.message || 'Failed to create API key.', 'error');
+            return;
+        }
         const data = await r.json();
         document.getElementById('acc-key-value').textContent = data.api_key;
         document.getElementById('acc-key-box').style.display = 'block';
         mcpKey = data.api_key;
         renderMcpSetup();
-        toast('New API key generated.');
+        input.value = '';
+        toast('API key created.');
+        loadApiKeys();
+    } catch {
+        toast('Network error.', 'error');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('api-keys-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-revoke-id]');
+    if (!btn) return;
+    pendingRevokeKey = btn.dataset.revokeId;
+    document.getElementById('revoke-key-name').textContent = btn.dataset.revokeName;
+    showModal('revoke-key-modal');
+});
+
+document.getElementById('revoke-key-cancel').addEventListener('click', () => hideModal('revoke-key-modal'));
+
+document.getElementById('revoke-key-confirm').addEventListener('click', async () => {
+    const id = pendingRevokeKey;
+    hideModal('revoke-key-modal');
+    if (!id) return;
+    try {
+        const r = await api('/me/keys/' + encodeURIComponent(id), { method: 'DELETE' });
+        if (r.ok) { toast('API key revoked.'); loadApiKeys(); }
+        else toast('Failed to revoke API key.', 'error');
     } catch {
         toast('Network error.', 'error');
     }
@@ -1428,7 +1552,7 @@ function renderMcpSetup() {
     const status = document.getElementById('mcp-status');
     status.textContent = mcpKey
         ? 'Your new API key is filled in below. Copy the command now: the key is shown only once and these snippets disappear when you leave this page.'
-        : 'Generate an API key above and these commands fill in with it automatically. Until then they show a placeholder.';
+        : 'Create an API key above and these commands fill in with it automatically. Until then they show a placeholder.';
     status.classList.toggle('ready', !!mcpKey);
     document.getElementById('mcp-guest-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_URL;
     document.querySelectorAll('.mcp-client-btn').forEach(b => b.classList.toggle('active', b.dataset.client === mcpClient));
@@ -1608,7 +1732,7 @@ document.getElementById('deactivate-confirm').addEventListener('click', async ()
 });
 
 // ── Close modals on overlay click ─────────────────────────────────────────
-['confirm-modal', 'deactivate-modal', 'promote-modal'].forEach(id => {
+['confirm-modal', 'deactivate-modal', 'promote-modal', 'revoke-key-modal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => {
         if (e.target === e.currentTarget) hideModal(id);
     });
