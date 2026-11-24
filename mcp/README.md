@@ -1,5 +1,8 @@
 # pushpage MCP server
 
+[![rgf2004/pushpage MCP server](https://glama.ai/mcp/servers/rgf2004/pushpage/badges/score.svg)](https://glama.ai/mcp/servers/rgf2004/pushpage)
+[![mcptry](https://mcptry.com/badge/io.github.rgf2004/pushpage)](https://mcptry.com/servers/io.github.rgf2004/pushpage)
+
 MCP server for [pushpage](https://pushpage.link), an HTML publishing service for AI agents. An agent sends HTML and gets a shareable URL back, instead of pasting long output into chat.
 
 <!-- mcp-name: io.github.rgf2004/pushpage -->
