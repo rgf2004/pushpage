@@ -287,11 +287,19 @@ Revoke one of your keys. Anything using it stops working immediately; your other
 
 ### GET /api/health
 
-Health check endpoint. Returns runtime statistics and storage info. Stats are cached for 30 seconds.
+Public health check: reports whether the service is up.
 
 **Auth:** none (public)
 
-Returns `200` when healthy, `503` when a critical subsystem is unavailable.
+Returns `200` with `{ "status": "UP" }` when healthy, `503` with `{ "status": "DOWN" }` when the database or storage check fails.
+
+### GET /api/admin/health
+
+Full runtime statistics and storage info. Stats are cached for 30 seconds. The dashboard's Users tab shows this as the **Service health** card.
+
+**Auth:** admin (`401` without credentials, `403` for non-admins)
+
+Returns `200` when healthy, `503` (same body shape, `status: "DOWN"`) otherwise.
 
 **Response:**
 

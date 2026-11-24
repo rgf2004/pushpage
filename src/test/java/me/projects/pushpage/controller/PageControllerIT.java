@@ -229,9 +229,25 @@ class PageControllerIT extends PostgresTestSupport {
     }
 
     @Test
-    void health_returnsRequiredFields() throws Exception {
+    void health_isPublicAndReturnsOnlyTheStatus() throws Exception {
         mockMvc.perform(get("/health"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$.version").doesNotExist())
+                .andExpect(jsonPath("$.uptimeSeconds").doesNotExist())
+                .andExpect(jsonPath("$.livePages").doesNotExist())
+                .andExpect(jsonPath("$.deletedPages").doesNotExist())
+                .andExpect(jsonPath("$.oldestPage").doesNotExist())
+                .andExpect(jsonPath("$.newestPage").doesNotExist())
+                .andExpect(jsonPath("$.storage").doesNotExist());
+    }
+
+    @Test
+    void adminHealth_withAdminKey_returnsTheFullPayload() throws Exception {
+        mockMvc.perform(get("/admin/health").header("X-Api-Key", TEST_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
                 .andExpect(jsonPath("$.version").exists())
                 .andExpect(jsonPath("$.uptimeSeconds").isNumber())
                 .andExpect(jsonPath("$.livePages").isNumber())
@@ -243,7 +259,7 @@ class PageControllerIT extends PostgresTestSupport {
     }
 
     @Test
-    void health_withPages_returnsOldestAndNewestTimestamps() throws Exception {
+    void adminHealth_withPages_returnsOldestAndNewestTimestamps() throws Exception {
         mockMvc.perform(post("/pages")
                         .header("X-Api-Key", TEST_API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -252,18 +268,31 @@ class PageControllerIT extends PostgresTestSupport {
                                 """))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/health"))
+        mockMvc.perform(get("/admin/health").header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.oldestPage").exists())
                 .andExpect(jsonPath("$.newestPage").exists());
     }
 
     @Test
-    void health_withNoPages_omitsPageTimestamps() throws Exception {
-        mockMvc.perform(get("/health"))
+    void adminHealth_withNoPages_omitsPageTimestamps() throws Exception {
+        mockMvc.perform(get("/admin/health").header("X-Api-Key", TEST_API_KEY))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.oldestPage").doesNotExist())
                 .andExpect(jsonPath("$.newestPage").doesNotExist());
+    }
+
+    @Test
+    void adminHealth_withRegularUserKey_returns403() throws Exception {
+        TestUsers.insert(jdbc, "healthreg1", null, false, "pp_health-regular-key");
+
+        mockMvc.perform(get("/admin/health").header("X-Api-Key", "pp_health-regular-key"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminHealth_withoutCredentials_returns401() throws Exception {
+        mockMvc.perform(get("/admin/health")).andExpect(status().isUnauthorized());
     }
 
     @Test

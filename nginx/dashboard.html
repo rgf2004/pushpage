@@ -826,6 +826,24 @@
     <div class="tab-panel" id="tab-admin">
       <div class="dash-inner">
         <div class="panel-header">
+            <h2>Service health</h2>
+        </div>
+        <div class="card" id="health-card" style="margin-bottom:28px">
+            <div id="health-loading" class="loading-state">Loading…</div>
+            <div id="health-error" style="display:none;color:var(--danger,#c0392b)"></div>
+            <div class="info-grid" id="health-grid" style="display:none;margin-bottom:0">
+                <div class="info-row"><span class="info-label">Status</span><span class="info-value" id="h-status">—</span></div>
+                <div class="info-row"><span class="info-label">Version</span><span class="info-value" id="h-version">—</span></div>
+                <div class="info-row"><span class="info-label">Uptime</span><span class="info-value" id="h-uptime">—</span></div>
+                <div class="info-row"><span class="info-label">Live pages</span><span class="info-value" id="h-live">—</span></div>
+                <div class="info-row"><span class="info-label">Deleted pages</span><span class="info-value" id="h-deleted">—</span></div>
+                <div class="info-row"><span class="info-label">Oldest page</span><span class="info-value" id="h-oldest">—</span></div>
+                <div class="info-row"><span class="info-label">Newest page</span><span class="info-value" id="h-newest">—</span></div>
+                <div class="info-row"><span class="info-label">Storage used</span><span class="info-value" id="h-used">—</span></div>
+                <div class="info-row"><span class="info-label">Storage free</span><span class="info-value" id="h-free">—</span></div>
+            </div>
+        </div>
+        <div class="panel-header">
             <h2>Users</h2>
         </div>
         <div id="users-loading" class="loading-state">Loading…</div>
@@ -1319,7 +1337,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
-    if (name === 'admin') loadUsers();
+    if (name === 'admin') { loadHealth(); loadUsers(); }
 }
 
 // ── Pages tab ─────────────────────────────────────────────────────────────
@@ -1575,6 +1593,40 @@ document.getElementById('mcp-guest-copy-btn').addEventListener('click', () => {
 renderMcpSetup();
 
 // ── Admin → Users tab ─────────────────────────────────────────────────────
+function fmtUptime(sec) {
+    const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+    return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m ${sec % 60}s`;
+}
+
+async function loadHealth() {
+    const loading = document.getElementById('health-loading');
+    const err = document.getElementById('health-error');
+    const grid = document.getElementById('health-grid');
+    loading.style.display = 'block'; err.style.display = 'none'; grid.style.display = 'none';
+    try {
+        // 503 still carries a body (status DOWN), so only 401/403 and network errors are failures here.
+        const r = await api('/admin/health');
+        if (r.status === 401 || r.status === 403) throw new Error('not allowed');
+        const h = await r.json();
+        const set = (id, v) => { document.getElementById(id).textContent = v; };
+        set('h-status', h.status === 'UP' ? '● UP' : '● DOWN');
+        document.getElementById('h-status').style.color = h.status === 'UP' ? 'var(--success,#1e8e3e)' : 'var(--danger,#c0392b)';
+        set('h-version', h.version || '—');
+        set('h-uptime', fmtUptime(h.uptimeSeconds));
+        set('h-live', h.livePages);
+        set('h-deleted', h.deletedPages);
+        set('h-oldest', h.oldestPage ? fmtDate(h.oldestPage) : '—');
+        set('h-newest', h.newestPage ? fmtDate(h.newestPage) : '—');
+        set('h-used', h.storage ? h.storage.usedHuman : '—');
+        set('h-free', h.storage ? h.storage.freeHuman : '—');
+        loading.style.display = 'none'; grid.style.display = '';
+    } catch (e) {
+        loading.style.display = 'none';
+        err.textContent = 'Could not load service health.';
+        err.style.display = 'block';
+    }
+}
+
 async function loadUsers() {
     document.getElementById('users-loading').style.display = 'block';
     document.getElementById('users-table-wrap').style.display = 'none';
