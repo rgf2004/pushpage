@@ -12,6 +12,58 @@ Guest mode never answers `401`, so a client can only discover the sign-in flow t
 
 ## Flow
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant C as MCP client<br/>(Claude Code, Cursor...)
+    participant G as /mcp/signin<br/>(MCP gateway)
+    participant B as Browser<br/>(/oauth/authorize)
+    participant P as Publisher<br/>(OAuth server + API)
+
+    Note over C,G: First connection, no token yet
+    C->>G: initialize
+    G-->>C: 401 + WWW-Authenticate: resource_metadata=...
+    C->>P: GET /.well-known/oauth-protected-resource/mcp/signin
+    P-->>C: resource + authorization server
+    C->>P: GET /.well-known/oauth-authorization-server
+    P-->>C: authorize, token and register endpoints, PKCE S256
+    C->>P: POST /api/oauth/register (redirect URI)
+    P-->>C: client_id
+
+    Note over U,P: Sign-in in the browser
+    C->>B: open /oauth/authorize (client_id, code_challenge, state)
+    B->>P: GET /api/oauth/client (is this client and redirect URI registered?)
+    P-->>B: client name
+    U->>B: email + password
+    B->>P: POST /api/auth/login
+    P-->>B: session JWT
+    U->>B: Allow
+    B->>P: POST /api/oauth/authorize (session JWT)
+    P-->>B: redirect_to = redirect URI + one-time code
+    B->>C: redirect back with code + state
+
+    Note over C,P: Tokens
+    C->>P: POST /api/oauth/token (code + code_verifier)
+    P-->>C: access token (60 min, scoped) + refresh token (30 days)
+
+    Note over C,P: Using it
+    C->>G: initialize / tools/call (Authorization: Bearer access token)
+    G->>P: GET /api/me (is the token valid and the account active?)
+    P-->>G: 200
+    G->>P: POST /api/pages, GET /api/pages, DELETE /api/pages/id
+    P-->>G: result
+    G-->>C: tool result
+
+    Note over C,P: Later, when the access token expires
+    C->>P: POST /api/oauth/token (refresh_token)
+    P-->>C: new access token + new refresh token (old one is dead)
+```
+
+**Where each URL fits:** `/mcp` (guests or an API key) and `/mcp-guest` (always keyless) skip all of this. Only `/mcp/signin` starts the flow above. An OAuth token can only publish, list and delete pages; admin, API-key management and issuing more tokens return `403`.
+
+The same flow in words:
+
 1. The client calls `/mcp/signin`, gets `401` with `resource_metadata="…/.well-known/oauth-protected-resource/mcp/signin"`.
 2. It reads the protected-resource metadata, then the authorization-server metadata at `/.well-known/oauth-authorization-server`.
 3. It registers itself at `POST /api/oauth/register` (RFC 7591) and receives a `client_id`.
