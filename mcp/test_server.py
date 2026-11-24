@@ -216,5 +216,90 @@ class TestGuestMode(unittest.TestCase):
         self.assertEqual(self.server.list_pages()[0]["signup_url"], "https://my.example/dashboard")
 
 
+class TestSignInEndpoint(unittest.TestCase):
+    """/mcp/signin: same server, but only for callers with a valid credential (OAuth discovery on 401)."""
+
+    def setUp(self):
+        self.server = _load_server()
+        self.server._public_url = "https://my.example"
+        self.sent = []
+        self.forwarded = []
+
+        async def inner(scope, receive, send):
+            self.forwarded.append(scope["path"])
+
+        self.gateway = self.server.SignInGateway(inner)
+
+    def _call(self, path, headers=None):
+        scope = {"type": "http", "path": path, "raw_path": path.encode(),
+                 "headers": [(k.encode(), v.encode()) for k, v in (headers or {}).items()]}
+
+        async def send(message):
+            self.sent.append(message)
+
+        asyncio.run(self.gateway(scope, None, send))
+
+    def _status(self):
+        return next(m["status"] for m in self.sent if m["type"] == "http.response.start")
+
+    def _challenge(self):
+        start = next(m for m in self.sent if m["type"] == "http.response.start")
+        return dict(start["headers"])[b"www-authenticate"].decode()
+
+    def test_without_credentials_answers_401_with_discovery_pointer(self):
+        self._call("/mcp/signin")
+        self.assertEqual(self._status(), 401)
+        self.assertIn('resource_metadata="https://my.example/.well-known/oauth-protected-resource/mcp/signin"',
+                      self._challenge())
+        self.assertNotIn("invalid_token", self._challenge())
+        self.assertEqual(self.forwarded, [])
+
+    def test_invalid_token_answers_401_invalid_token(self):
+        with patch("pushpage_mcp.server._token_is_valid", return_value=False) as check:
+            async def no(token):
+                return False
+            check.side_effect = no
+            self._call("/mcp/signin", {"authorization": "Bearer a.b.c"})
+        self.assertEqual(self._status(), 401)
+        self.assertIn('error="invalid_token"', self._challenge())
+        self.assertEqual(self.forwarded, [])
+
+    def test_api_outage_answers_503_not_invalid_token(self):
+        async def boom(token):
+            raise ConnectionError("api down")
+
+        with patch("pushpage_mcp.server._token_is_valid", side_effect=boom):
+            self._call("/mcp/signin", {"authorization": "Bearer a.b.c"})
+        self.assertEqual(self._status(), 503)
+        self.assertEqual(self.forwarded, [])
+
+    def test_valid_token_is_passed_on_as_the_normal_mcp_route(self):
+        async def yes(token):
+            return True
+
+        with patch("pushpage_mcp.server._token_is_valid", side_effect=yes):
+            self._call("/mcp/signin", {"authorization": "Bearer a.b.c"})
+        self.assertEqual(self.forwarded, ["/mcp"])
+        self.assertEqual(self.sent, [])
+
+    def test_plain_mcp_endpoint_is_untouched_and_stays_open_to_guests(self):
+        self._call("/mcp")
+        self.assertEqual(self.forwarded, ["/mcp"])
+        self.assertEqual(self.sent, [])
+
+    def test_credentials_are_presented_to_the_api_by_type(self):
+        self.assertEqual(self.server._auth_headers("pp_abc"), {"X-Api-Key": "pp_abc"})
+        self.assertEqual(self.server._auth_headers("eyJ.a.b"), {"Authorization": "Bearer eyJ.a.b"})
+        self.assertEqual(self.server._auth_headers(""), {})
+
+    def test_guest_message_points_to_the_sign_in_endpoint(self):
+        self.assertIn("https://my.example/mcp/signin", self.server._signup_message("x"))
+
+    def test_http_server_is_wrapped_by_the_gateway(self):
+        with patch.object(self.server.uvicorn, "run") as uv, patch.object(self.server.mcp, "http_app"):
+            self.server.main(["--http"])
+        self.assertIsInstance(uv.call_args.args[0], self.server.SignInGateway)
+
+
 if __name__ == "__main__":
     unittest.main()

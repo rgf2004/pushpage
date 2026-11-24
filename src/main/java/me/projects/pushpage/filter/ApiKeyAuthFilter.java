@@ -6,8 +6,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import me.projects.pushpage.config.AuthContext;
 import me.projects.pushpage.model.User;
+import me.projects.pushpage.oauth.OAuthScopes;
 import me.projects.pushpage.repository.UserRepository;
 import me.projects.pushpage.service.ApiKeyService;
+import me.projects.pushpage.service.JwtClaims;
 import me.projects.pushpage.service.JwtService;
 import me.projects.pushpage.util.ApiKeyHasher;
 import org.springframework.core.annotation.Order;
@@ -25,6 +27,11 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     private static final Set<String> PUBLIC_PATH_PREFIXES = Set.of(
             "/health", "/config", "/swagger-ui", "/v3/api-docs", "/api-docs", "/auth/"
     );
+    /** OAuth endpoints a client calls before it has any token. /oauth/authorize is not here: it needs a session. */
+    private static final Set<String> OAUTH_PUBLIC_PATHS = Set.of(
+            "/oauth/token", "/oauth/register", "/oauth/metadata", "/oauth/protected-resource", "/oauth/client"
+    );
+    private static final String OAUTH_AUTHORIZE_PATH = "/oauth/authorize";
     private static final String ADMIN_PATH_PREFIX = "/admin";
     private static final String KEY_MANAGEMENT_PATH_PREFIX = "/me/keys";
     private static final Set<String> GUEST_ALLOWED = Set.of("POST /pages");
@@ -70,13 +77,18 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         }
 
         Optional<User> user;
+        Set<String> scopes = null;
         String apiKeyHash = null;
         if (apiKey != null) {
             apiKeyHash = ApiKeyHasher.hash(apiKey);
             user = userRepository.findByApiKeyHash(apiKeyHash);
         } else {
-            user = jwtService.parseToken(jwt).flatMap(claims ->
+            Optional<JwtClaims> parsed = jwtService.parseToken(jwt);
+            user = parsed.flatMap(claims ->
                     userRepository.findById(claims.userId()).filter(claims::matchesCurrentPassword));
+            if (parsed.isPresent() && parsed.get().isScoped()) {
+                scopes = parsed.get().scopes();
+            }
         }
 
         if (user.isEmpty() || !user.get().active()) {
@@ -84,6 +96,17 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (scopes != null && !OAuthScopes.permits(scopes, request.getMethod(), path)) {
+            // An OAuth access token only reaches the page endpoints it was granted.
+            sendError(response, HttpServletResponse.SC_FORBIDDEN, "This access token's scope does not allow this request");
+            return;
+        }
+
+        if (apiKeyHash != null && path.startsWith(OAUTH_AUTHORIZE_PATH)) {
+            sendError(response, HttpServletResponse.SC_FORBIDDEN,
+                    "Authorizing an app needs a signed-in session, not an API key");
+            return;
+        }
         if (apiKeyHash != null && path.startsWith(KEY_MANAGEMENT_PATH_PREFIX)) {
             // A leaked key must not be able to mint replacement keys: key management needs a signed-in session.
             sendError(response, HttpServletResponse.SC_FORBIDDEN,
@@ -108,7 +131,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATH_PREFIXES.stream().anyMatch(path::startsWith);
+        return OAUTH_PUBLIC_PATHS.contains(path) || PUBLIC_PATH_PREFIXES.stream().anyMatch(path::startsWith);
     }
 
     private String extractApiKey(HttpServletRequest request) {

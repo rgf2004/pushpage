@@ -160,6 +160,10 @@ If you prefer a local process over the hosted endpoint and have [uv](https://doc
 }
 ```
 
+### Sign in with the browser (no key to copy)
+
+Clients that support the MCP OAuth flow can connect to `https://pushpage.link/mcp/signin` instead: the client opens the browser, the user signs in and allows it. Only publish, list and delete of that user's pages are allowed. Use `/mcp` for guest mode or an API key.
+
 ### Other MCP clients
 
 Any client that supports streamable-http MCP servers can connect to `https://pushpage.link/mcp` with the `X-Api-Key` header. Consult your client's documentation for the exact config format.

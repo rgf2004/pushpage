@@ -143,6 +143,7 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 | `RATE_LIMIT_USER_RPM` | Max publish requests per minute for authenticated users. Admin users are exempt. | `10` |
 | `RATE_LIMIT_GUEST_RPM` | Max publish requests per minute per IP for unauthenticated (guest) requests. | `5` |
 | `RATE_LIMIT_SIGNUP_RPM` | Max sign-up requests per minute per IP (`POST /api/auth/signup`). | `5` |
+| `OAUTH_ACCESS_TOKEN_MINUTES` / `OAUTH_REFRESH_TOKEN_DAYS` | Lifetimes of OAuth access / refresh tokens for MCP sign-in. | `60` / `30` |
 | `API_KEYS_MAX_PER_USER` | Max named API keys an account can hold. | `10` |
 | `TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of reverse proxies or tunnels in front of nginx whose forwarded client IP nginx should trust. Empty = off. | — |
 | `REAL_IP_HEADER` | Header carrying the client IP when `TRUSTED_PROXIES` is set (`CF-Connecting-IP` for Cloudflare). | `X-Forwarded-For` |
@@ -182,6 +183,8 @@ On first run, if no users exist the service auto-creates an `admin@pushpage.link
 
 **MCP guest mode.** The MCP server (`mcp/pushpage_mcp/server.py`) does not require a key. Without one it calls `POST /api/pages` as a guest (the wrapper omits `X-Api-Key` entirely, because the API rejects an empty value, and forwards the real client IP from nginx's `X-Real-IP` so the per-IP guest limit is per client, not per MCP container). Guest `publish_page` results carry `guest_mode`, `message` and `signup_url` (built from `PUSHPAGE_PUBLIC_URL`, set from `APP_SERVER_URL` in the compose files); guest `list_pages` / `delete_page` return a "Sign in required" result without calling the API. A key that is present but invalid still fails with `401`, never downgraded to guest.
 
+**MCP browser sign-in (OAuth).** `/mcp` stays open to guests, so it never answers `401`; a second URL, `/mcp/signin`, is the same server behind `SignInGateway` (`mcp/pushpage_mcp/server.py`), which answers `401` + `WWW-Authenticate: Bearer resource_metadata=…` until the caller holds a valid credential (checked with `GET /api/me`; `503` if the API is down). The publisher is the OAuth authorization server (`oauth/` package, migration `V1004`): dynamic client registration, authorization code + PKCE (S256), scoped short-lived JWT access tokens, rotating refresh tokens. nginx serves the consent page `/oauth/authorize` and proxies `/.well-known/oauth-*` to the publisher. OAuth tokens only reach `POST/GET /api/pages`, `DELETE /api/pages/{id}` and `GET /api/me` (`OAuthScopes.permits`). Details: [`docs/oauth.md`](docs/oauth.md).
+
 **MCP Registry.** `server.json` (repo root) is the registry entry: hosted remote, PyPI package, and `icons` (`nginx/static/icon-512.png` and `favicon.svg`, served from `https://pushpage.link/static/`). The checked-in version is a placeholder; after each release is deployed run `scripts/publish-registry.sh <version>` (checks PyPI and the icon URLs, stamps the version, validates, asks before publishing). Registry versions cannot be republished, so a changed `server.json` only reaches the registry with the next version.
 
 ## API
@@ -198,6 +201,7 @@ All endpoints are under `/api` (Spring Boot context path).
 | `GET` | `/api/me/keys` | User (JWT) | List your API keys: `id`, `name`, `key_prefix`, `created_at`, `last_used_at` (never the raw key). |
 | `POST` | `/api/me/keys` | User (JWT) | Create a named API key (`{ name }`, ≤60 chars) → `201 { id, name, api_key, key_prefix, created_at }`; raw key returned once. Other keys are unaffected. Max `API_KEYS_MAX_PER_USER` (409 beyond). |
 | `DELETE` | `/api/me/keys/{id}` | User (JWT) | Revoke one key (404 if not yours). |
+| `POST` | `/api/oauth/register`, `/api/oauth/token` | None | OAuth dynamic client registration and token endpoint for MCP browser sign-in. Also `GET /api/oauth/{metadata,protected-resource,client}` (public) and `POST /api/oauth/authorize` (JWT session only). See [`docs/oauth.md`](docs/oauth.md). |
 | `GET` | `/api/health` | None | Health check: `{ "status": "UP" }` (200) or `{ "status": "DOWN" }` (503). |
 | `GET` | `/api/admin/health` | Admin | Full runtime details: version, uptime, live/deleted page counts, oldest/newest page, storage, user counts (total, active, inactive, and awaiting verification with `EMAIL_ENABLED`). Shown on the dashboard's Users tab. |
 | `GET` | `/api/config` | None | Public frontend config: `{ features: { plans, email } }`. Add new frontend-visible settings in `ClientConfigService`. |
