@@ -6,6 +6,7 @@ COPY nginx/docs.html /usr/share/nginx/html/docs.html
 COPY nginx/404.html /usr/share/nginx/html/404.html
 COPY nginx/static/ /usr/share/nginx/html/static/
 COPY nginx/terms.html /usr/share/nginx/html/terms.html
+COPY nginx/guides/ /usr/share/nginx/html/guides/
 COPY nginx/robots.txt /usr/share/nginx/html/robots.txt
 COPY nginx/sitemap.xml /usr/share/nginx/html/sitemap.xml
 COPY nginx/static/og-image.png /usr/share/nginx/html/static/og-image.png

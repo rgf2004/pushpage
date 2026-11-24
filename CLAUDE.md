@@ -28,6 +28,7 @@ push-page/
 │   ├── dashboard.html          # browser dashboard (/dashboard)
 │   ├── docs.html               # documentation page (/docs)
 │   ├── terms.html              # Terms of Use page (/terms)
+│   ├── guides/                 # how-to / explainer pages (/guides/<slug>)
 │   ├── 404.html                # custom 404 error page
 │   ├── overlay/                # empty; downstream forks drop override files here (see below)
 │   └── static/
@@ -81,15 +82,27 @@ All migrations, including the `V1000+` ones used by these features, live in the 
 columns when a feature is off). New migrations take the next unused version number;
 **never reuse or drop below a version number already released**.
 
-### Adding a new nginx page
+### Pages: one topic, one page
 
-Every new static page requires **four** changes:
-1. Create `nginx/<name>.html`
-2. Add `COPY nginx/<name>.html /usr/share/nginx/html/<name>.html` to `nginx/Dockerfile`
-3. Add a `location = /<name>` block to `nginx/default.conf` pointing to the file
-4. Add a `<url>` entry to `nginx/sitemap.xml` (only for pages that should be indexed — exclude auth-required or noindex pages like the dashboard)
+**Rule:** every topic that should be findable on its own gets its own static HTML page with its own URL. Do not fold it into `docs.html` as a section, and do not render it with JavaScript (tabs, accordions). A search engine indexes and ranks URLs, so a topic that lives inside another page cannot rank for itself or be linked to precisely.
 
-Shared visual styles (`theme.css`) are already linked from all pages — new pages should link to `/static/theme.css` and follow the same header/footer pattern as `docs.html`.
+Every such page needs:
+- a unique `<title>` and meta description, a canonical URL, Open Graph tags (and Article JSON-LD for guides);
+- an entry in `nginx/sitemap.xml` with the real last-change date as `lastmod` (update it when the page changes);
+- internal links to it: the footers of `index.html`, `docs.html`, `terms.html` and `dashboard.html`, and related pages;
+- facts consistent with `docs/mcp.md` and the docs page (commands, guest vs key behavior, limits), and no claims about other products that we have not verified.
+
+Footers must not link to raw API endpoints such as `/mcp`: they answer crawlers with an error.
+
+**Where the files go**
+- **Site pages** (landing, docs, terms): `nginx/<name>.html`, which needs **four** changes:
+  1. Create `nginx/<name>.html`
+  2. Add `COPY nginx/<name>.html /usr/share/nginx/html/<name>.html` to `nginx/Dockerfile`
+  3. Add a `location = /<name>` block to `nginx/default.conf` pointing to the file
+  4. Add a `<url>` entry to `nginx/sitemap.xml` (only for pages that should be indexed — exclude auth-required or noindex pages like the dashboard)
+- **Topic pages, grouped by kind** in a folder under `nginx/`, served under the same URL prefix. Today there is `nginx/guides/` (`/guides/share-html-from-claude-code`, `/guides/mcp-server-publish-html`, `/guides/html-hosting-for-ai-agents`) for how-to and explainer content. A new kind of content (comparisons, use cases, ...) gets its own folder and prefix by the same rule. The Dockerfile copies each folder as a whole directory; each page still needs its own exact `location = /<folder>/<slug>` block in `default.conf` and a `sitemap.xml` entry.
+
+Shared visual styles (`theme.css`) are already linked from all pages; new pages link to `/static/theme.css` and follow the same header/footer pattern as `docs.html`.
 
 ### Security headers and rate limiting (nginx)
 
