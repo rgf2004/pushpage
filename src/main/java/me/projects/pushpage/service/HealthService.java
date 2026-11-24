@@ -3,6 +3,8 @@ package me.projects.pushpage.service;
 import me.projects.pushpage.model.HealthResponse;
 import me.projects.pushpage.repository.PageRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,7 @@ import java.util.stream.Stream;
 @Service
 public class HealthService {
 
+    private static final Logger log = LoggerFactory.getLogger(HealthService.class);
     private static final long CACHE_TTL_MS = 30_000;
 
     private final PageRepository pageRepository;
@@ -42,6 +45,8 @@ public class HealthService {
     @PostConstruct
     void init() {
         startTime = Instant.now();
+        // The public health endpoint no longer reports the version, so deploys are confirmed from the logs.
+        log.info("pushpage {} started", buildProperties.getVersion());
     }
 
     public HealthResponse getHealth() {

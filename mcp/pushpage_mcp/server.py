@@ -217,8 +217,8 @@ def health() -> dict:
     Read-only. Takes no arguments and does not require a valid API key.
 
     Returns:
-        The service status object, e.g. {status: 'UP', version, uptimeSeconds, livePages,
-        storage}. On failure {error, status_code, detail}.
+        {status: 'UP'} when the service is healthy. Nothing else is reported publicly
+        (statistics are admin-only). On failure {error, status_code, detail}.
     """
     with _client() as client:
         r = client.get("/api/health")

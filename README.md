@@ -25,7 +25,8 @@ All endpoints are under `/api` (Spring Boot context path). Most require an API k
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/pages` | Optional | Publish HTML (JSON or file upload), returns `{ url, id }` |
-| `GET` | `/api/health` | None | Health check |
+| `GET` | `/api/health` | None | Health check (`{ "status": "UP" }` only) |
+| `GET` | `/api/admin/health` | Admin | Detailed runtime stats (version, uptime, page counts, storage) |
 | `GET` | `/api/config` | None | Public frontend config (enabled feature flags) |
 
 For the full API reference — page management, admin user endpoints, request/response schemas — see the Swagger UI: `https://pushpage.link/api/swagger-ui/index.html`

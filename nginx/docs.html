@@ -737,7 +737,14 @@ Copy these credentials now. They will NOT appear again.
                 <span class="endpoint-path">/api/health</span>
                 <span class="endpoint-auth">Public</span>
             </div>
-            <p>Returns service health and live statistics (cached for 30 seconds). Returns <code>200</code> when healthy, <code>503</code> when a critical subsystem is unavailable.</p>
+            <p>Returns only the service status: <code>200</code> with <code>{"status":"UP"}</code> when healthy, <code>503</code> with <code>{"status":"DOWN"}</code> when a critical subsystem is unavailable.</p>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api/admin/health</span>
+                <span class="endpoint-auth">Admin</span>
+            </div>
+            <p>Admin only. Full runtime statistics (cached for 30 seconds), also shown on the dashboard's Users tab:</p>
 
 <pre><code>{
   <span class="token-key">"status"</span>: <span class="token-str">"UP"</span>,

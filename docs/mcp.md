@@ -11,7 +11,7 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 | `publish_page(html, title?)` | Publish an HTML page, returns `{ url, id, expires_at }`. `title` is optional — omitted to let the service extract it from the `<title>` tag or fall back to `"Untitled"`. |
 | `list_pages()` | List published pages scoped to the authenticated user (admins see all). |
 | `delete_page(id)` | Delete a page by its ID. |
-| `health()` | Check whether the pushpage service is reachable and healthy. |
+| `health()` | Check whether the pushpage service is reachable and healthy (returns `{status: "UP"}` only). |
 
 ## Authentication
 
