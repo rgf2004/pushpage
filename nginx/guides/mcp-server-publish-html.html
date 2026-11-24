@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MCP server to publish HTML: setup guide | pushpage</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="Set up the pushpage MCP server in Claude Code, Cursor or Claude Desktop so your agent can publish HTML pages and return shareable links.">
+    <link rel="canonical" href="https://pushpage.link/guides/mcp-server-publish-html">
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://pushpage.link/guides/mcp-server-publish-html">
+    <meta property="og:title" content="MCP server to publish HTML: setup guide | pushpage">
+    <meta property="og:description" content="Set up the pushpage MCP server in Claude Code, Cursor or Claude Desktop so your agent can publish HTML pages and return shareable links.">
+    <meta property="og:image" content="https://pushpage.link/static/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MCP server to publish HTML: setup guide | pushpage">
+    <meta name="twitter:description" content="Set up the pushpage MCP server in Claude Code, Cursor or Claude Desktop so your agent can publish HTML pages and return shareable links.">
+    <meta name="twitter:image" content="https://pushpage.link/static/og-image.png">
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "An MCP server that publishes HTML",
+  "description": "Set up the pushpage MCP server in Claude Code, Cursor or Claude Desktop so your agent can publish HTML pages and return shareable links.",
+  "url": "https://pushpage.link/guides/mcp-server-publish-html",
+  "mainEntityOfPage": "https://pushpage.link/guides/mcp-server-publish-html",
+  "datePublished": "2026-11-24",
+  "dateModified": "2026-11-24",
+  "image": "https://pushpage.link/static/og-image.png",
+  "author": {
+    "@type": "Organization",
+    "name": "pushpage",
+    "url": "https://pushpage.link"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "pushpage",
+    "url": "https://pushpage.link",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://pushpage.link/static/icon-512.png"
+    }
+  }
+}
+    </script>
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        .guide-wrap { max-width: 760px; margin: 0 auto; padding: 56px 32px 80px; }
+        .guide-crumbs { font-size: .82rem; color: var(--text-muted); margin-bottom: 20px; }
+        .guide-crumbs a { color: var(--text-muted); }
+        .guide-wrap h1 { font-size: 2.1rem; font-weight: 800; line-height: 1.2; color: var(--text); margin-bottom: 14px; }
+        .guide-lead { font-size: 1.08rem; color: var(--text-muted); margin-bottom: 36px; }
+        .guide-wrap h2 { font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 38px 0 12px; }
+        .guide-wrap h3 { font-size: 1.02rem; font-weight: 600; color: var(--text); margin: 22px 0 8px; }
+        .guide-wrap p, .guide-wrap li { font-size: .98rem; line-height: 1.7; color: var(--text); }
+        .guide-wrap p { margin-bottom: 14px; }
+        .guide-wrap ul, .guide-wrap ol { margin: 0 0 16px 22px; }
+        .guide-wrap li { margin-bottom: 6px; }
+        .guide-wrap code { font-family: var(--font-mono); font-size: .86em; background: var(--bg-input); padding: 1px 6px; border-radius: 5px; }
+        .guide-wrap pre { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; overflow-x: auto; margin: 0 0 18px; }
+        .guide-wrap pre code { background: none; padding: 0; font-size: .84rem; line-height: 1.6; white-space: pre; }
+        .guide-wrap table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: .9rem; }
+        .guide-wrap th, .guide-wrap td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        .guide-wrap th { color: var(--text-muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+        .guide-wrap a { color: var(--accent); }
+        .guide-cta { background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; margin: 44px 0 0; }
+        .guide-cta h2 { margin-top: 0; }
+        .guide-cta .btn { margin-top: 6px; }
+        .guide-related { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border); }
+        .guide-related h2 { font-size: 1rem; margin: 0 0 10px; }
+        @media (max-width: 560px) { .guide-wrap { padding: 36px 18px 56px; } .guide-wrap h1 { font-size: 1.7rem; } }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link">Docs</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-ghost btn-sm">Sign in</a>
+            <a href="/dashboard" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+    </div>
+</header>
+
+<main class="guide-wrap">
+    <div class="guide-crumbs"><a href="/">pushpage</a> &rsaquo; Guides</div>
+    <h1>An MCP server that publishes HTML</h1>
+    <p class="guide-lead">The pushpage MCP server gives an AI agent one job it is usually missing: turn the HTML it just wrote into a link someone can open. It is hosted, free to try without a key, and also installable locally.</p>
+<h2>What it is</h2>
+<p>An <a href="https://modelcontextprotocol.io" rel="noopener" target="_blank">MCP</a> server with four tools: <code>publish_page</code>, <code>list_pages</code>, <code>delete_page</code> and <code>health</code>. The agent sends HTML and receives a public URL. The hosted endpoint is <code>https://pushpage.link/mcp</code> (streamable HTTP). It is listed in the official MCP Registry as <code>io.github.rgf2004/pushpage</code>.</p>
+
+<h2>Two ways to connect</h2>
+<h3>Guest mode (no key)</h3>
+<p>Connect with just the URL. <code>publish_page</code> works and the page is deleted after 30 minutes. The tool result tells the agent (and you) to sign up or sign in for an API key if you want more. <code>list_pages</code> and <code>delete_page</code> need an account.</p>
+<h3>With an API key</h3>
+<p>Create a named key under <strong>Account</strong> in the <a href="/dashboard">dashboard</a>, then send it as <code>X-Api-Key</code> or <code>Authorization: Bearer</code>. Pages then follow your account's retention, and all four tools work. A wrong key is rejected with a 401; it is never silently treated as a guest.</p>
+
+<h2>Claude Code</h2>
+<pre><code># try it, no key
+claude mcp add --transport http pushpage https://pushpage.link/mcp
+
+# with your key
+claude mcp add --transport http pushpage https://pushpage.link/mcp \
+  --header "Authorization: Bearer pp_your_key_here"</code></pre>
+
+<h2>Cursor</h2>
+<p>Add this to <code>~/.cursor/mcp.json</code> (or your project's <code>.cursor/mcp.json</code>) and restart Cursor. Omit the <code>headers</code> block to use guest mode.</p>
+<pre><code>{
+  "mcpServers": {
+    "pushpage": {
+      "url": "https://pushpage.link/mcp",
+      "headers": { "X-Api-Key": "pp_your_key_here" }
+    }
+  }
+}</code></pre>
+
+<h2>Claude Desktop</h2>
+<p>Claude Desktop does not always forward custom headers to remote servers, so use the <code>mcp-remote</code> bridge (needs Node.js). Add this to <code>claude_desktop_config.json</code> and restart the app:</p>
+<pre><code>{
+  "mcpServers": {
+    "pushpage": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://pushpage.link/mcp",
+               "--header", "X-Api-Key:pp_your_key_here"]
+    }
+  }
+}</code></pre>
+
+<h2>Run it locally instead</h2>
+<p>If you prefer a local process, the server is on PyPI as <code>pushpage-mcp</code>. With <a href="https://docs.astral.sh/uv/" rel="noopener" target="_blank">uv</a> installed:</p>
+<pre><code>claude mcp add pushpage -e PUSHPAGE_API_KEY=pp_your_key_here -- uvx pushpage-mcp</code></pre>
+<p>It speaks stdio, works as a guest without a key, and can point at your own server with <code>PUSHPAGE_URL</code>. Setting <code>PUSHPAGE_PUBLIC_URL</code> as well makes the sign-up links in guest messages point to your instance.</p>
+
+<h2>Troubleshooting</h2>
+<ul>
+  <li><strong>401 &ldquo;Invalid or expired credentials&rdquo;:</strong> the key is wrong or was revoked. Create a new one in the dashboard.</li>
+  <li><strong>The key never arrives (Claude Desktop):</strong> use the <code>mcp-remote</code> configuration above.</li>
+  <li><strong>Tools do not appear:</strong> restart the client after editing its configuration, and check the server shows as connected.</li>
+  <li><strong>Self-hosting:</strong> see the <a href="/docs#self-hosting">self-hosting guide</a>; the MCP server runs in the same Docker Compose stack.</li>
+</ul>
+
+    <div class="guide-cta">
+        <h2>Try it now</h2>
+        <p>No account needed. Add the server to Claude Code and ask for a page:</p>
+        <pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
+        <a href="/dashboard" class="btn btn-primary">Create a free account</a>
+        <a href="/docs" class="btn btn-ghost">Read the docs</a>
+    </div>
+
+    <div class="guide-related">
+        <h2>Related guides</h2>
+        <ul><li><a href="/guides/share-html-from-claude-code">Share an HTML page from Claude Code</a></li><li><a href="/guides/html-hosting-for-ai-agents">HTML hosting for AI agents</a></li></ul>
+    </div>
+</main>
+
+<footer>
+    <div class="footer-inner">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">push<span>page</span></a>
+                <p>A lightweight HTML publishing service for AI agents and developers.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/api/swagger-ui/index.html">API reference</a>
+                <a href="/docs">Documentation</a>
+            </div>
+            <div class="footer-col">
+                <h4>Docs &amp; guides</h4>
+                <a href="/docs#quick-start">Quick start</a>
+                <a href="/docs#authentication">Authentication</a>
+                <a href="/docs#self-hosting">Self-hosting</a>
+                <a href="/guides/share-html-from-claude-code">Share HTML from Claude Code</a>
+                <a href="/guides/mcp-server-publish-html">MCP server setup</a>
+                <a href="/guides/html-hosting-for-ai-agents">HTML hosting for agents</a>
+            </div>
+            <div class="footer-col">
+                <h4>Links</h4>
+                <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">GitHub</a>
+                <a href="/llms.txt">llms.txt</a>
+                <a href="/terms">Terms of Use</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 pushpage &nbsp;&middot;&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

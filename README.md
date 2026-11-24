@@ -194,6 +194,8 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
 
 The MCP server can also run locally over stdio with no clone or Docker: `uvx pushpage-mcp` with `PUSHPAGE_API_KEY` set (PyPI package [`pushpage-mcp`](https://pypi.org/project/pushpage-mcp/)); see [`docs/mcp.md`](docs/mcp.md#run-locally-with-uvx-pypi-package).
 
+Step-by-step guides are on the site: [share HTML from Claude Code](https://pushpage.link/guides/share-html-from-claude-code), [MCP server setup](https://pushpage.link/guides/mcp-server-publish-html) and [HTML hosting for AI agents](https://pushpage.link/guides/html-hosting-for-ai-agents).
+
 For the full tool reference, alternative connection methods (including `mcp-remote` for HTTP-only or older clients), and troubleshooting, see [`docs/mcp.md`](docs/mcp.md).
 
 ## Security

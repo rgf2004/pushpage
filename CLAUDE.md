@@ -28,6 +28,7 @@ push-page/
 │   ├── dashboard.html          # browser dashboard (/dashboard)
 │   ├── docs.html               # documentation page (/docs)
 │   ├── terms.html              # Terms of Use page (/terms)
+│   ├── guides/                 # SEO guide pages (/guides/<slug>), copied into the image as a directory
 │   ├── 404.html                # custom 404 error page
 │   ├── overlay/                # empty; downstream forks drop override files here (see below)
 │   └── static/
@@ -80,6 +81,10 @@ All migrations, including the `V1000+` ones used by these features, live in the 
 `db/migration/` folder and always run regardless of the flags (they just add unused
 columns when a feature is off). New migrations take the next unused version number;
 **never reuse or drop below a version number already released**.
+
+### Guides (SEO pages)
+
+`nginx/guides/*.html` are static, indexable guide pages (`/guides/share-html-from-claude-code`, `/guides/mcp-server-publish-html`, `/guides/html-hosting-for-ai-agents`) aimed at non-brand searches. The Dockerfile copies the whole directory; each page still needs its own exact `location = /guides/<slug>` block in `default.conf` and a `sitemap.xml` entry (use the real last-change date as `lastmod`). Every page has a unique `<title>` and meta description, a canonical URL and Article JSON-LD; keep their facts in line with `docs/mcp.md` and the docs page (commands, guest vs key behavior, limits). The footers of `index.html`, `docs.html`, `terms.html` and `dashboard.html` link to the guides; the footer must not link to the raw `/mcp` endpoint, which is an API and answers crawlers with an error.
 
 ### Adding a new nginx page
 

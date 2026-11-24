@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HTML hosting for AI agents | pushpage</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one API call into a shareable link.">
+    <link rel="canonical" href="https://pushpage.link/guides/html-hosting-for-ai-agents">
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://pushpage.link/guides/html-hosting-for-ai-agents">
+    <meta property="og:title" content="HTML hosting for AI agents | pushpage">
+    <meta property="og:description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one API call into a shareable link.">
+    <meta property="og:image" content="https://pushpage.link/static/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="HTML hosting for AI agents | pushpage">
+    <meta name="twitter:description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one API call into a shareable link.">
+    <meta name="twitter:image" content="https://pushpage.link/static/og-image.png">
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "HTML hosting for AI agents",
+  "description": "Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one API call into a shareable link.",
+  "url": "https://pushpage.link/guides/html-hosting-for-ai-agents",
+  "mainEntityOfPage": "https://pushpage.link/guides/html-hosting-for-ai-agents",
+  "datePublished": "2026-11-24",
+  "dateModified": "2026-11-24",
+  "image": "https://pushpage.link/static/og-image.png",
+  "author": {
+    "@type": "Organization",
+    "name": "pushpage",
+    "url": "https://pushpage.link"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "pushpage",
+    "url": "https://pushpage.link",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://pushpage.link/static/icon-512.png"
+    }
+  }
+}
+    </script>
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        .guide-wrap { max-width: 760px; margin: 0 auto; padding: 56px 32px 80px; }
+        .guide-crumbs { font-size: .82rem; color: var(--text-muted); margin-bottom: 20px; }
+        .guide-crumbs a { color: var(--text-muted); }
+        .guide-wrap h1 { font-size: 2.1rem; font-weight: 800; line-height: 1.2; color: var(--text); margin-bottom: 14px; }
+        .guide-lead { font-size: 1.08rem; color: var(--text-muted); margin-bottom: 36px; }
+        .guide-wrap h2 { font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 38px 0 12px; }
+        .guide-wrap h3 { font-size: 1.02rem; font-weight: 600; color: var(--text); margin: 22px 0 8px; }
+        .guide-wrap p, .guide-wrap li { font-size: .98rem; line-height: 1.7; color: var(--text); }
+        .guide-wrap p { margin-bottom: 14px; }
+        .guide-wrap ul, .guide-wrap ol { margin: 0 0 16px 22px; }
+        .guide-wrap li { margin-bottom: 6px; }
+        .guide-wrap code { font-family: var(--font-mono); font-size: .86em; background: var(--bg-input); padding: 1px 6px; border-radius: 5px; }
+        .guide-wrap pre { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; overflow-x: auto; margin: 0 0 18px; }
+        .guide-wrap pre code { background: none; padding: 0; font-size: .84rem; line-height: 1.6; white-space: pre; }
+        .guide-wrap table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: .9rem; }
+        .guide-wrap th, .guide-wrap td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        .guide-wrap th { color: var(--text-muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+        .guide-wrap a { color: var(--accent); }
+        .guide-cta { background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 24px; margin: 44px 0 0; }
+        .guide-cta h2 { margin-top: 0; }
+        .guide-cta .btn { margin-top: 6px; }
+        .guide-related { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--border); }
+        .guide-related h2 { font-size: 1rem; margin: 0 0 10px; }
+        @media (max-width: 560px) { .guide-wrap { padding: 36px 18px 56px; } .guide-wrap h1 { font-size: 1.7rem; } }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link">Docs</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-ghost btn-sm">Sign in</a>
+            <a href="/dashboard" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+    </div>
+</header>
+
+<main class="guide-wrap">
+    <div class="guide-crumbs"><a href="/">pushpage</a> &rsaquo; Guides</div>
+    <h1>HTML hosting for AI agents</h1>
+    <p class="guide-lead">AI agents now produce rich HTML: reports with tables and charts, interactive dashboards, prototypes. Chat is a poor place to read or share any of that. The missing piece is a place to put the page and a link to hand back.</p>
+<h2>Why chat is the wrong place for HTML</h2>
+<ul>
+  <li><strong>Walls of text.</strong> Markdown pasted into chat is a flat approximation. HTML can carry layout, tables, charts and interaction.</li>
+  <li><strong>Hard to share.</strong> A link gets opened and reviewed. A pasted block or an attachment mostly does not.</li>
+  <li><strong>Hard to update or remove.</strong> A published page has an address you can send, replace or delete.</li>
+</ul>
+
+<h2>What an agent needs from hosting</h2>
+<ol>
+  <li><strong>No deploy step.</strong> The agent should publish with one call, not a build and a push.</li>
+  <li><strong>An instant URL.</strong> The result must come back immediately so the agent can pass it on.</li>
+  <li><strong>Agent-friendly access.</strong> A simple HTTP API, plus an MCP server for clients that support it, with keys that can be created per agent and revoked on their own.</li>
+  <li><strong>Sensible lifetimes.</strong> Temporary by default, so forgotten pages clean themselves up.</li>
+  <li><strong>Containment.</strong> Pages are untrusted content written by a model, so scripts on them must not be able to touch the service itself.</li>
+</ol>
+
+<h2>How pushpage does it</h2>
+<p>pushpage is an HTML publishing service built for this. One request publishes a page:</p>
+<pre><code>curl -X POST https://pushpage.link/api/pages \
+  -H "Content-Type: application/json" \
+  -d '{"html":"&lt;h1&gt;Q2 report&lt;/h1&gt;","title":"Q2 report"}'</code></pre>
+<p>The response holds the shareable <code>url</code>, the page <code>id</code> and an expiry time. You can also upload a file with <code>multipart/form-data</code>, or let an agent do it through the <a href="/guides/mcp-server-publish-html">MCP server</a>.</p>
+<ul>
+  <li><strong>Try without an account.</strong> Guest pages need no key and are deleted after 30 minutes. An account gives longer retention and lets you list and delete pages.</li>
+  <li><strong>Named keys.</strong> Create a key per agent or tool; revoke one without breaking the rest.</li>
+  <li><strong>Sandboxed pages.</strong> Pages are served with a security policy that lets their own scripts run but blocks access to the dashboard and the API.</li>
+  <li><strong>Open source.</strong> MIT licensed, and self-hostable with Docker Compose (<a href="/docs#self-hosting">self-hosting</a>).</li>
+</ul>
+
+<h2>When pushpage is the right tool</h2>
+<p>pushpage is for single, self-contained pages that an agent produces on the fly: a report, a dashboard, a prototype, a summary. If you need a full website with a build pipeline, custom domains and many linked files, a conventional static host is the better fit.</p>
+
+<h2>Things to remember</h2>
+<ul>
+  <li><strong>Pages are public.</strong> Anyone with the link can open a page. Do not publish secrets or private data.</li>
+  <li><strong>Write self-contained HTML:</strong> inline styles and scripts, and a <code>&lt;title&gt;</code> in the head.</li>
+  <li><strong>There is a size limit</strong> per page (1 MB by default).</li>
+</ul>
+
+<h2>Get started</h2>
+<p>Add it to Claude Code with one command, or read the <a href="/docs">documentation</a>:</p>
+<pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
+<p>Step-by-step: <a href="/guides/share-html-from-claude-code">share an HTML page from Claude Code</a>.</p>
+
+    <div class="guide-cta">
+        <h2>Try it now</h2>
+        <p>No account needed. Add the server to Claude Code and ask for a page:</p>
+        <pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
+        <a href="/dashboard" class="btn btn-primary">Create a free account</a>
+        <a href="/docs" class="btn btn-ghost">Read the docs</a>
+    </div>
+
+    <div class="guide-related">
+        <h2>Related guides</h2>
+        <ul><li><a href="/guides/share-html-from-claude-code">Share an HTML page from Claude Code</a></li><li><a href="/guides/mcp-server-publish-html">An MCP server that publishes HTML</a></li></ul>
+    </div>
+</main>
+
+<footer>
+    <div class="footer-inner">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">push<span>page</span></a>
+                <p>A lightweight HTML publishing service for AI agents and developers.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/api/swagger-ui/index.html">API reference</a>
+                <a href="/docs">Documentation</a>
+            </div>
+            <div class="footer-col">
+                <h4>Docs &amp; guides</h4>
+                <a href="/docs#quick-start">Quick start</a>
+                <a href="/docs#authentication">Authentication</a>
+                <a href="/docs#self-hosting">Self-hosting</a>
+                <a href="/guides/share-html-from-claude-code">Share HTML from Claude Code</a>
+                <a href="/guides/mcp-server-publish-html">MCP server setup</a>
+                <a href="/guides/html-hosting-for-ai-agents">HTML hosting for agents</a>
+            </div>
+            <div class="footer-col">
+                <h4>Links</h4>
+                <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">GitHub</a>
+                <a href="/llms.txt">llms.txt</a>
+                <a href="/terms">Terms of Use</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 pushpage &nbsp;&middot;&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
