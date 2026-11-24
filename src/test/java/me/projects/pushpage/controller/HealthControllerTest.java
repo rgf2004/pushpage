@@ -20,8 +20,9 @@ class HealthControllerTest {
 
     static final HealthResponse UP = new HealthResponse("UP", "9.9.9", 123, 12, 3,
             "2026-11-01T00:00:00Z", "2026-11-02T00:00:00Z",
-            new HealthResponse.StorageInfo(1000, "1000 B", 5000, "4 KB"));
-    static final HealthResponse DOWN = new HealthResponse("DOWN", "9.9.9", 123, 0, 0, null, null, null);
+            new HealthResponse.StorageInfo(1000, "1000 B", 5000, "4 KB"),
+            new HealthResponse.UserInfo(10, 8, 2, null));
+    static final HealthResponse DOWN = new HealthResponse("DOWN", "9.9.9", 123, 0, 0, null, null, null, null);
 
     @Mock
     HealthService healthService;
@@ -61,7 +62,9 @@ class HealthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.version").value("9.9.9"))
                 .andExpect(jsonPath("$.livePages").value(12))
-                .andExpect(jsonPath("$.storage.freeBytes").value(5000));
+                .andExpect(jsonPath("$.storage.freeBytes").value(5000))
+                .andExpect(jsonPath("$.users.active").value(8))
+                .andExpect(jsonPath("$.users.awaitingVerification").doesNotExist());
     }
 
     @Test

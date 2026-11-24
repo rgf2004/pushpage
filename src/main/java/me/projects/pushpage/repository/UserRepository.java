@@ -19,6 +19,22 @@ public class UserRepository {
         this.jdbc = jdbc;
     }
 
+    public record UserStats(long total, long active, long inactive, long unverified) {}
+
+    public UserStats getStats() {
+        return jdbc.queryForObject(
+                """
+                SELECT
+                  COUNT(*) AS total,
+                  COUNT(CASE WHEN active THEN 1 END) AS active,
+                  COUNT(CASE WHEN NOT active THEN 1 END) AS inactive,
+                  COUNT(CASE WHEN NOT email_verified THEN 1 END) AS unverified
+                FROM users
+                """,
+                (rs, i) -> new UserStats(rs.getLong("total"), rs.getLong("active"),
+                        rs.getLong("inactive"), rs.getLong("unverified")));
+    }
+
     public void save(User user) {
         jdbc.update(
                 "INSERT INTO users (id, email, password_hash, created_at, active, admin) VALUES (?, ?, ?, ?, ?, ?)",

@@ -317,9 +317,17 @@ Returns `200` when healthy, `503` (same body shape, `status: "DOWN"`) otherwise.
     "usedHuman": "200 KB",
     "freeBytes": 10737418240,
     "freeHuman": "10.0 GB"
+  },
+  "users": {
+    "total": 8,
+    "active": 7,
+    "inactive": 1,
+    "awaitingVerification": 2
   }
 }
 ```
+
+`users.awaitingVerification` (accounts whose email is not yet verified) is only present when `EMAIL_ENABLED=true`.
 
 ---
 

@@ -11,8 +11,12 @@ public record HealthResponse(
         long deletedPages,
         String oldestPage,
         String newestPage,
-        StorageInfo storage
+        StorageInfo storage,
+        UserInfo users
 ) {
+    /** {@code awaitingVerification} is null (omitted) unless email verification is enabled. */
+    public record UserInfo(long total, long active, long inactive, Long awaitingVerification) {}
+
     public record StorageInfo(
             long usedBytes,
             String usedHuman,

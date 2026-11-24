@@ -841,6 +841,9 @@
                 <div class="info-row"><span class="info-label">Newest page</span><span class="info-value" id="h-newest">—</span></div>
                 <div class="info-row"><span class="info-label">Storage used</span><span class="info-value" id="h-used">—</span></div>
                 <div class="info-row"><span class="info-label">Storage free</span><span class="info-value" id="h-free">—</span></div>
+                <div class="info-row"><span class="info-label">Users</span><span class="info-value" id="h-users">—</span></div>
+                <div class="info-row"><span class="info-label">Active / inactive</span><span class="info-value" id="h-users-active">—</span></div>
+                <div class="info-row" id="h-verify-row" style="display:none"><span class="info-label">Awaiting verification</span><span class="info-value" id="h-users-unverified">—</span></div>
             </div>
         </div>
         <div class="panel-header">
@@ -1619,6 +1622,12 @@ async function loadHealth() {
         set('h-newest', h.newestPage ? fmtDate(h.newestPage) : '—');
         set('h-used', h.storage ? h.storage.usedHuman : '—');
         set('h-free', h.storage ? h.storage.freeHuman : '—');
+        const u = h.users;
+        set('h-users', u ? u.total : '—');
+        set('h-users-active', u ? `${u.active} / ${u.inactive}` : '—');
+        const showVerify = !!(u && u.awaitingVerification != null);
+        document.getElementById('h-verify-row').style.display = showVerify ? '' : 'none';
+        if (showVerify) set('h-users-unverified', u.awaitingVerification);
         loading.style.display = 'none'; grid.style.display = '';
     } catch (e) {
         loading.style.display = 'none';

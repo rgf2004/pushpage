@@ -198,7 +198,7 @@ All endpoints are under `/api` (Spring Boot context path).
 | `POST` | `/api/me/keys` | User (JWT) | Create a named API key (`{ name }`, ≤60 chars) → `201 { id, name, api_key, key_prefix, created_at }`; raw key returned once. Other keys are unaffected. Max `API_KEYS_MAX_PER_USER` (409 beyond). |
 | `DELETE` | `/api/me/keys/{id}` | User (JWT) | Revoke one key (404 if not yours). |
 | `GET` | `/api/health` | None | Health check: `{ "status": "UP" }` (200) or `{ "status": "DOWN" }` (503). |
-| `GET` | `/api/admin/health` | Admin | Full runtime details: version, uptime, live/deleted page counts, oldest/newest page, storage. Shown on the dashboard's Users tab. |
+| `GET` | `/api/admin/health` | Admin | Full runtime details: version, uptime, live/deleted page counts, oldest/newest page, storage, user counts (total, active, inactive, and awaiting verification with `EMAIL_ENABLED`). Shown on the dashboard's Users tab. |
 | `GET` | `/api/config` | None | Public frontend config: `{ features: { plans, email } }`. Add new frontend-visible settings in `ClientConfigService`. |
 | `GET` | `/api/admin/users` | Admin | List all users. |
 | `PATCH` | `/api/admin/users/{id}/deactivate` | Admin | Deactivate a user. |
@@ -227,7 +227,7 @@ A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.h
 **Tabs:**
 - **Pages** — lists the caller's pages, with delete and pagination
 - **Account** — displays email, role; **API keys** list (name, key prefix, created, last used, Revoke with confirmation) and a create form (a required name; the raw key is shown once); plan badge + quota progress bar (`PLANS_ENABLED` only — hidden otherwise); **Connect your AI agent (MCP)** section with copyable setup commands for Claude Code, Cursor, Claude Desktop (`mcp-remote`) and the local `uvx pushpage-mcp` server. They are built in the browser (`mcpSnippet()` in `dashboard.html`) with the key created in this session filled in (kept only in memory, cleared on sign-out/reload), show a `pp_your_key_here` placeholder before that, use `location.origin` for the endpoint (self-hosted instances also get `PUSHPAGE_URL` / `PUSHPAGE_PUBLIC_URL` in the local command), and include a no-key guest-mode command
-- **Users** (admin only) — a **Service health** card (version, uptime, page counts, storage, from `GET /api/admin/health`), then lists all users; Promote and Deactivate actions; plan column (`PLANS_ENABLED`), verified column and Verify button (`EMAIL_ENABLED`), and a Reset password button that shows a one-time link to hand to the user
+- **Users** (admin only) — a **Service health** card (version, uptime, page counts, storage, user counts, from `GET /api/admin/health`), then lists all users; Promote and Deactivate actions; plan column (`PLANS_ENABLED`), verified column and Verify button (`EMAIL_ENABLED`), and a Reset password button that shows a one-time link to hand to the user
 
 ## Subscription plans (`PLANS_ENABLED`)
 
