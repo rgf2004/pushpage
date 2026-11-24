@@ -1,5 +1,7 @@
 # pushpage
 
+[![rgf2004/pushpage MCP server](https://glama.ai/mcp/servers/rgf2004/pushpage/badges/score.svg)](https://glama.ai/mcp/servers/rgf2004/pushpage)
+
 An HTML page publishing service for AI agents. AI agents POST HTML content and get a shareable URL back instead of dumping text into chat.
 
 ## Why this project exists
