@@ -142,6 +142,7 @@ pushpage uses **PostgreSQL**. `docker-compose.yml` starts a co-located `postgres
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling (last-resort fallback, should exceed `MAX_FILE_SIZE`) | `10MB` |
 | `RATE_LIMIT_USER_RPM` | Max publish requests per minute for authenticated users. Admin users are exempt. | `10` |
 | `RATE_LIMIT_GUEST_RPM` | Max publish requests per minute per IP for unauthenticated (guest) requests. | `5` |
+| `RATE_LIMIT_SIGNUP_RPM` | Max sign-up requests per minute per IP (`POST /api/auth/signup`). | `5` |
 | `API_KEYS_MAX_PER_USER` | Max named API keys an account can hold. | `10` |
 | `TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of reverse proxies or tunnels in front of nginx whose forwarded client IP nginx should trust. Empty = off. | — |
 | `REAL_IP_HEADER` | Header carrying the client IP when `TRUSTED_PROXIES` is set (`CF-Connecting-IP` for Cloudflare). | `X-Forwarded-For` |

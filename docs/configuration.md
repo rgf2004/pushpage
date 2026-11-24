@@ -14,6 +14,7 @@ All variables are set in a `.env` file in the project root and passed to the con
 | `MAX_REQUEST_SIZE` | Servlet-level request size ceiling. Should exceed `MAX_FILE_SIZE`. | `10MB` |
 | `RATE_LIMIT_USER_RPM` | Max publish requests per minute for authenticated users. Admin users are exempt. `429 Too Many Requests` is returned when exceeded. | `10` |
 | `RATE_LIMIT_GUEST_RPM` | Max publish requests per minute per IP for unauthenticated (guest) requests. | `5` |
+| `RATE_LIMIT_SIGNUP_RPM` | Max sign-up requests (`POST /api/auth/signup`) per minute per IP. `429 Too Many Requests` is returned when exceeded. | `5` |
 | `API_KEYS_MAX_PER_USER` | Max named API keys an account can hold. | `10` |
 | `TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of reverse proxies, tunnels or load balancers in front of nginx. nginx takes the client IP from `REAL_IP_HEADER` only for requests from these addresses. Empty disables it. See [Running behind a proxy](#running-behind-a-proxy-or-tunnel). | _(empty)_ |
 | `REAL_IP_HEADER` | Header that carries the client IP when `TRUSTED_PROXIES` is set. | `X-Forwarded-For` |
