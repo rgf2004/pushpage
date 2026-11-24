@@ -5,6 +5,7 @@ MCP clients that implement the [MCP authorization spec](https://modelcontextprot
 | Endpoint | Behavior |
 |----------|----------|
 | `https://pushpage.link/mcp` | Unchanged: guest mode without a key, or `X-Api-Key` / `Authorization: Bearer pp_...` with one. |
+| `https://pushpage.link/mcp-guest` | Always a guest, whatever the client sends: any key or token is dropped. The URL to give people for trying it with no account. |
 | `https://pushpage.link/mcp/signin` | The same MCP server, but only for signed-in callers. Without a valid credential it answers `401` with a `WWW-Authenticate` header pointing at the discovery document, which is what makes the client open the browser. |
 
 Guest mode never answers `401`, so a client can only discover the sign-in flow through the second URL.

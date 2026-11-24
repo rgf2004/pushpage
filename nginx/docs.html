@@ -868,7 +868,7 @@ Copy these credentials now. They will NOT appear again.
             <h3>Try it with no key (guest mode)</h3>
             <p>You do not need an account to try the MCP server. Add it with just the URL:</p>
 
-<pre><code><span class="token-hl">claude</span> mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
+<pre><code><span class="token-hl">claude</span> mcp add --transport http pushpage https://pushpage.link/mcp-guest</code></pre>
 
             <p>In guest mode <code>publish_page</code> works and the page is deleted after 30 minutes. The tool result includes <code>guest_mode: true</code> and a message telling the user to <a href="/dashboard">sign up or sign in</a> to get an API key. <code>list_pages</code> and <code>delete_page</code> need an account. An invalid key is rejected with <code>401</code>, never downgraded to guest mode.</p>
 

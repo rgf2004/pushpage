@@ -287,6 +287,20 @@ class TestSignInEndpoint(unittest.TestCase):
         self.assertEqual(self.forwarded, ["/mcp"])
         self.assertEqual(self.sent, [])
 
+    def test_guest_endpoint_drops_credentials_and_serves_the_mcp_route(self):
+        seen = {}
+
+        async def inner(scope, receive, send):
+            seen["path"] = scope["path"]
+            seen["headers"] = {k.decode(): v.decode() for k, v in scope["headers"]}
+
+        gateway = self.server.SignInGateway(inner)
+        scope = {"type": "http", "path": "/mcp-guest", "raw_path": b"/mcp-guest", "headers": [
+            (b"authorization", b"Bearer pp_secret"), (b"x-api-key", b"pp_secret"), (b"accept", b"text/event-stream")]}
+        asyncio.run(gateway(scope, None, None))
+        self.assertEqual(seen["path"], "/mcp")
+        self.assertEqual(seen["headers"], {"accept": "text/event-stream"})
+
     def test_credentials_are_presented_to_the_api_by_type(self):
         self.assertEqual(self.server._auth_headers("pp_abc"), {"X-Api-Key": "pp_abc"})
         self.assertEqual(self.server._auth_headers("eyJ.a.b"), {"Authorization": "Bearer eyJ.a.b"})

@@ -119,7 +119,7 @@ A FastMCP server is available at `https://pushpage.link/mcp` (streamable-http tr
 ### Try it with no key (guest mode)
 
 ```bash
-claude mcp add --transport http pushpage https://pushpage.link/mcp
+claude mcp add --transport http pushpage https://pushpage.link/mcp-guest
 ```
 
 ### Claude Desktop config

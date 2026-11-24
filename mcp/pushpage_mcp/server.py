@@ -244,6 +244,8 @@ def health() -> dict:
 # ── Browser sign-in endpoint (OAuth) ──────────────────────────────────────────
 
 _SIGNIN_PATH = "/mcp/signin"
+_GUEST_PATH = "/mcp-guest"
+_CREDENTIAL_HEADERS = {"authorization", "x-api-key"}
 _SIGNIN_SCOPES = "pages:publish pages:read pages:delete"
 
 
@@ -285,18 +287,24 @@ async def _send_unavailable(send) -> None:
 
 
 class SignInGateway:
-    """ASGI wrapper that serves the same MCP server at ``/mcp/signin`` for signed-in callers only.
+    """ASGI wrapper that serves the same MCP server at more than one URL.
 
-    ``/mcp`` stays open to guests. ``/mcp/signin`` answers 401 with the OAuth discovery pointer
-    until the client presents a valid access token (or API key), which is what makes a client open
-    the browser sign-in. Accepted calls are passed on to the normal ``/mcp`` route.
+    - ``/mcp``: unchanged, guests or a key.
+    - ``/mcp/signin``: signed-in callers only. It answers 401 with the OAuth discovery pointer until
+      the client presents a valid access token (or API key), which is what makes a client open the
+      browser sign-in. Accepted calls are passed on to the normal ``/mcp`` route.
+    - ``/mcp-guest``: always a guest. Any credential sent is dropped, so the session is keyless
+      whatever the client has configured.
     """
 
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] == "http" and scope["path"].rstrip("/") == _SIGNIN_PATH:
+        if scope["type"] == "http" and scope["path"].rstrip("/") == _GUEST_PATH:
+            headers = [(k, v) for k, v in scope["headers"] if k.decode().lower() not in _CREDENTIAL_HEADERS]
+            scope = dict(scope, path="/mcp", raw_path=b"/mcp", headers=headers)
+        elif scope["type"] == "http" and scope["path"].rstrip("/") == _SIGNIN_PATH:
             headers = {k.decode().lower(): v.decode() for k, v in scope["headers"]}
             token = _bearer_or_key(headers)
             if not token:

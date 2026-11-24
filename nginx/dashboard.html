@@ -989,6 +989,7 @@ const PAGE_SIZE = 20;
 let jwt = '';
 // MCP setup snippets (Account tab): the key lives only in this variable, never stored.
 const MCP_URL = location.origin + '/mcp';
+const MCP_GUEST_URL = location.origin + '/mcp-guest';
 const MCP_KEY_PLACEHOLDER = 'pp_your_key_here';
 let mcpKey = null;
 let mcpClient = 'claude-code';
@@ -1684,7 +1685,7 @@ function renderMcpSetup() {
         ? 'Your new API key is filled in below. Copy the command now: the key is shown only once and these snippets disappear when you leave this page.'
         : 'Create an API key above and these commands fill in with it automatically. Until then they show a placeholder.';
     status.classList.toggle('ready', !!mcpKey);
-    document.getElementById('mcp-guest-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_URL;
+    document.getElementById('mcp-guest-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_GUEST_URL;
     document.querySelectorAll('.mcp-client-btn').forEach(b => b.classList.toggle('active', b.dataset.client === mcpClient));
 }
 

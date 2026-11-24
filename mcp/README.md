@@ -39,7 +39,7 @@ Requires [uv](https://docs.astral.sh/uv/). To use a self-hosted instance, set `P
 `https://pushpage.link/mcp` (streamable-http). Try it in guest mode with one command and no key:
 
 ```bash
-claude mcp add --transport http pushpage https://pushpage.link/mcp
+claude mcp add --transport http pushpage https://pushpage.link/mcp-guest
 ```
 
 With an account, send the key as `X-Api-Key` or `Authorization: Bearer`:
