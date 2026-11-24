@@ -465,6 +465,24 @@
         .mcp-guest { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
 
         /* ── Guest page highlight ────────────────────────────────────── */
+        .insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+        .stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; box-shadow: var(--shadow-sm); }
+        .stat-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); }
+        .stat-value { font-size: 1.7rem; font-weight: 700; margin-top: 4px; line-height: 1.1; }
+        .stat-value.warn { color: #b45309; }
+        .stat-sub { font-size: .8rem; color: var(--text-muted); margin-top: 4px; }
+        .activity { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 14px; }
+        .activity-bars { display: flex; align-items: flex-end; gap: 8px; height: 64px; margin-top: 10px; }
+        .activity-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+        .activity-bar { flex: none; width: 100%; max-width: 38px; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 2px; opacity: .85; }
+        .activity-bar.zero { background: var(--border-soft); opacity: .6; }
+        .activity-day { font-size: .7rem; color: var(--text-dim); }
+        .activity-n { font-size: .72rem; color: var(--text-muted); }
+        .pages-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: .85rem; color: var(--text-muted); }
+        .chip { border: 1px solid var(--border-soft); background: var(--bg-card); color: var(--text); border-radius: 20px; padding: 4px 12px; font-size: .82rem; cursor: pointer; }
+        .chip.on { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+        .exp-soon { color: #b45309; font-weight: 600; }
+        .exp-urgent { color: var(--red); font-weight: 600; }
         .guest-badge {
             display: inline-block;
             background: #fef3c7;
@@ -727,6 +745,22 @@
             <h2 id="pages-heading">Your pages</h2>
         </div>
         <div id="pages-loading" class="loading-state">Loading…</div>
+        <div id="pages-insights" style="display:none">
+            <div class="insights">
+                <div class="stat"><div class="stat-label">Live pages</div><div class="stat-value" id="ins-live">0</div><div class="stat-sub" id="ins-next">&nbsp;</div></div>
+                <div class="stat"><div class="stat-label">Expire within 24h</div><div class="stat-value" id="ins-24h">0</div></div>
+                <div class="stat"><div class="stat-label">Expire within 7 days</div><div class="stat-value" id="ins-7d">0</div></div>
+                <div class="stat"><div class="stat-label">Published, last 7 days</div><div class="stat-value" id="ins-week">0</div><div class="stat-sub">pages still live</div></div>
+            </div>
+            <div class="activity">
+                <div class="stat-label">Publishing activity (live pages, per day)</div>
+                <div class="activity-bars" id="ins-bars"></div>
+            </div>
+            <div class="pages-toolbar">
+                <button class="chip" id="soon-filter" type="button">Expiring within 24h only</button>
+                <span id="soon-note"></span>
+            </div>
+        </div>
         <div id="pages-table-wrap" style="display:none">
             <div class="table-wrap">
                 <table>
@@ -1324,6 +1358,8 @@ document.getElementById('logout-btn').addEventListener('click', () => {
     currentUser = null;
     allPages = [];
     pagesPage = 0;
+    soonOnly = false;
+    document.getElementById('pages-insights').style.display = 'none';
     document.getElementById('dashboard-screen').style.display = 'none';
     document.getElementById('pages-heading').textContent = 'Your pages';
     document.getElementById('admin-tab-btn').style.display = 'none';
@@ -1353,12 +1389,86 @@ async function renderPages() {
     }
 
     document.getElementById('pages-table-wrap').style.display = 'block';
+    renderInsights();
     renderPageRows();
 }
 
+// ── Pages insights ────────────────────────────────────────────────────────
+let soonOnly = false;
+const HOUR = 3600e3, DAY = 24 * HOUR;
+
+function msLeft(p) { return p['expires_at'] ? new Date(p['expires_at']).getTime() - Date.now() : Infinity; }
+function viewPages() { return soonOnly ? allPages.filter(p => msLeft(p) <= DAY) : allPages; }
+
+function fmtLeft(ms) {
+    if (ms <= 0) return 'expired';
+    const m = Math.round(ms / 60e3);
+    if (m < 60) return `in ${Math.max(m, 1)} min`;
+    const h = Math.round(ms / HOUR);
+    if (h < 48) return `in ${h} h`;
+    return `in ${Math.round(ms / DAY)} days`;
+}
+
+function expiryCell(iso) {
+    if (!iso) return '—';
+    const ms = new Date(iso).getTime() - Date.now();
+    const cls = ms <= HOUR ? 'exp-urgent' : ms <= DAY ? 'exp-soon' : '';
+    const rel = ms <= 7 * DAY ? ` <span class="${cls}">(${fmtLeft(ms)})</span>` : '';
+    return `<span title="${esc(new Date(iso).toLocaleString())}">${fmtDate(iso)}</span>${rel}`;
+}
+
+function renderInsights() {
+    document.getElementById('pages-insights').style.display = allPages.length ? 'block' : 'none';
+    const live = allPages.length;
+    const within = limit => allPages.filter(p => msLeft(p) <= limit).length;
+    const n24 = within(DAY), n7 = within(7 * DAY);
+    document.getElementById('ins-live').textContent = live;
+    const el24 = document.getElementById('ins-24h');
+    el24.textContent = n24;
+    el24.classList.toggle('warn', n24 > 0);
+    document.getElementById('ins-7d').textContent = n7;
+
+    const next = allPages.filter(p => p['expires_at']).sort((a, b) => msLeft(a) - msLeft(b))[0];
+    document.getElementById('ins-next').textContent = next
+        ? `Next to expire ${fmtLeft(msLeft(next))}` : '\u00a0';
+
+    // last 7 local days, oldest first
+    const days = [];
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    for (let i = 6; i >= 0; i--) days.push(new Date(today.getTime() - i * DAY));
+    const counts = days.map(() => 0);
+    allPages.forEach(p => {
+        const t = new Date(p['created_at']).getTime();
+        const idx = Math.floor((t - days[0].getTime()) / DAY);
+        if (idx >= 0 && idx < 7) counts[idx]++;
+    });
+    document.getElementById('ins-week').textContent = counts.reduce((a, b) => a + b, 0);
+    const max = Math.max(1, ...counts);
+    document.getElementById('ins-bars').innerHTML = counts.map((c, i) => `
+        <div class="activity-col" title="${c} page(s) on ${days[i].toLocaleDateString()}">
+            <span class="activity-n">${c || ''}</span>
+            <div class="activity-bar${c ? '' : ' zero'}" style="height:${c ? Math.max(8, Math.round(c / max * 40)) : 2}px"></div>
+            <span class="activity-day">${days[i].toLocaleDateString(undefined, { weekday: 'short' })}</span>
+        </div>`).join('');
+
+    const chip = document.getElementById('soon-filter');
+    chip.classList.toggle('on', soonOnly);
+    document.getElementById('soon-note').textContent = soonOnly ? `Showing ${viewPages().length} of ${live}` : '';
+}
+
+document.getElementById('soon-filter').addEventListener('click', () => {
+    soonOnly = !soonOnly;
+    pagesPage = 0;
+    renderInsights();
+    renderPageRows();
+});
+
 function renderPageRows() {
+    const list = viewPages();
+    const maxPage = Math.max(0, Math.ceil(list.length / PAGE_SIZE) - 1);
+    if (pagesPage > maxPage) pagesPage = maxPage;
     const start = pagesPage * PAGE_SIZE;
-    const slice = allPages.slice(start, start + PAGE_SIZE);
+    const slice = list.slice(start, start + PAGE_SIZE);
     const tbody = document.getElementById('pages-tbody');
     tbody.innerHTML = '';
 
@@ -1375,7 +1485,7 @@ function renderPageRows() {
             </td>
             <td class="page-url"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a></td>
             <td class="date-cell">${fmtDate(p['created_at'])}</td>
-            <td class="date-cell">${fmtDate(p['expires_at'])}</td>
+            <td class="date-cell">${expiryCell(p['expires_at'])}</td>
             <td><button class="btn btn-danger btn-sm" data-id="${esc(p.id)}" data-title="${esc(p.title || p.id)}">Delete</button></td>
         `;
         tbody.appendChild(tr);
@@ -1389,7 +1499,7 @@ function renderPageRows() {
 }
 
 function renderPagination() {
-    const total = allPages.length;
+    const total = viewPages().length;
     const pages = Math.ceil(total / PAGE_SIZE);
     const el = document.getElementById('pages-pagination');
     if (pages <= 1) { el.innerHTML = ''; return; }
@@ -1419,14 +1529,13 @@ document.getElementById('confirm-delete').addEventListener('click', async () => 
         const r = await api('/pages/' + id, { method: 'DELETE' });
         if (r.ok) {
             allPages = allPages.filter(p => p.id !== id);
-            const row = document.getElementById('page-row-' + id);
-            if (row) row.remove();
             if (allPages.length === 0) {
                 document.getElementById('pages-table-wrap').style.display = 'none';
                 document.getElementById('pages-empty').style.display = 'block';
             } else {
-                renderPagination();
+                renderPageRows();
             }
+            renderInsights();
             toast('Page deleted.');
         } else {
             toast('Failed to delete page.', 'error');
