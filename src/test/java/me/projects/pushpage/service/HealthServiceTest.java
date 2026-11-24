@@ -2,6 +2,7 @@ package me.projects.pushpage.service;
 
 import me.projects.pushpage.model.HealthResponse;
 import me.projects.pushpage.repository.PageRepository;
+import me.projects.pushpage.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +25,9 @@ import static org.mockito.Mockito.*;
 class HealthServiceTest {
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private PageRepository pageRepository;
 
     @Mock
@@ -40,6 +44,7 @@ class HealthServiceTest {
         ReflectionTestUtils.setField(healthService, "pagesDir", tempDir.toString());
         ReflectionTestUtils.setField(healthService, "startTime", Instant.now().minusSeconds(120));
         when(buildProperties.getVersion()).thenReturn("0.3.0-SNAPSHOT");
+        lenient().when(userRepository.getStats()).thenReturn(new UserRepository.UserStats(10, 8, 2, 3));
     }
 
     @Test
@@ -166,5 +171,25 @@ class HealthServiceTest {
         healthService.getHealth();
 
         verify(pageRepository, times(1)).getStats();
+    }
+
+    @Test
+    void getHealth_returnsUserCounts_withoutVerificationWhenEmailIsDisabled() {
+        when(pageRepository.getStats()).thenReturn(new PageRepository.PageStats(0, 0, null, null));
+
+        HealthResponse.UserInfo users = healthService.getHealth().users();
+
+        assertThat(users.total()).isEqualTo(10);
+        assertThat(users.active()).isEqualTo(8);
+        assertThat(users.inactive()).isEqualTo(2);
+        assertThat(users.awaitingVerification()).isNull();
+    }
+
+    @Test
+    void getHealth_includesAwaitingVerification_whenEmailIsEnabled() {
+        ReflectionTestUtils.setField(healthService, "emailEnabled", true);
+        when(pageRepository.getStats()).thenReturn(new PageRepository.PageStats(0, 0, null, null));
+
+        assertThat(healthService.getHealth().users().awaitingVerification()).isEqualTo(3);
     }
 }

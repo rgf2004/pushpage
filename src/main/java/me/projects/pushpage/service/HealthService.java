@@ -2,6 +2,7 @@ package me.projects.pushpage.service;
 
 import me.projects.pushpage.model.HealthResponse;
 import me.projects.pushpage.repository.PageRepository;
+import me.projects.pushpage.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +25,14 @@ public class HealthService {
     private static final long CACHE_TTL_MS = 30_000;
 
     private final PageRepository pageRepository;
+    private final UserRepository userRepository;
     private final BuildProperties buildProperties;
 
     @Value("${app.pages-dir}")
     private String pagesDir;
+
+    @Value("${app.features.email.enabled:false}")
+    private boolean emailEnabled;
 
     private Instant startTime;
 
@@ -37,8 +42,9 @@ public class HealthService {
         cachedStats.set(null);
     }
 
-    public HealthService(PageRepository pageRepository, BuildProperties buildProperties) {
+    public HealthService(PageRepository pageRepository, UserRepository userRepository, BuildProperties buildProperties) {
         this.pageRepository = pageRepository;
+        this.userRepository = userRepository;
         this.buildProperties = buildProperties;
     }
 
@@ -62,6 +68,10 @@ public class HealthService {
                     humanReadable(stats.freeBytes())
             );
 
+            UserRepository.UserStats u = stats.userStats();
+            HealthResponse.UserInfo users = new HealthResponse.UserInfo(u.total(), u.active(), u.inactive(),
+                    emailEnabled ? u.unverified() : null);
+
             return new HealthResponse(
                     "UP",
                     buildProperties.getVersion(),
@@ -70,12 +80,13 @@ public class HealthService {
                     pageStats.deletedCount(),
                     oldest,
                     newest,
-                    storage
+                    storage,
+                    users
             );
         } catch (Exception e) {
             return new HealthResponse("DOWN", buildProperties.getVersion(),
                     Instant.now().getEpochSecond() - startTime.getEpochSecond(),
-                    0, 0, null, null, null);
+                    0, 0, null, null, null, null);
         }
     }
 
@@ -85,9 +96,10 @@ public class HealthService {
             return current;
         }
         PageRepository.PageStats pageStats = pageRepository.getStats();
+        UserRepository.UserStats userStats = userRepository.getStats();
         long usedBytes = computeUsedBytes();
         long freeBytes = Files.getFileStore(Path.of(pagesDir)).getUsableSpace();
-        CachedStats fresh = new CachedStats(pageStats, usedBytes, freeBytes, System.currentTimeMillis());
+        CachedStats fresh = new CachedStats(pageStats, userStats, usedBytes, freeBytes, System.currentTimeMillis());
         cachedStats.set(fresh);
         return fresh;
     }
@@ -119,6 +131,7 @@ public class HealthService {
 
     private record CachedStats(
             PageRepository.PageStats pageStats,
+            UserRepository.UserStats userStats,
             long usedBytes,
             long freeBytes,
             long computedAt
