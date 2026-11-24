@@ -92,6 +92,17 @@ PUSHPAGE_API_KEY=pp_your_key_here PUSHPAGE_URL=https://pushpage.link python mcp/
 
 `PUSHPAGE_URL` defaults to `https://pushpage.link`. `AUTHORIZATION` or `Authorization` (`Bearer pp_...`) is accepted as an alternative to `PUSHPAGE_API_KEY`. In the default HTTP mode the key is still read only from each request's headers.
 
+### Publishing a release to the MCP Registry
+
+`server.json` describes the server (hosted endpoint, PyPI package, icons) for the [official MCP Registry](https://registry.modelcontextprotocol.io). Each registry version is published once, so every release needs its own publish. After a release is out, **deploy it first** (the icons in `server.json` are served by the nginx image from `/static/`), then:
+
+```bash
+mcp-publisher login github          # once
+scripts/publish-registry.sh 1.9.0   # the release version, without the leading v
+```
+
+The script refuses to continue unless that version of `pushpage-mcp` is on PyPI and every icon URL in `server.json` answers `200`, stamps the version into a temporary copy (the checked-in `server.json` keeps a placeholder, the PyPI workflow stamps its own copy), validates it, and asks before publishing. Directories such as mcptry read the registry entry, so the icon appears there after the next publish.
+
 ### Storing your API key
 
 Avoid pasting the key into config files you might commit or share. Recommended setup:

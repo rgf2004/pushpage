@@ -167,6 +167,8 @@ On first run, if no users exist the service auto-creates an `admin@pushpage.link
 
 **MCP guest mode.** The MCP server (`mcp/pushpage_mcp/server.py`) does not require a key. Without one it calls `POST /api/pages` as a guest (the wrapper omits `X-Api-Key` entirely, because the API rejects an empty value, and forwards the real client IP from nginx's `X-Real-IP` so the per-IP guest limit is per client, not per MCP container). Guest `publish_page` results carry `guest_mode`, `message` and `signup_url` (built from `PUSHPAGE_PUBLIC_URL`, set from `APP_SERVER_URL` in the compose files); guest `list_pages` / `delete_page` return a "Sign in required" result without calling the API. A key that is present but invalid still fails with `401`, never downgraded to guest.
 
+**MCP Registry.** `server.json` (repo root) is the registry entry: hosted remote, PyPI package, and `icons` (`nginx/static/icon-512.png` and `favicon.svg`, served from `https://pushpage.link/static/`). The checked-in version is a placeholder; after each release is deployed run `scripts/publish-registry.sh <version>` (checks PyPI and the icon URLs, stamps the version, validates, asks before publishing). Registry versions cannot be republished, so a changed `server.json` only reaches the registry with the next version.
+
 ## API
 
 All endpoints are under `/api` (Spring Boot context path).
