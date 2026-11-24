@@ -392,6 +392,48 @@
             box-shadow: 0 0 0 3px rgba(37,99,235,.08);
         }
 
+        /* ── MCP setup (Account tab) ─────────────────────────────────── */
+        .mcp-setup {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-top: 16px;
+        }
+        .mcp-setup h3 { font-size: .9rem; font-weight: 600; margin-bottom: 6px; }
+        .mcp-setup p { font-size: .82rem; color: var(--text-muted); margin-bottom: 12px; }
+        .mcp-setup .mcp-status { font-weight: 500; }
+        .mcp-setup .mcp-status.ready { color: var(--green); }
+        .mcp-clients { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .mcp-client-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: .78rem;
+            font-weight: 500;
+            padding: 4px 12px;
+        }
+        .mcp-client-btn:hover { color: var(--text); }
+        .mcp-client-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+        .mcp-code {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--accent-code);
+            font-family: var(--font-mono);
+            font-size: .78rem;
+            margin: 0 0 8px;
+            overflow-x: auto;
+            padding: 12px 14px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .mcp-code.has-key { border-color: var(--accent); }
+        .mcp-hint { font-size: .78rem; color: var(--text-muted); margin-bottom: 10px; }
+        .mcp-guest { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
+
         /* ── Guest page highlight ────────────────────────────────────── */
         .guest-badge {
             display: inline-block;
@@ -722,6 +764,25 @@
                 </div>
                 <button class="btn btn-secondary btn-sm" id="rotate-key-btn" style="margin-top:4px">Generate / Rotate API Key</button>
             </div>
+
+            <div class="mcp-setup" id="mcp-setup">
+                <h3>Connect your AI agent (MCP)</h3>
+                <p id="mcp-status" class="mcp-status">Generate an API key above and these commands fill in with it automatically.</p>
+                <div class="mcp-clients" id="mcp-clients" role="tablist" aria-label="MCP client">
+                    <button type="button" class="mcp-client-btn active" data-client="claude-code">Claude Code</button>
+                    <button type="button" class="mcp-client-btn" data-client="cursor">Cursor</button>
+                    <button type="button" class="mcp-client-btn" data-client="claude-desktop">Claude Desktop</button>
+                    <button type="button" class="mcp-client-btn" data-client="local">Local (uvx)</button>
+                </div>
+                <pre class="mcp-code" id="mcp-code"></pre>
+                <div class="mcp-hint" id="mcp-hint"></div>
+                <button class="btn btn-secondary btn-sm" id="mcp-copy-btn" type="button">Copy</button>
+                <div class="mcp-guest">
+                    <p style="margin-bottom:8px"><strong>Just trying it?</strong> No key needed. Guest mode lets <code>publish_page</code> work and pages last 30 minutes:</p>
+                    <pre class="mcp-code" id="mcp-guest-code"></pre>
+                    <button class="btn btn-secondary btn-sm" id="mcp-guest-copy-btn" type="button">Copy</button>
+                </div>
+            </div>
         </div>
       </div>
     </div>
@@ -823,6 +884,11 @@ const PAGE_SIZE = 20;
 
 // ── State ────────────────────────────────────────────────────────────────
 let jwt = '';
+// MCP setup snippets (Account tab): the key lives only in this variable, never stored.
+const MCP_URL = location.origin + '/mcp';
+const MCP_KEY_PLACEHOLDER = 'pp_your_key_here';
+let mcpKey = null;
+let mcpClient = 'claude-code';
 let currentUser = null;
 let allPages = [];
 let pagesPage = 0;
@@ -1138,6 +1204,8 @@ async function loadDashboard() {
     // Account tab
     document.getElementById('acc-email').textContent = email;
     document.getElementById('acc-key-box').style.display = 'none';
+    mcpKey = null;
+    renderMcpSetup();
     const roleEl = document.getElementById('acc-role');
     roleEl.textContent = isAdmin ? 'admin' : 'user';
     roleEl.className = 'role-badge' + (isAdmin ? ' admin' : '');
@@ -1179,6 +1247,8 @@ async function loadDashboard() {
 document.getElementById('logout-btn').addEventListener('click', () => {
     ['confirm-modal', 'deactivate-modal', 'promote-modal', 'reset-link-modal'].forEach(hideModal);
     document.getElementById('reset-link-value').textContent = '';
+    mcpKey = null;
+    renderMcpSetup();
     sessionStorage.removeItem('pp_jwt');
     jwt = '';
     currentUser = null;
@@ -1304,6 +1374,8 @@ document.getElementById('rotate-key-btn').addEventListener('click', async () => 
         const data = await r.json();
         document.getElementById('acc-key-value').textContent = data.api_key;
         document.getElementById('acc-key-box').style.display = 'block';
+        mcpKey = data.api_key;
+        renderMcpSetup();
         toast('New API key generated.');
     } catch {
         toast('Network error.', 'error');
@@ -1314,6 +1386,69 @@ document.getElementById('acc-copy-key-btn').addEventListener('click', () => {
     const key = document.getElementById('acc-key-value').textContent;
     navigator.clipboard.writeText(key).then(() => toast('API key copied.'));
 });
+
+// ── Account tab — MCP setup commands ──────────────────────────────────────
+// Built in the browser from the key generated in this session. The key lives only in this
+// variable (never stored); it is cleared on sign-out and on reload.
+function mcpSnippet(client, key) {
+    const selfHosted = location.origin !== 'https://pushpage.link';
+    switch (client) {
+        case 'cursor':
+            return {
+                code: JSON.stringify({ mcpServers: { pushpage: { url: MCP_URL, headers: { 'X-Api-Key': key } } } }, null, 2),
+                hint: 'Add to ~/.cursor/mcp.json (or your project\'s .cursor/mcp.json), then restart Cursor.'
+            };
+        case 'claude-desktop':
+            return {
+                code: JSON.stringify({ mcpServers: { pushpage: { command: 'npx', args: ['mcp-remote', MCP_URL, '--header', 'X-Api-Key:' + key] } } }, null, 2),
+                hint: 'Add to claude_desktop_config.json, then restart Claude Desktop. Uses the mcp-remote bridge, so Node.js is required.'
+            };
+        case 'local':
+            return {
+                code: 'claude mcp add pushpage -e PUSHPAGE_API_KEY=' + key +
+                    (selfHosted ? ' -e PUSHPAGE_URL=' + location.origin + ' -e PUSHPAGE_PUBLIC_URL=' + location.origin : '') +
+                    ' -- uvx pushpage-mcp',
+                hint: 'Runs the pushpage-mcp package from PyPI on your machine over stdio. Requires uv (https://docs.astral.sh/uv/).'
+            };
+        default:
+            return {
+                code: 'claude mcp add --transport http pushpage ' + MCP_URL + ' --header "Authorization: Bearer ' + key + '"',
+                hint: 'Run in your terminal. Check with: claude mcp list'
+            };
+    }
+}
+
+function renderMcpSetup() {
+    const key = mcpKey || MCP_KEY_PLACEHOLDER;
+    const snip = mcpSnippet(mcpClient, key);
+    const codeEl = document.getElementById('mcp-code');
+    codeEl.textContent = snip.code;
+    codeEl.classList.toggle('has-key', !!mcpKey);
+    document.getElementById('mcp-hint').textContent = snip.hint;
+    const status = document.getElementById('mcp-status');
+    status.textContent = mcpKey
+        ? 'Your new API key is filled in below. Copy the command now: the key is shown only once and these snippets disappear when you leave this page.'
+        : 'Generate an API key above and these commands fill in with it automatically. Until then they show a placeholder.';
+    status.classList.toggle('ready', !!mcpKey);
+    document.getElementById('mcp-guest-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_URL;
+    document.querySelectorAll('.mcp-client-btn').forEach(b => b.classList.toggle('active', b.dataset.client === mcpClient));
+}
+
+document.getElementById('mcp-clients').addEventListener('click', (e) => {
+    const btn = e.target.closest('.mcp-client-btn');
+    if (!btn) return;
+    mcpClient = btn.dataset.client;
+    renderMcpSetup();
+});
+document.getElementById('mcp-copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('mcp-code').textContent)
+        .then(() => toast(mcpKey ? 'Copied. It contains your API key, so keep it private.' : 'Copied.'));
+});
+document.getElementById('mcp-guest-copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('mcp-guest-code').textContent)
+        .then(() => toast('Copied.'));
+});
+renderMcpSetup();
 
 // ── Admin → Users tab ─────────────────────────────────────────────────────
 async function loadUsers() {

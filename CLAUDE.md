@@ -209,7 +209,7 @@ A browser-based dashboard is served by nginx at `/dashboard` (`nginx/dashboard.h
 
 **Tabs:**
 - **Pages** — lists the caller's pages, with delete and pagination
-- **Account** — displays email, role; Generate / Rotate API Key button (shows key once); plan badge + quota progress bar (`PLANS_ENABLED` only — hidden otherwise)
+- **Account** — displays email, role; Generate / Rotate API Key button (shows key once); plan badge + quota progress bar (`PLANS_ENABLED` only — hidden otherwise); **Connect your AI agent (MCP)** section with copyable setup commands for Claude Code, Cursor, Claude Desktop (`mcp-remote`) and the local `uvx pushpage-mcp` server. They are built in the browser (`mcpSnippet()` in `dashboard.html`) with the key generated in this session filled in (kept only in memory, cleared on sign-out/reload), show a `pp_your_key_here` placeholder before that, use `location.origin` for the endpoint (self-hosted instances also get `PUSHPAGE_URL` / `PUSHPAGE_PUBLIC_URL` in the local command), and include a no-key guest-mode command
 - **Users** (admin only) — lists all users; Promote and Deactivate actions; plan column (`PLANS_ENABLED`), verified column and Verify button (`EMAIL_ENABLED`), and a Reset password button that shows a one-time link to hand to the user
 
 ## Subscription plans (`PLANS_ENABLED`)
