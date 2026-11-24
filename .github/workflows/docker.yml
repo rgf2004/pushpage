@@ -22,6 +22,9 @@ jobs:
           echo "VERSION=$VERSION"                                     >> $GITHUB_ENV
           echo "NEXT_SNAPSHOT=${MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"     >> $GITHUB_ENV
 
+      - name: Stamp release version into the MCP server
+        run: sed -i "s/^__version__ = .*/__version__ = \"${{ env.VERSION }}\"/" mcp/pushpage_mcp/__init__.py
+
       - name: Set release version in pom.xml
         run: mvn -B versions:set -DnewVersion=${{ env.VERSION }} -DgenerateBackupPoms=false
 

@@ -6,6 +6,8 @@ import uvicorn
 from fastmcp import FastMCP
 from fastmcp.server.dependencies import get_http_request
 
+from pushpage_mcp import __version__
+
 _url = os.environ.get("PUSHPAGE_URL", "https://pushpage.link").rstrip("/")
 # Public address users should open to sign up / sign in (differs from _url when the MCP
 # container talks to the publisher over an internal address).
@@ -13,6 +15,7 @@ _public_url = os.environ.get("PUSHPAGE_PUBLIC_URL", "https://pushpage.link").rst
 
 mcp = FastMCP(
     "pushpage",
+    version=__version__,
     instructions=(
         "Publish HTML as shareable pages, list your pages, and delete them by ID. "
         "The id returned by publish_page can be passed directly to delete_page. "
