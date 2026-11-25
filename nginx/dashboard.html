@@ -878,6 +878,11 @@
                     <p style="margin-bottom:8px"><strong>Connect without an API key.</strong> The app opens your browser, you sign in and allow it, and it shows up here:</p>
                     <pre class="mcp-code" id="mcp-signin-code"></pre>
                     <button class="btn btn-secondary btn-sm" id="mcp-signin-copy-btn" type="button">Copy</button>
+                    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+                        <a class="btn btn-secondary btn-sm" id="mcp-install-cursor" href="#">Add to Cursor</a>
+                        <a class="btn btn-secondary btn-sm" id="mcp-install-vscode" href="#">Add to VS Code</a>
+                    </div>
+                    <div class="mcp-hint" style="margin-top:8px">One-click links open the app to add pushpage (no key in the link); the app asks you to confirm.</div>
                     <div class="mcp-hint" style="margin-top:8px">Other apps: use <code id="mcp-signin-url"></code> as the server URL, if the app supports MCP sign-in.</div>
                 </div>
             </div>
@@ -1799,6 +1804,12 @@ document.getElementById('mcp-copy-btn').addEventListener('click', () => {
 });
 document.getElementById('mcp-signin-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_SIGNIN_URL;
 document.getElementById('mcp-signin-url').textContent = MCP_SIGNIN_URL;
+// One-click install deep links. Formats from the vendors' docs (Cursor: cursor.com/docs/context/mcp/install-links,
+// VS Code: code.visualstudio.com/api/extension-guides/ai/mcp). No credentials are embedded.
+document.getElementById('mcp-install-cursor').href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=pushpage&config='
+    + encodeURIComponent(btoa(JSON.stringify({ url: MCP_SIGNIN_URL })));
+document.getElementById('mcp-install-vscode').href = 'vscode:mcp/install?'
+    + encodeURIComponent(JSON.stringify({ name: 'pushpage', type: 'http', url: MCP_SIGNIN_URL }));
 document.getElementById('mcp-signin-copy-btn').addEventListener('click', () => {
     navigator.clipboard.writeText(document.getElementById('mcp-signin-code').textContent)
         .then(() => toast('Copied.'), () => toast('Could not copy.', 'error'));

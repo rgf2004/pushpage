@@ -192,6 +192,9 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
   --header "Authorization: Bearer pp_your_key_here"
 ```
 
+<!-- VS Code link decodes to {"name":"pushpage","type":"http","url":"https://pushpage.link/mcp/signin"} (double URL-encoded by the vscode.dev wrapper). Update with the /mcp flip, see CLAUDE.md. -->
+**One-click install (browser sign-in, no key):** [Add to VS Code](https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522pushpage%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fpushpage.link%252Fmcp%252Fsignin%2522%257D) · Cursor: use the "Add to Cursor" button on the [MCP setup guide](https://pushpage.link/guides/mcp-server-publish-html) (GitHub does not render `cursor://` links). Both add `https://pushpage.link/mcp/signin` and ask you to confirm; the dashboard's Account tab shows the same buttons for a self-hosted instance. Claude Code: `claude mcp add --transport http pushpage https://pushpage.link/mcp/signin`.
+
 **Storing your key:** keep it in `~/.config/pushpage/credentials` (`chmod 600`) and, where your client supports it (Claude Code, Cursor), reference it as an environment variable instead of pasting it into config. Details in [`docs/mcp.md`](docs/mcp.md#storing-your-api-key).
 
 The MCP server can also run locally over stdio with no clone or Docker: `uvx pushpage-mcp` with `PUSHPAGE_API_KEY` set (PyPI package [`pushpage-mcp`](https://pypi.org/project/pushpage-mcp/)); see [`docs/mcp.md`](docs/mcp.md#run-locally-with-uvx-pypi-package).
