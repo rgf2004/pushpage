@@ -193,10 +193,18 @@
         <h2>9. Security</h2>
         <p>Passwords and API keys are stored as hashes, connections use HTTPS, and published pages are served in a sandbox that cannot reach your account. No service is perfectly secure; report a vulnerability to <!--email_off--><a href="mailto:security@pushpage.link">security@pushpage.link</a><!--/email_off-->.</p>
 
-        <h2>10. Changes to this policy</h2>
+        <h2>10. Self-hosted instances and the MCP package</h2>
+        <p>
+            This policy covers the service at pushpage.link only. pushpage is open source: if you run your own instance, you operate it and decide what it stores, and this policy does not apply to it. The pushpage maintainers receive nothing from self-hosted instances: the software has no telemetry or analytics and does not contact us.
+        </p>
+        <p>
+            The <code>pushpage-mcp</code> package (for example <code>uvx pushpage-mcp</code>) runs on your computer and sends what you ask it to, such as the HTML of a page and your API key, only to the pushpage server it is configured to use. By default that is pushpage.link, and then this policy applies; if you point it at your own instance, your instance's operator handles the data.
+        </p>
+
+        <h2>11. Changes to this policy</h2>
         <p>If we change this policy we will update the effective date above, and for significant changes we will say so on the dashboard or by email.</p>
 
-        <h2>11. Contact</h2>
+        <h2>12. Contact</h2>
         <p>Questions or requests about your data: <!--email_off--><a href="mailto:privacy@pushpage.link">privacy@pushpage.link</a><!--/email_off-->. Help with using the service: <a href="/support">support</a>.</p>
 
     </div>
