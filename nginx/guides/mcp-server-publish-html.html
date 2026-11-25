@@ -26,7 +26,7 @@
   "url": "https://pushpage.link/guides/mcp-server-publish-html",
   "mainEntityOfPage": "https://pushpage.link/guides/mcp-server-publish-html",
   "datePublished": "2026-11-24",
-  "dateModified": "2026-11-24",
+  "dateModified": "2026-11-25",
   "image": "https://pushpage.link/static/og-image.png",
   "author": {
     "@type": "Organization",
@@ -122,9 +122,12 @@ claude mcp add --transport http pushpage https://pushpage.link/mcp \
 
 <h2>One-click install (Cursor and VS Code)</h2>
 <!-- /mcp/signin is a temporary URL; see CLAUDE.md ("MCP URLs") before changing it. -->
-<p>These buttons add pushpage with browser sign-in, so no API key is involved: the app asks you to confirm, then opens your browser to sign in with your pushpage account the first time it connects. They need the desktop app installed.</p>
-<p><a class="btn btn-secondary" href="cursor://anysphere.cursor-deeplink/mcp/install?name=pushpage&amp;config=eyJ1cmwiOiJodHRwczovL3B1c2hwYWdlLmxpbmsvbWNwL3NpZ25pbiJ9">Add to Cursor</a>
-<a class="btn btn-secondary" href="vscode:mcp/install?%7B%22name%22%3A%22pushpage%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpushpage.link%2Fmcp%2Fsignin%22%7D">Add to VS Code</a></p>
+<p>Both buttons add the browser sign-in endpoint (<code>/mcp/signin</code>) instead of the plain <code>/mcp</code> one. The first time the app calls a pushpage tool it opens your browser, where you sign in and allow it; no API key is created or stored. The app can publish, list and delete your pages, nothing else, and you can remove it any time under Account, Connected apps in the dashboard. For a no-account try-out use <code>/mcp-guest</code> as in the guest section above. The links need the desktop app installed and ask you to confirm before anything is added.</p>
+<!-- Cursor config (base64 below) decodes to {"url":"https://pushpage.link/mcp/signin"}. Regenerate: node -e 'const U="https://pushpage.link/mcp/signin";console.log(btoa(JSON.stringify({url:U})))' -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0">
+<a class="btn btn-secondary" href="cursor://anysphere.cursor-deeplink/mcp/install?name=pushpage&amp;config=eyJ1cmwiOiJodHRwczovL3B1c2hwYWdlLmxpbmsvbWNwL3NpZ25pbiJ9">Add to Cursor</a>
+<a class="btn btn-secondary" href="vscode:mcp/install?%7B%22name%22%3A%22pushpage%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpushpage.link%2Fmcp%2Fsignin%22%7D">Add to VS Code</a>
+</div>
 <p>Self-hosting? The dashboard (Account tab) shows the same buttons pointing at your own instance.</p>
 
 <h2>Claude Desktop</h2>

@@ -47,6 +47,8 @@ Clients that support the MCP authorization flow can connect to `https://pushpage
 
 ### One-click install links
 
+<!-- The Cursor/VS Code links on the guide page contain /mcp/signin in encoded form (base64 / percent-encoding); see below for how to regenerate them. -->
+
 The dashboard (Account, Connected apps) and the [MCP setup guide](https://pushpage.link/guides/mcp-server-publish-html) offer "Add to Cursor" and "Add to VS Code" buttons that add `<origin>/mcp/signin` with no key in the link. Formats, from the vendors' documentation:
 
 | Client | Link | Source |
@@ -54,7 +56,7 @@ The dashboard (Account, Connected apps) and the [MCP setup guide](https://pushpa
 | Cursor | `cursor://anysphere.cursor-deeplink/mcp/install?name=pushpage&config=<base64 of {"url":"<origin>/mcp/signin"}>` | https://cursor.com/docs/context/mcp/install-links |
 | VS Code | `vscode:mcp/install?<encodeURIComponent of {"name":"pushpage","type":"http","url":"<origin>/mcp/signin"}>` (Insiders: `vscode-insiders:`); web wrapper `https://vscode.dev/redirect?url=<encoded vscode: URL>` | https://code.visualstudio.com/api/extension-guides/ai/mcp |
 
-The dashboard builds them in JS from `MCP_SIGNIN_URL`, so a self-hosted instance links to itself. Static pages hard-code the pushpage.link URL (update them with the `/mcp/signin` flip, see CLAUDE.md). Claude Code and Claude Desktop have no documented install deep link; Claude Code uses `claude mcp add --transport http pushpage <origin>/mcp/signin`.
+The dashboard builds them in JS from `MCP_SIGNIN_URL`, so a self-hosted instance links to itself. Static pages hard-code the pushpage.link URL (update them with the `/mcp/signin` flip, see CLAUDE.md). To regenerate the Cursor payload after the URL changes: `node -e 'const U="https://pushpage.link/mcp/signin";console.log(btoa(JSON.stringify({url:U})))'` (decodes to `{"url":"https://pushpage.link/mcp/signin"}`); the VS Code one is `encodeURIComponent(JSON.stringify({name:"pushpage",type:"http",url:U}))`. Claude Code and Claude Desktop have no documented install deep link; Claude Code uses `claude mcp add --transport http pushpage <origin>/mcp/signin`.
 
 ## Connecting
 
