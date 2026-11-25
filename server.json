@@ -46,11 +46,15 @@
   "remotes": [
     {
       "type": "streamable-http",
+      "url": "https://pushpage.link/mcp-guest"
+    },
+    {
+      "type": "streamable-http",
       "url": "https://pushpage.link/mcp",
       "headers": [
         {
           "name": "X-Api-Key",
-          "description": "Optional. Your pushpage API key (pp_...). Omit it to use guest mode (publish only, pages expire after 30 minutes).",
+          "description": "Your pushpage API key (pp_...) from the dashboard, to list and delete your own pages and keep pages longer. Use the /mcp-guest remote for no account (publish only, pages expire after 30 minutes).",
           "isRequired": false,
           "isSecret": true
         }
