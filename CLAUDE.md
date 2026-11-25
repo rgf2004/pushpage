@@ -28,6 +28,8 @@ push-page/
 │   ├── dashboard.html          # browser dashboard (/dashboard)
 │   ├── docs.html               # documentation page (/docs)
 │   ├── terms.html              # Terms of Use page (/terms)
+│   ├── privacy.html            # Privacy Policy (/privacy; /privacy-policy redirects here)
+│   ├── support.html            # Support and contact (/support)
 │   ├── guides/                 # how-to / explainer pages (/guides/<slug>)
 │   ├── 404.html                # custom 404 error page
 │   ├── overlay/                # empty; downstream forks drop override files here (see below)
@@ -94,8 +96,10 @@ Every such page needs:
 
 Footers must not link to raw API endpoints such as `/mcp`: they answer crawlers with an error.
 
+**Contact addresses.** `support@`, `privacy@` and `security@pushpage.link` (plus `noreply@`, which only sends) are Cloudflare Email Routing rules that forward to the maintainer's Gmail; system email is sent through Mailtrap. The Privacy Policy (`nginx/privacy.html`) names Cloudflare, Mailtrap and Google as the parties that handle data: update it, and its effective date, if a processor, a retention period (`CLEANUP_RETENTION_DAYS`, token lifetimes) or what is stored changes.
+
 **Where the files go**
-- **Site pages** (landing, docs, terms): `nginx/<name>.html`, which needs **four** changes:
+- **Site pages** (landing, docs, terms, privacy, support): `nginx/<name>.html`, which needs **four** changes:
   1. Create `nginx/<name>.html`
   2. Add `COPY nginx/<name>.html /usr/share/nginx/html/<name>.html` to `nginx/Dockerfile`
   3. Add a `location = /<name>` block to `nginx/default.conf` pointing to the file

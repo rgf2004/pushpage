@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>pushpage — Privacy Policy</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="What pushpage collects, why, who else handles it, how long it is kept, and how to ask us to change or delete it.">
+    <link rel="canonical" href="https://pushpage.link/privacy">
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pushpage.link/privacy">
+    <meta property="og:title" content="pushpage — Privacy Policy">
+    <meta property="og:description" content="What pushpage collects, why, who else handles it, how long it is kept, and how to ask us to change or delete it.">
+    <meta property="og:image" content="https://pushpage.link/static/og-image.png">
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        .terms-wrap {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 56px 32px 80px;
+        }
+
+        .terms-header {
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terms-header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .terms-header .effective {
+            font-size: .85rem;
+            color: var(--text-muted);
+        }
+
+        .terms-body h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 40px 0 12px;
+        }
+
+        .terms-body h2:first-child { margin-top: 0; }
+
+        .terms-body p,
+        .terms-body li {
+            font-size: .92rem;
+            color: var(--text-secondary);
+            line-height: 1.75;
+        }
+
+        .terms-body ul {
+            margin: 12px 0 12px 20px;
+            padding: 0;
+        }
+
+        .terms-body li { margin-bottom: 6px; }
+
+        .terms-body a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .terms-body a:hover { text-decoration: underline; }
+
+        .terms-body code {
+            font-family: var(--font-mono);
+            font-size: .85em;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+
+        .terms-note {
+            background: var(--accent-bg);
+            border: 1px solid rgba(37,99,235,.2);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin: 32px 0;
+            font-size: .88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .terms-wrap { padding: 32px 20px 60px; }
+            .terms-header h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link">Docs</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-ghost btn-sm">Sign in</a>
+            <a href="/dashboard" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+    </div>
+</header>
+
+<div class="terms-wrap">
+    <div class="terms-header">
+        <h1>Privacy Policy</h1>
+        <p class="effective">Effective date: 25 November 2026</p>
+    </div>
+
+    <div class="terms-note">
+        This policy explains what the managed pushpage service at pushpage.link collects, why, who else handles it, and how to ask us to change or delete it. It does not apply to instances run by other people (pushpage is open source and can be self-hosted).
+    </div>
+
+    <div class="terms-body">
+
+        <h2>1. Who we are</h2>
+        <p>
+            pushpage ("we", "us") is operated by the maintainers of the open source project at <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">github.com/rgf2004/pushpage</a>. For anything about your data, write to <a href="mailto:privacy@pushpage.link">privacy@pushpage.link</a>.
+        </p>
+
+        <h2>2. What we collect</h2>
+        <p><strong>If you create an account:</strong></p>
+        <ul>
+            <li>Your email address and a salted hash of your password (we never store the password itself).</li>
+            <li>Account details such as when it was created, whether the email is verified, and whether it is active.</li>
+            <li>Your API keys, stored only as hashes (we cannot read a key back after it is created), with the name you gave each key and when it was last used.</li>
+            <li>If you connect an app with the browser sign-in: the app's name and return address, what you allowed it to do, and hashed access codes and refresh tokens.</li>
+            <li>Short-lived tokens for email verification and password reset.</li>
+        </ul>
+        <p><strong>When you publish a page:</strong></p>
+        <ul>
+            <li>The HTML you send, stored so it can be served at its public address, and the page's title, id, creation and expiry time and (for signed-in users) which account owns it.</li>
+        </ul>
+        <p><strong>When anyone uses the service, with or without an account:</strong></p>
+        <ul>
+            <li>Server logs with the IP address, time, requested address and browser or client name of each request. They are used to keep the service running and to stop abuse, and they are not kept long term.</li>
+            <li>The IP address is also held in memory to apply rate limits (for example, how many pages a guest can publish per minute).</li>
+        </ul>
+        <p>
+            We do not run advertising or analytics scripts, and the pushpage website sets no cookies of its own. The dashboard keeps your sign-in token in your browser's session storage for the current tab; it is cleared when you sign out or close the tab.
+        </p>
+
+        <h2>3. Published pages are public</h2>
+        <p>
+            Anyone who has a page's address can read it, and search engines may find it if it is linked elsewhere. Do not publish personal data, passwords, private keys or anything you do not want to be public. Guest pages (published without an account) are deleted after 30 minutes; pages from accounts are deleted after their retention period (30 days by default) or earlier if you delete them.
+        </p>
+
+        <h2>4. How we use it</h2>
+        <ul>
+            <li>To run the service: sign you in, serve your pages, enforce limits and keep your API keys and connected apps working.</li>
+            <li>To send the emails the service needs: email verification and password reset. We do not send marketing email.</li>
+            <li>To protect the service: detect abuse, spam and attempts to bypass limits, and fix faults.</li>
+        </ul>
+        <p>We do not sell your data, and we do not use your pages or account data to train AI models.</p>
+
+        <h2>5. Who else handles it</h2>
+        <ul>
+            <li><strong>Cloudflare</strong> provides the network in front of the service (DNS, TLS, traffic filtering) and therefore sees requests to it. It also forwards the mail sent to our support and privacy addresses to the operator's mailbox.</li>
+            <li><strong>Mailtrap</strong> delivers the verification and password-reset emails we send, so it receives the recipient's address and the message.</li>
+            <li><strong>Google (Gmail)</strong> hosts the mailbox where messages you send to our addresses arrive.</li>
+        </ul>
+        <p>We share information with authorities only where the law requires it.</p>
+
+        <h2>6. How long we keep it</h2>
+        <ul>
+            <li><strong>Pages:</strong> until they expire or you delete them. The HTML is then deleted; a small record (id, title, timestamps and owner) is kept.</li>
+            <li><strong>Accounts:</strong> until you ask us to delete the account.</li>
+            <li><strong>Access codes:</strong> two minutes. <strong>Refresh tokens:</strong> 30 days, replaced on every use. <strong>Access tokens:</strong> 60 minutes.</li>
+            <li><strong>Server logs:</strong> a short time, then discarded.</li>
+            <li><strong>Emails you send us:</strong> as long as needed to answer you and keep a record of the conversation.</li>
+        </ul>
+
+        <h2>7. Your choices and rights</h2>
+        <ul>
+            <li>You can delete any page, create and revoke API keys, and remove connected apps yourself in the <a href="/dashboard">dashboard</a>. You can change your password at any time by using the reset link.</li>
+            <li>To see, correct or export the data we hold about you, or to have your account and its data deleted, email <a href="mailto:privacy@pushpage.link">privacy@pushpage.link</a> from the address on the account. Account deletion is currently handled by request, not from the dashboard.</li>
+            <li>Depending on where you live, you may have further rights, including to object to or restrict processing and to complain to your local data protection authority.</li>
+        </ul>
+
+        <h2>8. Children</h2>
+        <p>pushpage is not meant for anyone under 13, and we do not knowingly collect their data. If you think a child has given us information, write to the address above and we will delete it.</p>
+
+        <h2>9. Security</h2>
+        <p>Passwords and API keys are stored as hashes, connections use HTTPS, and published pages are served in a sandbox that cannot reach your account. No service is perfectly secure; report a vulnerability to <a href="mailto:security@pushpage.link">security@pushpage.link</a>.</p>
+
+        <h2>10. Changes to this policy</h2>
+        <p>If we change this policy we will update the effective date above, and for significant changes we will say so on the dashboard or by email.</p>
+
+        <h2>11. Contact</h2>
+        <p>Questions or requests about your data: <a href="mailto:privacy@pushpage.link">privacy@pushpage.link</a>. Help with using the service: <a href="/support">support</a>.</p>
+
+    </div>
+</div>
+
+
+<footer>
+    <div class="footer-inner">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">push<span>page</span></a>
+                <p>A lightweight HTML publishing service for AI agents and developers.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/api/swagger-ui/index.html">API reference</a>
+                <a href="/docs">Documentation</a>
+            </div>
+            <div class="footer-col">
+                <h4>Docs &amp; guides</h4>
+                <a href="/docs#quick-start">Quick start</a>
+                <a href="/docs#authentication">Authentication</a>
+                <a href="/docs#self-hosting">Self-hosting</a>
+                <a href="/docs#configuration">Configuration</a>
+                <a href="/guides/share-html-from-claude-code">Share HTML from Claude Code</a>
+                <a href="/guides/mcp-server-publish-html">MCP server setup</a>
+                <a href="/guides/html-hosting-for-ai-agents">HTML hosting for agents</a>
+            </div>
+            <div class="footer-col">
+                <h4>Links</h4>
+                <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">GitHub</a>
+                <a href="/llms.txt">llms.txt</a>
+                <a href="/terms">Terms of Use</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/support">Support</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 pushpage &nbsp;·&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
