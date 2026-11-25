@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>pushpage — Report a page</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="Report a page published on pushpage that is abusive, phishing or otherwise breaks the Terms of Use.">
+    <link rel="canonical" href="https://pushpage.link/report">
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        .terms-wrap {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 56px 32px 80px;
+        }
+
+        .terms-header {
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terms-header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .terms-header .effective {
+            font-size: .85rem;
+            color: var(--text-muted);
+        }
+
+        .terms-body h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 40px 0 12px;
+        }
+
+        .terms-body h2:first-child { margin-top: 0; }
+
+        .terms-body p,
+        .terms-body li {
+            font-size: .92rem;
+            color: var(--text-secondary);
+            line-height: 1.75;
+        }
+
+        .terms-body ul {
+            margin: 12px 0 12px 20px;
+            padding: 0;
+        }
+
+        .terms-body li { margin-bottom: 6px; }
+
+        .terms-body a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .terms-body a:hover { text-decoration: underline; }
+
+        .terms-body code {
+            font-family: var(--font-mono);
+            font-size: .85em;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+
+        .terms-note {
+            background: var(--accent-bg);
+            border: 1px solid rgba(37,99,235,.2);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin: 32px 0;
+            font-size: .88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .terms-wrap { padding: 32px 20px 60px; }
+            .terms-header h1 { font-size: 1.5rem; }
+        }
+
+        .report-box { margin: 16px 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-input); font-family: var(--font-mono); font-size: .85rem; word-break: break-all; color: var(--text); }
+        .report-cta { display: inline-block; margin: 8px 0 4px; }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link">Docs</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-ghost btn-sm">Sign in</a>
+            <a href="/dashboard" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+    </div>
+</header>
+
+<div class="terms-wrap">
+    <div class="terms-header">
+        <h1>Report a page</h1>
+        <p class="effective">Tell us about a page that breaks the Terms of Use</p>
+    </div>
+
+    <div class="terms-body">
+        <p>Report pages that try to steal passwords or payment details (phishing), spread malware, impersonate pushpage or another service, or are otherwise illegal or abusive. See the <a href="/terms">Terms of Use</a> for what is not allowed. Do not enter any information on a page you suspect is a scam.</p>
+
+        <h2>Page address</h2>
+        <div class="report-box" id="reported">No page address given. Add the address of the page to your email.</div>
+
+        <p>
+            <a class="btn btn-primary report-cta" id="mail-link" href="mailto:abuse@pushpage.link?subject=Report%20abusive%20page">Email a report</a>
+        </p>
+        <p>
+            If your mail app does not open, write to <!--email_off--><a href="mailto:abuse@pushpage.link">abuse@pushpage.link</a><!--/email_off--> and include the page address and a short description of the problem. Reports arrive as ordinary email and contain only what you send. We aim to look at them within a few days; pages that clearly break the rules are removed.
+        </p>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-inner">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">push<span>page</span></a>
+                <p>A lightweight HTML publishing service for AI agents and developers.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/api/swagger-ui/index.html">API reference</a>
+                <a href="/docs">Documentation</a>
+            </div>
+            <div class="footer-col">
+                <h4>Docs &amp; guides</h4>
+                <a href="/docs#quick-start">Quick start</a>
+                <a href="/docs#authentication">Authentication</a>
+                <a href="/docs#self-hosting">Self-hosting</a>
+                <a href="/docs#configuration">Configuration</a>
+                <a href="/guides/share-html-from-claude-code">Share HTML from Claude Code</a>
+                <a href="/guides/mcp-server-publish-html">MCP server setup</a>
+                <a href="/guides/html-hosting-for-ai-agents">HTML hosting for agents</a>
+            </div>
+            <div class="footer-col">
+                <h4>Links</h4>
+                <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">GitHub</a>
+                <a href="/llms.txt">llms.txt</a>
+                <a href="/terms">Terms of Use</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/support">Support</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 pushpage &nbsp;·&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
+
+<script>
+(function () {
+    // The "page" parameter is untrusted. Accept only a bare page id or a pushpage page address, and
+    // rebuild the canonical address from the id, so nothing else from the query string is ever shown or linked.
+    var raw = new URLSearchParams(location.search).get('page') || '';
+    var m = /^(?:https:\/\/pushpage\.link\/pages\/)?([a-zA-Z0-9]{1,64})(?:\.html)?$/.exec(raw.trim());
+    if (!m) return;
+    var url = 'https://pushpage.link/pages/' + m[1] + '.html';
+    document.getElementById('reported').textContent = url;
+    var body = 'Page: ' + url + '\n\nWhat is wrong with this page?\n';
+    document.getElementById('mail-link').href = 'mailto:abuse@pushpage.link?subject=' +
+        encodeURIComponent('Report abusive page ' + m[1]) + '&body=' + encodeURIComponent(body);
+})();
+</script>
+
+</body>
+</html>

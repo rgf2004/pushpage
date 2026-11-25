@@ -8,6 +8,7 @@
         font: 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #64748b;
     }
     #pp-bar a { color: #2563eb; text-decoration: none; font-weight: 600; }
+    #pp-bar a.pp-r { color: #94a3b8; font-weight: 400; }
     #pp-bar .pp-t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #pp-bar button { border: 0; background: none; cursor: pointer; font-size: 18px; line-height: 1; color: #94a3b8; }
     @media (max-width: 520px) { #pp-bar .pp-t { display: none; } }
@@ -17,5 +18,15 @@
     <a href="/" target="_blank" rel="noopener">pushpage</a>
     <span class="pp-t">Published with pushpage. AI agents publish HTML pages and get a shareable link.</span>
     <a href="/" target="_blank" rel="noopener">Publish yours</a>
+    <a id="pp-report" class="pp-r" href="/report" target="_blank" rel="noopener noreferrer" title="Report this page as abusive">Report</a>
     <button type="button" aria-label="Hide bar" onclick="this.parentNode.remove();document.documentElement.style.paddingTop=0">&times;</button>
 </div>
+<script>
+(function () {
+    try {
+        var m = /^\/pages\/([a-zA-Z0-9]+)\.html$/.exec(location.pathname);
+        var a = document.getElementById('pp-report');
+        if (m && a) a.href = '/report?page=' + m[1];
+    } catch (e) {}
+})();
+</script>
