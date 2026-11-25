@@ -200,6 +200,26 @@ class OAuthIT extends PostgresTestSupport {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>x</p>\"}")).andExpect(status().isForbidden());
     }
 
+    @Test
+    void publishScope_canUpdateAPage_readOnlyScopeCannot() throws Exception {
+        String clientId = registerClient(REDIRECT);
+        String publisher = signIn(clientId, "pages:publish").get("access_token").asText();
+        String reader = signIn(clientId, "pages:read").get("access_token").asText();
+        String id = json(mockMvc.perform(post("/pages").header("Authorization", "Bearer " + publisher)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v1</p>\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/pages/" + id)
+                .header("Authorization", "Bearer " + reader)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v2</p>\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/pages/" + id)
+                .header("Authorization", "Bearer " + publisher)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v2</p>\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id));
+        assertThat(java.nio.file.Files.readString(tempDir.resolve(id + ".html"))).contains("v2");
+    }
+
     // ── authorization endpoint ────────────────────────────────────────────────
 
     @Test

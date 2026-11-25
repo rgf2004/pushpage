@@ -24,6 +24,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final String SIGNUP_PATH = "/auth/signup";
     private static final String OAUTH_REGISTER_PATH = "/oauth/register";
     private static final String POST = "POST";
+    private static final String PUT = "PUT";
 
     private final AuthContext authContext;
     private final RateLimitService rateLimitService;
@@ -38,7 +39,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = requestPath(request);
-        if (!POST.equalsIgnoreCase(request.getMethod())) {
+        boolean isUpdate = PUT.equalsIgnoreCase(request.getMethod()) && path.startsWith(PUBLISH_PATH + "/")
+                && path.indexOf('/', PUBLISH_PATH.length() + 1) < 0;
+        if (!POST.equalsIgnoreCase(request.getMethod()) && !isUpdate) {
             chain.doFilter(request, response);
             return;
         }
@@ -53,7 +56,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     rateLimitService.getSignupRequestsPerMinute());
             return;
         }
-        if (!path.equals(PUBLISH_PATH)) {
+        // Updating a page shares the publish bucket: it costs the same (a write of a whole page).
+        if (!isUpdate && !path.equals(PUBLISH_PATH)) {
             chain.doFilter(request, response);
             return;
         }

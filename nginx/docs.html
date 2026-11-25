@@ -250,6 +250,7 @@
         .method.get    { background: #dbeafe; color: #1d4ed8; }
         .method.delete { background: #fee2e2; color: #b91c1c; }
         .method.patch  { background: #fef3c7; color: #b45309; }
+        .method.put    { background: #fef3c7; color: #b45309; }
 
         .endpoint-path {
             font-family: var(--font-mono);
@@ -565,7 +566,7 @@ Copy these credentials now. They will NOT appear again.
         <!-- Rate limits -->
         <section class="docs-section" id="rate-limits">
             <h2>Rate limits</h2>
-            <p>Rate limiting applies to <code>POST /api/pages</code> only. All other endpoints are not rate-limited.</p>
+            <p>Rate limiting applies to <code>POST /api/pages</code> and <code>PUT /api/pages/{id}</code> (updates share the publish limit).  All other endpoints are not rate-limited.</p>
 
             <div class="docs-table-wrap">
                 <table class="docs-table">
@@ -646,6 +647,18 @@ Copy these credentials now. They will NOT appear again.
 { <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/pages/abc123.html"</span>, <span class="token-key">"id"</span>: <span class="token-str">"abc123"</span> }
 
 <span class="token-cmt"># Error: 400 (missing/empty HTML), 413 (payload too large), 429 (rate limit)</span></code></pre>
+
+            <div class="endpoint">
+                <span class="method put">PUT</span>
+                <span class="endpoint-path">/api/pages/{id}</span>
+                <span class="endpoint-auth">User</span>
+            </div>
+            <p>Replace the HTML (and title) of one of your pages, keeping the same ID and URL. Accepts <code>application/json</code> (<code>{ "html": "...", "title": "optional" }</code>) or <code>multipart/form-data</code>. Owner or admin only; guest pages cannot be updated. Expiry restarts from now and the call counts toward the publish rate limit.</p>
+
+<pre><code><span class="token-cmt"># Response: 200</span>
+{ <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/pages/abc123.html"</span>, <span class="token-key">"id"</span>: <span class="token-str">"abc123"</span>, <span class="token-key">"expires_at"</span>: <span class="token-str">"2026-07-24T10:00:00Z"</span> }
+
+<span class="token-cmt"># Error: 400 (empty HTML), 403 (not your page / guest page), 404 (not found), 413 (too large), 429 (rate limit / quota)</span></code></pre>
 
             <div class="endpoint">
                 <span class="method get">GET</span>
@@ -915,6 +928,7 @@ Copy these credentials now. They will NOT appear again.
                     <thead><tr><th>Tool</th><th>Description</th></tr></thead>
                     <tbody>
                         <tr><td>publish_page</td><td>Publish HTML content and return the URL.</td></tr>
+                        <tr><td>update_page</td><td>Replace the HTML of a page you published, keeping the same URL.</td></tr>
                         <tr><td>list_pages</td><td>List your published pages.</td></tr>
                         <tr><td>delete_page</td><td>Delete a page by ID.</td></tr>
                         <tr><td>health</td><td>Check service health and stats.</td></tr>

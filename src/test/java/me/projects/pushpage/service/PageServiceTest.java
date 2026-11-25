@@ -50,6 +50,9 @@ class PageServiceTest {
     @Mock
     private RetentionPolicy retentionPolicy;
 
+    @Mock
+    private me.projects.pushpage.repository.UserRepository userRepository;
+
     @InjectMocks
     private PageService pageService;
 
@@ -254,5 +257,50 @@ class PageServiceTest {
         when(pageRepository.findAll(anyString(), anyString(), anyBoolean())).thenReturn(pages);
 
         assertThat(pageService.listPages()).isEqualTo(pages);
+    }
+
+    private static Page livePage() {
+        return new Page("abc12345", "t", Instant.now(), null, Instant.now().plusSeconds(600), null, ADMIN_USER.id());
+    }
+
+    @Test
+    void updatePage_whenQuotaIsExhausted_throws429_andKeepsTheOldFile() throws Exception {
+        java.nio.file.Files.writeString(tempDir.resolve("abc12345.html"), "old");
+        when(pageRepository.findById("abc12345")).thenReturn(Optional.of(livePage()));
+        doThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Daily publish limit reached"))
+                .when(quotaPolicy).check(ADMIN_USER);
+
+        assertThatThrownBy(() -> pageService.update("abc12345", new PublishRequest("<p>new</p>", "t")))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Daily publish limit");
+
+        assertThat(java.nio.file.Files.readString(tempDir.resolve("abc12345.html"))).isEqualTo("old");
+        verify(pageRepository, never()).updateContent(any(), any(), any());
+    }
+
+    @Test
+    void updatePage_checksQuota_writesFile_andInvalidatesTheHealthCache() throws Exception {
+        java.nio.file.Files.writeString(tempDir.resolve("abc12345.html"), "old");
+        when(pageRepository.findById("abc12345")).thenReturn(Optional.of(livePage()));
+        when(pageRepository.updateContent(eq("abc12345"), eq("t"), any())).thenReturn(true);
+
+        PublishResponse response = pageService.update("abc12345", new PublishRequest("<p>new</p>", "t"));
+
+        assertThat(response.id()).isEqualTo("abc12345");
+        assertThat(java.nio.file.Files.readString(tempDir.resolve("abc12345.html"))).contains("<p>new</p>");
+        verify(quotaPolicy).check(ADMIN_USER);
+        verify(healthService).invalidateCache();
+    }
+
+    @Test
+    void updatePage_whenDeletedMeanwhile_throws404_andLeavesNoTempFile() {
+        when(pageRepository.findById("abc12345")).thenReturn(Optional.of(livePage()));
+        when(pageRepository.updateContent(any(), any(), any())).thenReturn(false);
+
+        assertThatThrownBy(() -> pageService.update("abc12345", new PublishRequest("<p>new</p>", "t")))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        assertThat(tempDir.toFile().list()).isEmpty();
     }
 }

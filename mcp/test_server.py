@@ -30,7 +30,7 @@ class TestServerRegistration(unittest.TestCase):
     def test_all_tools_registered(self):
         self.assertEqual(
             self._tool_names(),
-            {"publish_page", "list_pages", "delete_page", "health"},
+            {"publish_page", "list_pages", "update_page", "delete_page", "health"},
         )
 
     def test_missing_pushpage_url_defaults_to_public_instance(self):
@@ -154,7 +154,7 @@ class TestGuestMode(unittest.TestCase):
             def post(self, *a, **k):
                 return outer.response
 
-            get = delete = post
+            get = delete = put = post
 
         self.server.httpx.Client = FakeClient
         patcher = patch("pushpage_mcp.server.get_http_request", side_effect=RuntimeError("no request"))
@@ -200,6 +200,47 @@ class TestGuestMode(unittest.TestCase):
         self.assertTrue(listed[0]["guest_mode"])
         self.assertTrue(deleted["guest_mode"])
         self.assertIn("Sign up or sign in", deleted["message"])
+
+    def test_guest_update_asks_to_sign_in_without_calling_the_api(self):
+        out = self.server.update_page("abc", "<h1>new</h1>")
+        self.assertEqual(self.created, [])
+        self.assertEqual(out["error"], "Sign in required")
+        self.assertTrue(out["guest_mode"])
+        self.assertIn("Sign up or sign in", out["message"])
+
+    def test_keyed_update_puts_to_the_page_and_returns_same_url_and_id(self):
+        calls = []
+        self.response = _FakeResponse({"url": "https://x/pages/a.html", "id": "a", "expires_at": "t2"})
+        self.server.httpx.Client.put = lambda s, path, json=None: (calls.append((path, json)) or self.response)
+        with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_real"}):
+            out = self.server.update_page("a", "<h1>new</h1>", title="T")
+        self.assertEqual(calls, [("/api/pages/a", {"html": "<h1>new</h1>", "title": "T"})])
+        self.assertEqual(out, {"url": "https://x/pages/a.html", "id": "a", "expires_at": "t2"})
+        self.assertEqual(self.created[0]["headers"]["X-Api-Key"], "pp_real")
+
+    def test_update_omits_title_when_not_given(self):
+        calls = []
+        self.server.httpx.Client.put = lambda s, path, json=None: (calls.append(json) or self.response)
+        with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_real"}):
+            self.server.update_page("a", "<h1>new</h1>")
+        self.assertEqual(calls, [{"html": "<h1>new</h1>"}])
+
+    def test_update_errors_are_mapped(self):
+        for status in (403, 404, 413, 429):
+            self.response = _FakeResponse(status=status)
+            with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_real"}):
+                out = self.server.update_page("a", "<h1>new</h1>")
+            self.assertEqual(out["error"], "Failed to update page")
+            self.assertEqual(out["status_code"], status)
+            self.assertNotIn("guest_mode", out)
+
+    def test_update_tool_annotations(self):
+        tool = next(t for t in asyncio.run(self.server.mcp.list_tools()) if t.name == "update_page")
+        ann = tool.annotations
+        self.assertFalse(ann.readOnlyHint)
+        self.assertTrue(ann.destructiveHint)
+        self.assertTrue(ann.idempotentHint)
+        self.assertFalse(ann.openWorldHint)
 
     def test_client_ip_is_forwarded_over_http(self):
         request = MagicMock()

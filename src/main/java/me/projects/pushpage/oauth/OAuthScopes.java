@@ -39,6 +39,8 @@ public final class OAuthScopes {
             if (method.equals("POST")) return scopes.contains(PUBLISH);
             if (method.equals("GET")) return scopes.contains(READ);
         }
+        // Replacing a page's content is a publish: the same scope covers it.
+        if (path.startsWith("/pages/") && method.equals("PUT")) return scopes.contains(PUBLISH);
         if (path.startsWith("/pages/") && method.equals("DELETE")) return scopes.contains(DELETE);
         return false;
     }

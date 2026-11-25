@@ -25,6 +25,12 @@ public class PageRepository {
         );
     }
 
+    /** Replaces title and expiry of a live page; false if it does not exist (or was just deleted). */
+    public boolean updateContent(String id, String title, Instant expiresAt) {
+        return jdbc.update("UPDATE pages SET title = ?, expires_at = ? WHERE id = ? AND deleted_at IS NULL",
+                title, Timestamp.from(expiresAt), id) > 0;
+    }
+
     public List<Page> findAll(String baseUrl, String userId, boolean isAdmin) {
         if (isAdmin) {
             return jdbc.query(

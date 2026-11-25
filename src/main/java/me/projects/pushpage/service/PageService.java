@@ -6,6 +6,7 @@ import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.PageRepository;
+import me.projects.pushpage.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -51,9 +53,12 @@ public class PageService {
     private final AuthContext authContext;
     private final QuotaPolicy quotaPolicy;
     private final RetentionPolicy retentionPolicy;
+    private final UserRepository userRepository;
 
     public PageService(PageRepository pageRepository, HealthService healthService,
-                       AuthContext authContext, QuotaPolicy quotaPolicy, RetentionPolicy retentionPolicy) {
+                       AuthContext authContext, QuotaPolicy quotaPolicy, RetentionPolicy retentionPolicy,
+                       UserRepository userRepository) {
+        this.userRepository = userRepository;
         this.pageRepository = pageRepository;
         this.healthService = healthService;
         this.authContext = authContext;
@@ -95,6 +100,88 @@ public class PageService {
         String title = !titleFromTag.equals("Untitled") ? titleFromTag
                 : (filenameTitle != null ? filenameTitle : "Untitled");
         return publishHtml(html, title);
+    }
+
+    /** Replaces the HTML (and title) of an existing page, keeping its id and URL. JSON variant. */
+    public PublishResponse update(String id, PublishRequest request) {
+        if (request.html() == null || request.html().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML content is required");
+        }
+        String title = (request.title() != null && !request.title().isBlank())
+                ? request.title() : extractTitle(request.html());
+        return updateHtml(id, request.html(), title);
+    }
+
+    /** Multipart variant of {@link #update(String, PublishRequest)}. */
+    public PublishResponse updateFile(String id, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File part is required");
+        }
+        String html;
+        try {
+            html = new String(file.getBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read uploaded file");
+        }
+        String titleFromTag = extractTitle(html);
+        String filenameTitle = titleFromFilename(file.getOriginalFilename());
+        String title = !titleFromTag.equals("Untitled") ? titleFromTag
+                : (filenameTitle != null ? filenameTitle : "Untitled");
+        return updateHtml(id, html, title);
+    }
+
+    private PublishResponse updateHtml(String id, String html, String title) {
+        User currentUser = requireCurrentUser();
+        // Unknown, deleted and expired-but-not-yet-cleaned pages are all 404.
+        Page page = pageRepository.findById(id)
+                .filter(p -> p.expiresAt() == null || p.expiresAt().isAfter(Instant.now()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id));
+        if (page.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Guest pages cannot be updated; publish a new page instead");
+        }
+        if (!currentUser.admin() && !currentUser.id().equals(page.userId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own pages");
+        }
+        // An update is checked against the daily quota like a publish, but does not use any of it
+        // (usage counts pages created today, and an update creates none).
+        quotaPolicy.check(currentUser);
+        long sizeBytes = html.getBytes(StandardCharsets.UTF_8).length;
+        if (sizeBytes > maxFileSize.toBytes()) {
+            throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE,
+                    "Payload size %d bytes exceeds maximum allowed size of %d bytes".formatted(sizeBytes, maxFileSize.toBytes()));
+        }
+        String wrappedHtml = wrapIfNeeded(html, title);
+
+        // The retention window restarts from now under the page owner's plan (an admin editing
+        // someone else's page must not change it by their own plan).
+        Instant expiresAt = currentUser.id().equals(page.userId())
+                ? retentionPolicy.expiresAt(currentUser)
+                : userRepository.findById(page.userId())
+                        .map(retentionPolicy::expiresAt)
+                        .orElseGet(() -> retentionPolicy.expiresAt(currentUser));
+
+        // Write a temp file first (a dotfile: nginx never serves it), then rename over the page, so a
+        // reader sees either the old or the new content, never a partial file.
+        Path target = Path.of(pagesDir, id + ".html");
+        Path temp = Path.of(pagesDir, "." + id + "." + UUID.randomUUID().toString().substring(0, 8) + ".tmp");
+        try {
+            Files.writeString(temp, wrappedHtml);
+            if (!pageRepository.updateContent(id, title, expiresAt)) {
+                Files.deleteIfExists(temp);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id);
+            }
+            Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            try {
+                Files.deleteIfExists(temp);
+            } catch (IOException ignored) {
+                // best effort
+            }
+            throw new RuntimeException("Failed to write page file", e);
+        }
+        healthService.invalidateCache();
+        return new PublishResponse(baseUrl + "/" + id + ".html", id, expiresAt);
     }
 
     private PublishResponse publishHtml(String html, String title) {

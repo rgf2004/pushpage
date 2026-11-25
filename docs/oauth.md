@@ -51,7 +51,7 @@ sequenceDiagram
     C->>G: initialize / tools/call (Authorization: Bearer access token)
     G->>P: GET /api/me (is the token valid and the account active?)
     P-->>G: 200
-    G->>P: POST /api/pages, GET /api/pages, DELETE /api/pages/id
+    G->>P: POST /api/pages, PUT /api/pages/id, GET /api/pages, DELETE /api/pages/id
     P-->>G: result
     G-->>C: tool result
 
@@ -76,7 +76,7 @@ The same flow in words:
 - **The publisher is the authorization server.** Identity is the existing email/password account; there is no separate user store. Self-hosted instances get it with no extra service: the issuer is `APP_SERVER_URL`.
 - **Public clients only**, no client secret. PKCE with `S256` is required. Redirect URIs must match a registered one exactly; registration accepts `https`, `http` on localhost/127.0.0.1/[::1], and custom app schemes, never `javascript:`/`data:`/`file:` or a fragment.
 - **Access tokens** are the same signed JWTs as dashboard sessions, with a `scope` claim and a short life (`OAUTH_ACCESS_TOKEN_MINUTES`, default 60). **Refresh tokens** are random, stored hashed, rotate on every use (the old one stops working) and last `OAUTH_REFRESH_TOKEN_DAYS` (default 30). Authorization codes live 2 minutes and work once.
-- **Scopes:** `pages:publish` (`POST /api/pages`), `pages:read` (`GET /api/pages`), `pages:delete` (`DELETE /api/pages/{id}`). A client that asks for none gets all three. A token can also read `GET /api/me`. **Everything else is refused with `403`**: admin endpoints, API key management and `/api/oauth/authorize`, so a leaked token cannot mint keys or more tokens.
+- **Scopes:** `pages:publish` (`POST /api/pages` and `PUT /api/pages/{id}`, replacing the content of an existing page), `pages:read` (`GET /api/pages`), `pages:delete` (`DELETE /api/pages/{id}`). A client that asks for none gets all three. A token can also read `GET /api/me`. **Everything else is refused with `403`**: admin endpoints, API key management and `/api/oauth/authorize`, so a leaked token cannot mint keys or more tokens.
 - **Grants and revocation:** each app a user allows gets one *grant* (re-authorizing the same app reuses it, so reconnecting does not pile up entries). Every access token names its grant, and the API checks that it still exists. The user sees their grants under **Account → Connected apps** in the dashboard and can **Remove** one: it loses access **immediately** (its access tokens stop working even though they have not expired, and its refresh tokens are deleted), other apps and API keys are untouched, and the app can ask to be connected again. A password change or reset also invalidates every access and refresh token, and so does deactivating the account.
 - **API keys and guest mode are unaffected.** The MCP server presents `pp_` keys in `X-Api-Key` and OAuth tokens (JWTs) in `Authorization` to the API.
 

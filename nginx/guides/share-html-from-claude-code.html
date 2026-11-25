@@ -26,7 +26,7 @@
   "url": "https://pushpage.link/guides/share-html-from-claude-code",
   "mainEntityOfPage": "https://pushpage.link/guides/share-html-from-claude-code",
   "datePublished": "2026-11-24",
-  "dateModified": "2026-11-24",
+  "dateModified": "2026-11-25",
   "image": "https://pushpage.link/static/og-image.png",
   "author": {
     "@type": "Organization",
@@ -104,7 +104,7 @@ then publish it with pushpage and give me the link.</code></pre>
 <p>Claude writes a self-contained HTML document, calls the <code>publish_page</code> tool, and replies with a URL such as <code>https://pushpage.link/pages/a1b2c3d4.html</code>. Open it in a browser or send it to someone. The agent returns the link instead of pasting a wall of HTML into the chat.</p>
 
 <h2>3. Keep your pages longer with an API key</h2>
-<p>Guest pages last 30 minutes. For longer retention, and to list or delete your own pages through the tools, create an account and an API key:</p>
+<p>Guest pages last 30 minutes. For longer retention, and to list, update or delete your own pages through the tools, create an account and an API key:</p>
 <ol>
   <li>Sign up at <a href="/dashboard">pushpage.link/dashboard</a>.</li>
   <li>Open the <strong>Account</strong> tab, name a key (for example &ldquo;Claude Code on my laptop&rdquo;) and create it. The key is shown once.</li>
@@ -119,6 +119,7 @@ then publish it with pushpage and give me the link.</code></pre>
   <thead><tr><th>Tool</th><th>What it does</th><th>Needs a key?</th></tr></thead>
   <tbody>
     <tr><td><code>publish_page</code></td><td>Publish an HTML document and return its URL.</td><td>No (guest pages last 30 minutes)</td></tr>
+    <tr><td><code>update_page</code></td><td>Replace the HTML of one of your pages and keep its URL.</td><td>Yes</td></tr>
     <tr><td><code>list_pages</code></td><td>List the pages you have published.</td><td>Yes</td></tr>
     <tr><td><code>delete_page</code></td><td>Permanently delete one of your pages by id.</td><td>Yes</td></tr>
     <tr><td><code>health</code></td><td>Check that the service is up.</td><td>No</td></tr>

@@ -9,6 +9,7 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 | Tool | Description |
 |------|-------------|
 | `publish_page(html, title?)` | Publish an HTML page, returns `{ url, id, expires_at }`. `title` is optional — omitted to let the service extract it from the `<title>` tag or fall back to `"Untitled"`. |
+| `update_page(id, html, title?)` | Replace the HTML of one of your pages, keeping the same `id` and URL (`PUT /api/pages/{id}`). Overwrites the old content; the expiry restarts. Returns `{ url, id, expires_at }`. Needs an account. |
 | `list_pages()` | List published pages scoped to the authenticated user (admins see all). |
 | `delete_page(id)` | Delete a page by its ID. |
 | `health()` | Check whether the pushpage service is reachable and healthy. |
@@ -19,14 +20,14 @@ The dashboard's **Account** tab shows ready-to-copy setup commands for Claude Co
 
 There are two modes:
 
-**Guest mode (no key).** Connect with just the URL, no header. `publish_page` works and creates an anonymous page that is deleted after 30 minutes (the same limits as `POST /api/pages` without a key, rate-limited per client IP). The result includes `guest_mode: true`, a `message` and a `signup_url`, which tell the user to sign up or sign in to the dashboard to get an API key. `list_pages` and `delete_page` need an account, so in guest mode they return a "Sign in required" result with the same message and make no API call. `health` works.
+**Guest mode (no key).** Connect with just the URL, no header. `publish_page` works and creates an anonymous page that is deleted after 30 minutes (the same limits as `POST /api/pages` without a key, rate-limited per client IP). The result includes `guest_mode: true`, a `message` and a `signup_url`, which tell the user to sign up or sign in to the dashboard to get an API key. `list_pages`, `update_page` and `delete_page` need an account, so in guest mode they return a "Sign in required" result with the same message and make no API call. `health` works.
 
 **Account mode (with a key).** Each MCP client supplies its own pushpage API key via either header:
 
 - `Authorization: Bearer <key>`
 - `X-Api-Key: <key>`
 
-Pages then follow your plan's retention, and `list_pages` / `delete_page` work. An invalid or expired key is rejected by the API with `401`; it is never silently downgraded to guest mode.
+Pages then follow your plan's retention, and `list_pages` / `update_page` / `delete_page` work. An invalid or expired key is rejected by the API with `401`; it is never silently downgraded to guest mode.
 
 ### `PUSHPAGE_PUBLIC_URL` vs `PUSHPAGE_URL`
 

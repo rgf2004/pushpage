@@ -25,6 +25,7 @@ All endpoints are under `/api` (Spring Boot context path). Most require an API k
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/pages` | Optional | Publish HTML (JSON or file upload), returns `{ url, id }` |
+| `PUT` | `/api/pages/{id}` | User | Replace a page's HTML (and title), keeping the same id and URL; owner or admin only, expiry restarts |
 | `POST` | `/api/oauth/register`, `/api/oauth/token` | None | OAuth for MCP browser sign-in (see `docs/oauth.md`) |
 | `GET` | `/api/health` | None | Health check |
 | `GET` | `/api/admin/health` | Admin | Runtime stats (version, uptime, page counts, storage, user counts) |
@@ -162,7 +163,7 @@ See [`skill/SKILL.md`](skill/SKILL.md) for the full skill definition and usage e
 
 ## MCP Server
 
-pushpage ships a **cloud MCP server** that lets any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.) publish, list, and delete pages — no local install required. Agents connect to it with a single URL.
+pushpage ships a **cloud MCP server** that lets any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.) publish, update, list, and delete pages — no local install required. Agents connect to it with a single URL.
 
 The MCP server starts automatically with the rest of the stack — no extra configuration needed:
 
@@ -170,7 +171,7 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 docker compose up -d
 ```
 
-Once running, the server is available at `https://pushpage.link/mcp` (or `{APP_SERVER_URL}/mcp` for self-hosted instances). You can try it with no key: without one the server runs in **guest mode** (`publish_page` works, pages expire after 30 minutes, and the result tells the user to sign up or sign in at the dashboard). With a pushpage API key (sent in the `Authorization` or `X-Api-Key` header) you get permanent retention per plan, `list_pages` and `delete_page`.
+Once running, the server is available at `https://pushpage.link/mcp` (or `{APP_SERVER_URL}/mcp` for self-hosted instances). You can try it with no key: without one the server runs in **guest mode** (`publish_page` works, pages expire after 30 minutes, and the result tells the user to sign up or sign in at the dashboard). With a pushpage API key (sent in the `Authorization` or `X-Api-Key` header) you get permanent retention per plan, `list_pages`, `update_page` and `delete_page`.
 
 **Claude Desktop `claude_desktop_config.json`:**
 ```json
