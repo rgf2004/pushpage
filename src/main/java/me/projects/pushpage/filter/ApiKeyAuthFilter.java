@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import me.projects.pushpage.config.AuthContext;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.oauth.OAuthScopes;
+import me.projects.pushpage.oauth.OAuthService;
 import me.projects.pushpage.repository.UserRepository;
 import me.projects.pushpage.service.ApiKeyService;
 import me.projects.pushpage.service.JwtClaims;
@@ -34,16 +35,19 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     private static final String OAUTH_AUTHORIZE_PATH = "/oauth/authorize";
     private static final String ADMIN_PATH_PREFIX = "/admin";
     private static final String KEY_MANAGEMENT_PATH_PREFIX = "/me/keys";
+    private static final String CONNECTED_APPS_PATH_PREFIX = "/me/connected-apps";
     private static final Set<String> GUEST_ALLOWED = Set.of("POST /pages");
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final AuthContext authContext;
     private final ApiKeyService apiKeyService;
+    private final OAuthService oauthService;
 
     public ApiKeyAuthFilter(UserRepository userRepository, JwtService jwtService, AuthContext authContext,
-                            ApiKeyService apiKeyService) {
+                            ApiKeyService apiKeyService, OAuthService oauthService) {
         this.apiKeyService = apiKeyService;
+        this.oauthService = oauthService;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.authContext = authContext;
@@ -78,6 +82,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
 
         Optional<User> user;
         Set<String> scopes = null;
+        String grantId = null;
         String apiKeyHash = null;
         if (apiKey != null) {
             apiKeyHash = ApiKeyHasher.hash(apiKey);
@@ -88,6 +93,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                     userRepository.findById(claims.userId()).filter(claims::matchesCurrentPassword));
             if (parsed.isPresent() && parsed.get().isScoped()) {
                 scopes = parsed.get().scopes();
+                grantId = parsed.get().grantId();
             }
         }
 
@@ -96,6 +102,11 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (scopes != null && !oauthService.grantActive(grantId)) {
+            // The user removed this app under Connected apps: its tokens stop working at once.
+            sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "Access for this app was revoked");
+            return;
+        }
         if (scopes != null && !OAuthScopes.permits(scopes, request.getMethod(), path)) {
             // An OAuth access token only reaches the page endpoints it was granted.
             sendError(response, HttpServletResponse.SC_FORBIDDEN, "This access token's scope does not allow this request");
@@ -107,10 +118,10 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
                     "Authorizing an app needs a signed-in session, not an API key");
             return;
         }
-        if (apiKeyHash != null && path.startsWith(KEY_MANAGEMENT_PATH_PREFIX)) {
-            // A leaked key must not be able to mint replacement keys: key management needs a signed-in session.
+        if (apiKeyHash != null && (path.startsWith(KEY_MANAGEMENT_PATH_PREFIX) || path.startsWith(CONNECTED_APPS_PATH_PREFIX))) {
+            // A leaked key must not be able to mint replacement keys or change app access: these need a signed-in session.
             sendError(response, HttpServletResponse.SC_FORBIDDEN,
-                    "API keys can only be managed from a signed-in session (the dashboard), not with an API key");
+                    "This can only be managed from a signed-in session (the dashboard), not with an API key");
             return;
         }
         if (apiKeyHash != null) {

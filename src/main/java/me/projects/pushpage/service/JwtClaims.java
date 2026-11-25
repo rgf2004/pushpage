@@ -6,11 +6,11 @@ import me.projects.pushpage.model.User;
  * The verified identity in a JWT, plus the password version it was issued under. A password
  * change moves the user's version on, so every token issued before it stops matching.
  */
-public record JwtClaims(String userId, long passwordVersion, java.util.Set<String> scopes) {
+public record JwtClaims(String userId, long passwordVersion, java.util.Set<String> scopes, String grantId) {
 
     /** A dashboard session: no scope restriction. */
     public JwtClaims(String userId, long passwordVersion) {
-        this(userId, passwordVersion, null);
+        this(userId, passwordVersion, null, null);
     }
 
     /** Null for a normal session; the granted scopes for an OAuth access token. */

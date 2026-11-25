@@ -834,6 +834,12 @@
                 </form>
             </div>
 
+            <div class="api-key-section" id="connected-apps-section">
+                <h3>Connected apps</h3>
+                <p>Apps you allowed through the browser sign-in, for example an AI agent that opened a sign-in window. Remove one and it loses access immediately; your other apps and API keys are not affected.</p>
+                <div id="connected-apps-list" class="key-list" aria-live="polite"></div>
+            </div>
+
             <div class="mcp-setup" id="mcp-setup">
                 <h3>Connect your AI agent (MCP)</h3>
                 <p id="mcp-status" class="mcp-status">Create an API key above and these commands fill in with it automatically.</p>
@@ -921,6 +927,19 @@
         <div class="modal-actions">
             <button class="btn btn-secondary" id="confirm-cancel">Cancel</button>
             <button class="btn btn-danger" id="confirm-delete">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm remove connected app -->
+<div class="modal-overlay" id="revoke-app-modal" style="display:none">
+    <div class="modal">
+        <h3>Remove this app?</h3>
+        <p class="confirm-msg">It loses access to your account immediately. It can ask to be connected again later:</p>
+        <p class="confirm-name" id="revoke-app-name"></p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="revoke-app-cancel">Cancel</button>
+            <button class="btn btn-danger" id="revoke-app-confirm">Remove</button>
         </div>
     </div>
 </div>
@@ -1311,6 +1330,7 @@ async function loadDashboard() {
     mcpKey = null;
     renderMcpSetup();
     loadApiKeys();
+    loadConnectedApps();
     const roleEl = document.getElementById('acc-role');
     roleEl.textContent = isAdmin ? 'admin' : 'user';
     roleEl.className = 'role-badge' + (isAdmin ? ' admin' : '');
@@ -1350,7 +1370,7 @@ async function loadDashboard() {
 
 // ── Logout ───────────────────────────────────────────────────────────────
 document.getElementById('logout-btn').addEventListener('click', () => {
-    ['confirm-modal', 'deactivate-modal', 'promote-modal', 'reset-link-modal', 'revoke-key-modal'].forEach(hideModal);
+    ['confirm-modal', 'deactivate-modal', 'promote-modal', 'reset-link-modal', 'revoke-key-modal', 'revoke-app-modal'].forEach(hideModal);
     document.getElementById('reset-link-value').textContent = '';
     mcpKey = null;
     renderMcpSetup();
@@ -1637,6 +1657,59 @@ document.getElementById('revoke-key-confirm').addEventListener('click', async ()
     }
 });
 
+// ── Account tab — connected apps (OAuth grants) ───────────────────────────
+let pendingRevokeApp = null;
+const APP_SCOPE_TEXT = { 'pages:publish': 'publish', 'pages:read': 'list', 'pages:delete': 'delete' };
+
+async function loadConnectedApps() {
+    const list = document.getElementById('connected-apps-list');
+    try {
+        const r = await api('/me/connected-apps');
+        if (!r.ok) { list.innerHTML = '<div class="key-empty">Could not load your connected apps.</div>'; return; }
+        const apps = await r.json();
+        if (!apps.length) {
+            list.innerHTML = '<div class="key-empty">No apps connected through the browser sign-in.</div>';
+            return;
+        }
+        list.innerHTML = apps.map(a => {
+            const can = (a.scope || '').split(' ').map(s => APP_SCOPE_TEXT[s]).filter(Boolean).join(', ');
+            return `
+            <div class="key-row" id="app-row-${esc(a.id)}">
+                <div class="key-row-main">
+                    <div class="key-row-name">${esc(a.name)}</div>
+                    <div class="key-row-meta">can ${esc(can || 'nothing')} pages · connected ${fmtDate(a.created_at)} · ${esc(fmtLastUsed(a.last_used_at))}</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" data-app-id="${esc(a.id)}" data-app-name="${esc(a.name)}">Remove</button>
+            </div>`;
+        }).join('');
+    } catch {
+        list.innerHTML = '<div class="key-empty">Network error loading your connected apps.</div>';
+    }
+}
+
+document.getElementById('connected-apps-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-app-id]');
+    if (!btn) return;
+    pendingRevokeApp = btn.dataset.appId;
+    document.getElementById('revoke-app-name').textContent = btn.dataset.appName;
+    showModal('revoke-app-modal');
+});
+
+document.getElementById('revoke-app-cancel').addEventListener('click', () => hideModal('revoke-app-modal'));
+
+document.getElementById('revoke-app-confirm').addEventListener('click', async () => {
+    const id = pendingRevokeApp;
+    hideModal('revoke-app-modal');
+    if (!id) return;
+    try {
+        const r = await api('/me/connected-apps/' + encodeURIComponent(id), { method: 'DELETE' });
+        if (r.ok) { toast('App removed.'); loadConnectedApps(); }
+        else toast('Failed to remove the app.', 'error');
+    } catch {
+        toast('Network error.', 'error');
+    }
+});
+
 document.getElementById('acc-copy-key-btn').addEventListener('click', () => {
     const key = document.getElementById('acc-key-value').textContent;
     navigator.clipboard.writeText(key).then(() => toast('API key copied.'));
@@ -1903,7 +1976,7 @@ document.getElementById('deactivate-confirm').addEventListener('click', async ()
 });
 
 // ── Close modals on overlay click ─────────────────────────────────────────
-['confirm-modal', 'deactivate-modal', 'promote-modal', 'revoke-key-modal'].forEach(id => {
+['confirm-modal', 'deactivate-modal', 'promote-modal', 'revoke-key-modal', 'revoke-app-modal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => {
         if (e.target === e.currentTarget) hideModal(id);
     });

@@ -151,8 +151,10 @@ public class OAuthService {
             throw new OAuthException("invalid_scope", "No supported scope requested");
         }
         String code = newSecret();
-        repository.saveCode(ApiKeyHasher.hash(code), new OAuthRepository.AuthCode(clientId, user.id(), redirectUri,
-                codeChallenge, OAuthScopes.format(scopes), Instant.now().plusSeconds(CODE_TTL_SECONDS)));
+        String formatted = OAuthScopes.format(scopes);
+        String grantId = repository.upsertGrant(UUID.randomUUID().toString(), user.id(), clientId, formatted);
+        repository.saveCode(ApiKeyHasher.hash(code), new OAuthRepository.AuthCode(clientId, user.id(), grantId, redirectUri,
+                codeChallenge, formatted, Instant.now().plusSeconds(CODE_TTL_SECONDS)));
         UriComponentsBuilder redirect = UriComponentsBuilder.fromUriString(redirectUri).queryParam("code", code);
         if (state != null && !state.isEmpty()) {
             redirect.queryParam("state", state);
@@ -175,7 +177,7 @@ public class OAuthService {
             throw new OAuthException("invalid_grant", "Invalid, expired or mismatched code");
         }
         User user = activeUser(stored.userId());
-        return issueTokens(user, stored.clientId(), stored.scope());
+        return issueTokens(user, stored.clientId(), stored.grantId(), stored.scope());
     }
 
     public Map<String, Object> refresh(String refreshToken, String clientId) {
@@ -191,7 +193,7 @@ public class OAuthService {
         if (stored.passwordVersion() != JwtClaims.passwordVersionOf(user)) {
             throw new OAuthException("invalid_grant", "The password changed since this token was issued");
         }
-        return issueTokens(user, stored.clientId(), stored.scope());
+        return issueTokens(user, stored.clientId(), stored.grantId(), stored.scope());
     }
 
     private User activeUser(String userId) {
@@ -199,13 +201,13 @@ public class OAuthService {
                 .orElseThrow(() -> new OAuthException("invalid_grant", "The account is not available"));
     }
 
-    private Map<String, Object> issueTokens(User user, String clientId, String scope) {
+    private Map<String, Object> issueTokens(User user, String clientId, String grantId, String scope) {
         Set<String> scopes = OAuthScopes.parse(scope);
         String refreshToken = newSecret();
         repository.saveRefreshToken(ApiKeyHasher.hash(refreshToken), new OAuthRepository.RefreshToken(clientId, user.id(),
-                scope, JwtClaims.passwordVersionOf(user), Instant.now().plus(refreshTokenDays, ChronoUnit.DAYS)));
+                grantId, scope, JwtClaims.passwordVersionOf(user), Instant.now().plus(refreshTokenDays, ChronoUnit.DAYS)));
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("access_token", jwtService.generateAccessToken(user, scopes, clientId, accessTokenMinutes));
+        response.put("access_token", jwtService.generateAccessToken(user, scopes, clientId, grantId, accessTokenMinutes));
         response.put("token_type", "Bearer");
         response.put("expires_in", accessTokenMinutes * 60);
         response.put("refresh_token", refreshToken);
@@ -228,6 +230,19 @@ public class OAuthService {
         byte[] bytes = new byte[32];
         random.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /** False once the user has revoked the app: its access tokens stop working immediately. */
+    public boolean grantActive(String grantId) {
+        return grantId != null && repository.grantActive(grantId);
+    }
+
+    public List<OAuthRepository.Grant> grants(String userId) {
+        return repository.findGrants(userId);
+    }
+
+    public boolean revokeGrant(String userId, String grantId) {
+        return repository.revokeGrant(userId, grantId);
     }
 
     @Scheduled(fixedDelay = 3_600_000, initialDelay = 60_000)

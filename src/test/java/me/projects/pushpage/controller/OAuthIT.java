@@ -88,8 +88,12 @@ class OAuthIT extends PostgresTestSupport {
     }
 
     String registerClient(String redirect) throws Exception {
+        return registerNamedClient("Test client", redirect);
+    }
+
+    String registerNamedClient(String name, String redirect) throws Exception {
         return json(mockMvc.perform(post("/oauth/register").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"client_name\":\"Test client\",\"redirect_uris\":[\"" + redirect + "\"]}"))
+                        .content("{\"client_name\":\"" + name + "\",\"redirect_uris\":[\"" + redirect + "\"]}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).get("client_id").asText();
     }
 
@@ -299,5 +303,110 @@ class OAuthIT extends PostgresTestSupport {
         mockMvc.perform(post("/oauth/register").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"redirect_uris\":[\"" + REDIRECT + "\"]}"))
                 .andExpect(status().isTooManyRequests());
+    }
+
+    // ── connected apps and revocation ─────────────────────────────────────────
+
+    JsonNode connectedApps(String bearer) throws Exception {
+        return json(mockMvc.perform(get("/me/connected-apps").header("Authorization", "Bearer " + bearer))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+    }
+
+    @Test
+    void connectedApps_listsTheAppWithoutDuplicatesWhenItReconnects() throws Exception {
+        String clientId = registerClient(REDIRECT);
+        signIn(clientId, "pages:read pages:publish");
+        signIn(clientId, null); // the same app authorized again
+
+        JsonNode apps = connectedApps(jwt);
+        assertThat(apps).hasSize(1);
+        assertThat(apps.get(0).get("name").asText()).isEqualTo("Test client");
+        assertThat(apps.get(0).get("scope").asText()).contains("pages:delete"); // latest consent wins
+        assertThat(apps.get(0).get("id").asText()).isNotBlank();
+    }
+
+    @Test
+    void connectedApps_areSeparatePerAppAndPerUser() throws Exception {
+        signIn(registerClient(REDIRECT), null);
+        signIn(registerClient(REDIRECT), null);
+        assertThat(connectedApps(jwt)).hasSize(2);
+
+        TestUsers.insert(jdbc, "other-oauth", "other@oauth.test", false, null);
+        mockMvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"bob@oauth.test\",\"password\":\"securepass1\"}")).andExpect(status().isCreated());
+        String bobJwt = json(mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"bob@oauth.test\",\"password\":\"securepass1\"}"))
+                .andReturn().getResponse().getContentAsString()).get("jwt").asText();
+        assertThat(connectedApps(bobJwt)).isEmpty();
+    }
+
+    @Test
+    void revoke_cutsOffAccessAndRefreshImmediately() throws Exception {
+        String clientId = registerClient(REDIRECT);
+        JsonNode tokens = signIn(clientId, null);
+        String access = tokens.get("access_token").asText();
+        mockMvc.perform(get("/pages").header("Authorization", "Bearer " + access)).andExpect(status().isOk());
+
+        String grantId = connectedApps(jwt).get(0).get("id").asText();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/me/connected-apps/" + grantId)
+                .header("Authorization", "Bearer " + jwt)).andExpect(status().isNoContent());
+
+        // the access token is still within its lifetime, yet it no longer works
+        mockMvc.perform(get("/pages").header("Authorization", "Bearer " + access))
+                .andExpect(status().isUnauthorized());
+        // and the app cannot get a new one
+        token("grant_type", "refresh_token", "refresh_token", tokens.get("refresh_token").asText(), "client_id", clientId)
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value("invalid_grant"));
+        assertThat(connectedApps(jwt)).isEmpty();
+    }
+
+    @Test
+    void revoke_onlyAffectsThatApp_andTheUserCanAuthorizeItAgain() throws Exception {
+        String appA = registerNamedClient("App A", REDIRECT);
+        String appB = registerNamedClient("App B", REDIRECT);
+        String accessA = signIn(appA, null).get("access_token").asText();
+        String accessB = signIn(appB, null).get("access_token").asText();
+
+        String grantA = null;
+        for (JsonNode g : connectedApps(jwt)) if (g.get("name").asText().equals("App A")) grantA = g.get("id").asText();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/me/connected-apps/" + grantA)
+                .header("Authorization", "Bearer " + jwt)).andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/pages").header("Authorization", "Bearer " + accessA)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/pages").header("Authorization", "Bearer " + accessB)).andExpect(status().isOk());
+
+        // the revoked app can be authorized again from scratch
+        mockMvc.perform(get("/pages").header("Authorization", "Bearer " + signIn(appA, null).get("access_token").asText()))
+                .andExpect(status().isOk());
+        assertThat(connectedApps(jwt)).hasSize(2);
+    }
+
+    @Test
+    void revoke_someoneElsesGrant_is404() throws Exception {
+        signIn(registerClient(REDIRECT), null);
+        String grantId = connectedApps(jwt).get(0).get("id").asText();
+
+        mockMvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"carol@oauth.test\",\"password\":\"securepass1\"}")).andExpect(status().isCreated());
+        String carol = json(mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"carol@oauth.test\",\"password\":\"securepass1\"}"))
+                .andReturn().getResponse().getContentAsString()).get("jwt").asText();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/me/connected-apps/" + grantId)
+                .header("Authorization", "Bearer " + carol)).andExpect(status().isNotFound());
+        assertThat(connectedApps(jwt)).hasSize(1);
+    }
+
+    @Test
+    void connectedApps_needAnInteractiveSession_notAnApiKeyOrAnAppToken() throws Exception {
+        String clientId = registerClient(REDIRECT);
+        String access = signIn(clientId, null).get("access_token").asText();
+        String grantId = connectedApps(jwt).get(0).get("id").asText();
+
+        mockMvc.perform(get("/me/connected-apps")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/me/connected-apps").header("X-Api-Key", "pp_oauth-admin-key")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/me/connected-apps").header("Authorization", "Bearer " + access)).andExpect(status().isForbidden());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/me/connected-apps/" + grantId)
+                .header("Authorization", "Bearer " + access)).andExpect(status().isForbidden());
+        assertThat(connectedApps(jwt)).hasSize(1);
     }
 }

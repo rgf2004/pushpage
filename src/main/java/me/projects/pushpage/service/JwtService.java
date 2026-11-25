@@ -51,7 +51,7 @@ public class JwtService {
     }
 
     /** A short-lived access token for an OAuth client, restricted to the granted scopes. */
-    public String generateAccessToken(User user, java.util.Set<String> scopes, String clientId, long minutes) {
+    public String generateAccessToken(User user, java.util.Set<String> scopes, String clientId, String grantId, long minutes) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(user.id())
@@ -59,6 +59,7 @@ public class JwtService {
                 .claim(PASSWORD_VERSION_CLAIM, JwtClaims.passwordVersionOf(user))
                 .claim(SCOPE_CLAIM, String.join(" ", scopes))
                 .claim("client_id", clientId)
+                .claim("gid", grantId)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(minutes, ChronoUnit.MINUTES)))
                 .signWith(signingKey)
@@ -84,7 +85,8 @@ public class JwtService {
             java.util.Set<String> scopes = scope instanceof String s
                     ? new java.util.LinkedHashSet<>(java.util.Arrays.asList(s.trim().split("\\s+")))
                     : null;
-            return Optional.of(new JwtClaims(claims.getSubject(), passwordVersion, scopes));
+            Object gid = claims.get("gid");
+            return Optional.of(new JwtClaims(claims.getSubject(), passwordVersion, scopes, gid instanceof String g ? g : null));
         } catch (Exception e) {
             return Optional.empty();
         }

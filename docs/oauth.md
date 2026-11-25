@@ -77,7 +77,7 @@ The same flow in words:
 - **Public clients only**, no client secret. PKCE with `S256` is required. Redirect URIs must match a registered one exactly; registration accepts `https`, `http` on localhost/127.0.0.1/[::1], and custom app schemes, never `javascript:`/`data:`/`file:` or a fragment.
 - **Access tokens** are the same signed JWTs as dashboard sessions, with a `scope` claim and a short life (`OAUTH_ACCESS_TOKEN_MINUTES`, default 60). **Refresh tokens** are random, stored hashed, rotate on every use (the old one stops working) and last `OAUTH_REFRESH_TOKEN_DAYS` (default 30). Authorization codes live 2 minutes and work once.
 - **Scopes:** `pages:publish` (`POST /api/pages`), `pages:read` (`GET /api/pages`), `pages:delete` (`DELETE /api/pages/{id}`). A client that asks for none gets all three. A token can also read `GET /api/me`. **Everything else is refused with `403`**: admin endpoints, API key management and `/api/oauth/authorize`, so a leaked token cannot mint keys or more tokens.
-- **Revocation:** a password change or reset invalidates the user's access tokens (the same `pwd_v` claim as sessions) and their refresh tokens; deactivating the account does too. There is no per-app revocation screen yet.
+- **Grants and revocation:** each app a user allows gets one *grant* (re-authorizing the same app reuses it, so reconnecting does not pile up entries). Every access token names its grant, and the API checks that it still exists. The user sees their grants under **Account → Connected apps** in the dashboard and can **Remove** one: it loses access **immediately** (its access tokens stop working even though they have not expired, and its refresh tokens are deleted), other apps and API keys are untouched, and the app can ask to be connected again. A password change or reset also invalidates every access and refresh token, and so does deactivating the account.
 - **API keys and guest mode are unaffected.** The MCP server presents `pp_` keys in `X-Api-Key` and OAuth tokens (JWTs) in `Authorization` to the API.
 
 ## Endpoints
@@ -92,10 +92,12 @@ All under `/api` except the discovery documents and the consent page, which ngin
 | `GET` | `/oauth/authorize` | the consent page (static HTML, `noindex`) |
 | `GET` | `/api/oauth/client?client_id&redirect_uri` | none; returns the client name for the consent page |
 | `POST` | `/api/oauth/authorize` | signed-in session (JWT); an API key or OAuth token gets `403` |
+| `GET` | `/api/me/connected-apps` | signed-in session (JWT); an API key or OAuth token gets `403` |
+| `DELETE` | `/api/me/connected-apps/{id}` | signed-in session (JWT); `404` if the grant is not yours |
 | `POST` | `/api/oauth/token` | none (`authorization_code` and `refresh_token` grants, form-encoded) |
 
 Errors from the token and registration endpoints follow RFC 6749 / 7591: `{"error": "...", "error_description": "..."}`.
 
 ## Storage
 
-Migration `V1004__oauth_authorization_server.sql` adds `oauth_clients`, `oauth_codes` and `oauth_refresh_tokens` (codes and refresh tokens as SHA-256 hashes). Expired codes and refresh tokens are removed hourly. Registered clients are kept (they are small, and clients cache their `client_id`).
+Migration `V1004__oauth_authorization_server.sql` adds `oauth_clients`, `oauth_grants`, `oauth_codes` and `oauth_refresh_tokens` (codes and refresh tokens as SHA-256 hashes). Expired codes and refresh tokens are removed hourly. Registered clients are kept (they are small, and clients cache their `client_id`).
