@@ -8,11 +8,11 @@ MCP server for [pushpage](https://pushpage.link), an HTML publishing service for
 <!-- mcp-name: io.github.rgf2004/pushpage -->
 mcp-name: io.github.rgf2004/pushpage
 
-**Tools:** `publish_page`, `list_pages`, `delete_page`, `health`.
+**Tools:** `publish_page`, `update_page`, `list_pages`, `delete_page`, `health`.
 
 ## Run it locally (stdio)
 
-No key is needed to try it: without one the server runs in **guest mode** (`publish_page` works, pages expire after 30 minutes, and the result tells you to sign up or sign in). For permanent pages, `list_pages` and `delete_page`, get an API key from the Account tab of https://pushpage.link/dashboard and add this to your MCP client:
+No key is needed to try it: without one the server runs in **guest mode** (`publish_page` works, pages expire after 30 minutes, and the result tells you to sign up or sign in). For permanent pages, `list_pages`, `update_page` and `delete_page`, get an API key from the Account tab of https://pushpage.link/dashboard and add this to your MCP client:
 
 ```json
 {

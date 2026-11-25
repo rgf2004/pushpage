@@ -64,6 +64,40 @@ public class PageController {
                 .body(pageService.publishFile(file));
     }
 
+    @Operation(summary = "Update a published page (JSON)", operationId = "updatePageJson",
+            description = "Replaces the HTML (and title) of a page you own, keeping its id and URL. " +
+                    "Expiry restarts from now under the owner's retention. Counts against the publish rate limit " +
+                    "(not the daily quota). Guest pages cannot be updated.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page updated",
+                    content = @Content(schema = @Schema(implementation = PublishResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Missing HTML", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Authentication required", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Not your page, or a guest page", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Page not found (or deleted/expired)", content = @Content),
+            @ApiResponse(responseCode = "413", description = "Payload exceeds the configured size limit", content = @Content),
+            @ApiResponse(responseCode = "429", description = "Rate limit reached", content = @Content)
+    })
+    @PutMapping(value = "/pages/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<PublishResponse> update(
+            @Parameter(description = "8-character page ID", example = "a1b2c3d4") @PathVariable String id,
+            @RequestBody PublishRequest request) {
+        return ResponseEntity.ok()
+                .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(pageService.getMaxFileSizeBytes()))
+                .body(pageService.update(id, request));
+    }
+
+    @Operation(summary = "Update a published page (file upload)", operationId = "updatePageFile",
+            description = "Same as the JSON variant, with a multipart/form-data .html file in the 'file' part.")
+    @PutMapping(value = "/pages/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PublishResponse> updateFile(
+            @Parameter(description = "8-character page ID", example = "a1b2c3d4") @PathVariable String id,
+            @Parameter(description = "HTML file with the new content") @RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok()
+                .header(AppHeaders.X_MAX_FILE_SIZE, String.valueOf(pageService.getMaxFileSizeBytes()))
+                .body(pageService.updateFile(id, file));
+    }
+
     @Operation(summary = "List all published pages",
             description = "Returns all pages ordered by publish date descending.")
     @ApiResponse(responseCode = "200", description = "List of pages",

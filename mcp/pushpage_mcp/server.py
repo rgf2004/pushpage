@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 
 import httpx
 import uvicorn
@@ -18,10 +19,10 @@ mcp = FastMCP(
     version=__version__,
     instructions=(
         "Publish HTML as shareable pages, list your pages, and delete them by ID. "
-        "The id returned by publish_page can be passed directly to delete_page. "
+        "The id returned by publish_page can be passed directly to update_page and delete_page. "
         "No API key is needed to try it: without one, publish_page works in guest mode "
         "(pages expire after 30 minutes). Sign up or sign in to the pushpage dashboard to "
-        "get an API key for permanent accounts, list_pages and delete_page."
+        "get an API key for permanent accounts, list_pages, update_page and delete_page."
     ),
 )
 
@@ -95,6 +96,16 @@ def _signup_message(reason: str) -> str:
     )
 
 
+_PAGE_ID = re.compile(r"[A-Za-z0-9]+")
+
+
+def _invalid_id(id: str) -> dict | None:
+    """Error result for an id that cannot be a page id (so it is never put into a URL path), else None."""
+    if isinstance(id, str) and _PAGE_ID.fullmatch(id):
+        return None
+    return {"error": "Invalid page id", "detail": "Use the page id (letters and digits, for example 'a1b2c3d4'), not a URL or path."}
+
+
 def _guest_sign_in_required(what: str) -> dict:
     return {
         "error": "Sign in required",
@@ -114,7 +125,8 @@ def publish_page(html: str, title: str | None = None) -> dict:
 
     Use this to share rich output (reports, dashboards, prototypes) as a link instead of
     pasting it into chat. Each call creates a NEW page with a new id; it never updates an
-    existing one (delete the old page with delete_page if you are replacing it).
+    existing one. To change a page you already published and keep its URL, use update_page
+    instead of publishing again.
     The page is served publicly at the returned URL, sandboxed (scripts run, but cannot
     access the pushpage dashboard or API), so do not include secrets.
 
@@ -191,6 +203,58 @@ def list_pages() -> list[dict]:
         return r.json()
 
 
+@mcp.tool(annotations={"title": "Update a page", "readOnlyHint": False,
+                       "destructiveHint": True, "idempotentHint": True,
+                       "openWorldHint": False})
+def update_page(id: str, html: str, title: str | None = None) -> dict:
+    """Replace the HTML of one of your published pages, keeping the same id and URL.
+
+    Use this to fix or refresh a page you already published instead of publishing a new one
+    (links already shared keep working). The previous content is overwritten and cannot be
+    recovered. You can only update your own pages (admin accounts can update any page), and
+    the page's expiry restarts from now under the owner's retention. An update counts toward
+    the publish rate limit (not the daily quota). Requires an
+    API key: in guest mode (no key) it returns guest_mode=true and a message telling the user
+    to sign up or sign in at the pushpage dashboard; relay that message. Guest pages cannot
+    be updated (they expire after 30 minutes); publish a new page instead.
+
+    Args:
+        id: The page id returned by publish_page or listed by list_pages (for example
+            'a1b2c3d4'), not the full URL.
+        html: The complete new HTML document (same format and size limit as publish_page).
+        title: Optional new display title. If omitted it is taken from the HTML <title>
+            tag, falling back to 'Untitled'.
+
+    Returns:
+        {url, id, expires_at} on success (same url and id as before, with the new expiry).
+        On failure {error, status_code, detail}, e.g. 404 if the id does not exist (or was
+        deleted or expired), 403 if the page is not yours or is a guest page, 400 if html is
+        empty, 413 if it is too large, 429 if the rate limit is exceeded, 401 if the
+        key is invalid. A 403 caused by a missing OAuth scope carries a message telling the user to
+        remove and reconnect the app.
+    """
+    if not _api_key():
+        return _guest_sign_in_required("Updating pages")
+    if (bad := _invalid_id(id)) is not None:
+        return bad
+    with _client() as client:
+        payload = {"html": html}
+        if title is not None:
+            payload["title"] = title
+        r = client.put(f"/api/pages/{id}", json=payload)
+        try:
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            result = {"error": "Failed to update page", "status_code": e.response.status_code, "detail": e.response.text}
+            if e.response.status_code == 403 and "scope" in (e.response.text or "").lower():
+                result["message"] = ("This app's sign-in does not allow updating pages (it was connected before the "
+                                     "update permission existed). Ask the user to remove the pushpage app under "
+                                     "Account > Connected apps in the dashboard and connect it again.")
+            return result
+        data = r.json()
+        return {"url": data["url"], "id": data["id"], "expires_at": data["expires_at"]}
+
+
 @mcp.tool(annotations={"title": "Delete a page", "readOnlyHint": False,
                        "destructiveHint": True, "idempotentHint": False,
                        "openWorldHint": False})
@@ -212,6 +276,8 @@ def delete_page(id: str) -> dict:
     """
     if not _api_key():
         return _guest_sign_in_required("Deleting pages")
+    if (bad := _invalid_id(id)) is not None:
+        return bad
     with _client() as client:
         r = client.delete(f"/api/pages/{id}")
         try:
@@ -246,7 +312,7 @@ def health() -> dict:
 _SIGNIN_PATH = "/mcp/signin"
 _GUEST_PATH = "/mcp-guest"
 _CREDENTIAL_HEADERS = {"authorization", "x-api-key"}
-_SIGNIN_SCOPES = "pages:publish pages:read pages:delete"
+_SIGNIN_SCOPES = "pages:publish pages:update pages:read pages:delete"
 
 
 def _bearer_or_key(headers) -> str:

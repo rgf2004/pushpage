@@ -193,6 +193,43 @@ curl -s -X POST https://pushpage.link/api/pages \
 
 ---
 
+### PUT /api/pages/{id}
+
+Replace the HTML (and title) of an existing page. The id and URL do not change, so links already shared keep working. The previous content is overwritten. Accepts the same two body shapes as `POST /api/pages`:
+
+- `Content-Type: application/json` with `{ "html": "...", "title": "optional" }` (title extracted from `<title>` if omitted)
+- `Content-Type: multipart/form-data` with a `file` part
+
+```bash
+curl -s -X PUT https://pushpage.link/api/pages/a1b2c3d4 \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -d '{"html": "<html>...new...</html>"}'
+```
+
+**Auth:** the page's owner, or an admin. API key, JWT and OAuth tokens with the `pages:update` scope all work (`pages:publish` alone does not allow it; apps connected before this scope existed must be reconnected). Guest pages (no owner) cannot be updated, even by an admin.
+
+**Response:** `200` with `{ "url", "id", "expires_at" }` (same `url` and `id`; `expires_at` is recalculated).
+
+**Behaviour:**
+- **Expiry** restarts from now under the page owner's retention (plan), so editing keeps a page alive. When an admin edits someone else's page, the owner's plan is used.
+- **Rate limit:** an update uses the same per-user bucket as publishing (`RATE_LIMIT_USER_RPM`; admins exempt).
+- **Daily quota** (`PLANS_ENABLED`): not applied. An update creates no page, so it neither checks nor uses the quota; only the rate limit bounds it. A failed update (403, 404, 413...) still consumes a rate-limit token like any request.
+- The file is replaced atomically; readers see the old or the new page, never a partial one. Browsers revalidate pages on every load (`Cache-Control: no-cache`), so they pick up the new content.
+
+**Error responses:**
+
+| Status | Reason |
+|--------|--------|
+| `400` | Blank `html` / missing or empty `file` part |
+| `401` | No or invalid credentials |
+| `403` | Page belongs to a different user, or is a guest page; or an OAuth token without `pages:update` |
+| `404` | Page not found (unknown, deleted or expired) |
+| `413` | Payload exceeds the configured size limit |
+| `429` | Rate limit reached |
+
+---
+
 ### GET /api/pages
 
 List published pages ordered by publish date descending. Regular users see only their own pages; admins see all.

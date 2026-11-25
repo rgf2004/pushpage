@@ -1689,7 +1689,7 @@ document.getElementById('revoke-key-confirm').addEventListener('click', async ()
 
 // ── Account tab — connected apps (OAuth grants) ───────────────────────────
 let pendingRevokeApp = null;
-const APP_SCOPE_TEXT = { 'pages:publish': 'publish', 'pages:read': 'list', 'pages:delete': 'delete' };
+const APP_SCOPE_TEXT = { 'pages:publish': 'publish', 'pages:update': 'update', 'pages:read': 'list', 'pages:delete': 'delete' };
 
 async function loadConnectedApps() {
     const list = document.getElementById('connected-apps-list');

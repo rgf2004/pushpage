@@ -104,7 +104,16 @@ curl -s -X DELETE https://pushpage.link/api/pages/{id} \
   -H "X-Api-Key: $PUSHPAGE_API_KEY"
 ```
 
-To update an existing page, delete it and publish a new one — pushpage does not support in-place edits via the REST API (use the MCP `publish_page` tool, which replaces by title if you want consistent naming).
+### Update a page (same URL)
+
+```bash
+curl -s -X PUT https://pushpage.link/api/pages/{id} \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -d '{"html": "<!DOCTYPE html>...new content...", "title": "Optional new title"}'
+```
+
+Replaces the HTML of one of your pages (admins: any user page) and keeps the same id and URL, so links you already shared keep working. Returns `{ url, id, expires_at }`; the expiry restarts. Guest pages cannot be updated (403): publish a new page instead. An update counts toward the publish rate limit. Also accepts multipart `file=@page.html`.
 
 ### Health check (no auth required)
 
@@ -114,7 +123,7 @@ curl -s https://pushpage.link/api/health
 
 ## MCP server
 
-A FastMCP server is available at `https://pushpage.link/mcp` (streamable-http transport). It exposes `publish_page`, `list_pages`, `delete_page`, and `health` tools. If your client supports MCP, prefer it over the direct API. **No key is required to try it (guest mode):** `publish_page` works and the page expires after 30 minutes; the tool result has `guest_mode: true` and a message — relay it to the user so they know to sign up or sign in at `{BASE_URL}/dashboard` for an API key (permanent pages, `list_pages`, `delete_page`). With a key, send it as the `X-Api-Key` header in the MCP config.
+A FastMCP server is available at `https://pushpage.link/mcp` (streamable-http transport). It exposes `publish_page`, `update_page`, `list_pages`, `delete_page`, and `health` tools. If your client supports MCP, prefer it over the direct API. **No key is required to try it (guest mode):** `publish_page` works and the page expires after 30 minutes; the tool result has `guest_mode: true` and a message — relay it to the user so they know to sign up or sign in at `{BASE_URL}/dashboard` for an API key (permanent pages, `list_pages`, `update_page`, `delete_page`). With a key, send it as the `X-Api-Key` header in the MCP config.
 
 ### Try it with no key (guest mode)
 
@@ -189,6 +198,6 @@ Pages are served directly in a browser — write clean, self-contained HTML:
 ## Do not
 
 - Do not publish pages that contain secrets, credentials, or private data — pages are publicly accessible to anyone with the link.
-- Do not create duplicate pages for the same content — delete the old one first if you need to republish.
+- Do not create duplicate pages for the same content — use `PUT /api/pages/{id}` (MCP `update_page`) to change a page you already published; its URL stays the same.
 - Do not use `http://` with the managed instance — HTTPS only.
 - Do not exceed 1 MB of HTML in a single request — split into multiple pages if needed.

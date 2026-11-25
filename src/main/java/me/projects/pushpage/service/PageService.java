@@ -6,6 +6,7 @@ import me.projects.pushpage.model.PublishRequest;
 import me.projects.pushpage.model.PublishResponse;
 import me.projects.pushpage.model.User;
 import me.projects.pushpage.repository.PageRepository;
+import me.projects.pushpage.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -51,9 +53,12 @@ public class PageService {
     private final AuthContext authContext;
     private final QuotaPolicy quotaPolicy;
     private final RetentionPolicy retentionPolicy;
+    private final UserRepository userRepository;
 
     public PageService(PageRepository pageRepository, HealthService healthService,
-                       AuthContext authContext, QuotaPolicy quotaPolicy, RetentionPolicy retentionPolicy) {
+                       AuthContext authContext, QuotaPolicy quotaPolicy, RetentionPolicy retentionPolicy,
+                       UserRepository userRepository) {
+        this.userRepository = userRepository;
         this.pageRepository = pageRepository;
         this.healthService = healthService;
         this.authContext = authContext;
@@ -95,6 +100,101 @@ public class PageService {
         String title = !titleFromTag.equals("Untitled") ? titleFromTag
                 : (filenameTitle != null ? filenameTitle : "Untitled");
         return publishHtml(html, title);
+    }
+
+    /** Replaces the HTML (and title) of an existing page, keeping its id and URL. JSON variant. */
+    public PublishResponse update(String id, PublishRequest request) {
+        if (request.html() == null || request.html().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML content is required");
+        }
+        String title = (request.title() != null && !request.title().isBlank())
+                ? request.title() : extractTitle(request.html());
+        return updateHtml(id, request.html(), title);
+    }
+
+    /** Multipart variant of {@link #update(String, PublishRequest)}. */
+    public PublishResponse updateFile(String id, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File part is required");
+        }
+        String html;
+        try {
+            html = new String(file.getBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Could not read uploaded file");
+        }
+        String titleFromTag = extractTitle(html);
+        String filenameTitle = titleFromFilename(file.getOriginalFilename());
+        String title = !titleFromTag.equals("Untitled") ? titleFromTag
+                : (filenameTitle != null ? filenameTitle : "Untitled");
+        return updateHtml(id, html, title);
+    }
+
+    private PublishResponse updateHtml(String id, String html, String title) {
+        User currentUser = requireCurrentUser();
+        // Unknown, deleted and expired-but-not-yet-cleaned pages are all 404.
+        Page page = pageRepository.findById(id)
+                .filter(p -> p.expiresAt() == null || p.expiresAt().isAfter(Instant.now()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id));
+        if (page.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Guest pages cannot be updated; publish a new page instead");
+        }
+        if (!currentUser.admin() && !currentUser.id().equals(page.userId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own pages");
+        }
+        // No quota check: updates are limited by the per-minute rate limit only (they create no page,
+        // so they never use up the daily publish quota either).
+        long sizeBytes = html.getBytes(StandardCharsets.UTF_8).length;
+        if (sizeBytes > maxFileSize.toBytes()) {
+            throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE,
+                    "Payload size %d bytes exceeds maximum allowed size of %d bytes".formatted(sizeBytes, maxFileSize.toBytes()));
+        }
+        String wrappedHtml = wrapIfNeeded(html, title);
+
+        // The retention window restarts from now under the page owner's plan (an admin editing
+        // someone else's page must not change it by their own plan).
+        Instant expiresAt = currentUser.id().equals(page.userId())
+                ? retentionPolicy.expiresAt(currentUser)
+                : userRepository.findById(page.userId())
+                        .map(retentionPolicy::expiresAt)
+                        .orElseGet(() -> retentionPolicy.expiresAt(currentUser));
+
+        // Order matters. 1) write a temp file (a dotfile: nginx never serves it), 2) rename it over the
+        // page (atomic: readers see the old or the new content, never a partial file), 3) only then
+        // update the row. A failure in 1 or 2 leaves the old file AND the old title/expiry untouched.
+        // Interleavings with deletePage / CleanupService, which do "delete file, then soft-delete row":
+        //  - they finish before our move: the page row is gone, so our move re-creates a file, but step 3
+        //    matches 0 rows (updateContent requires deleted_at IS NULL), and we remove that file again and
+        //    answer 404. Nothing stays served without a live row.
+        //  - they run between our move and our updateContent: they delete the file we just wrote and
+        //    soft-delete the row; updateContent then matches 0 rows and we delete the (already gone) file.
+        //  - they run after our updateContent: the page is simply deleted after being updated.
+        // In no ordering does a soft-deleted page keep a file on disk. (A reader can briefly see the new
+        // content of a page that is being deleted at that same moment; that is harmless.)
+        Path target = Path.of(pagesDir, id + ".html");
+        Path temp = Path.of(pagesDir, "." + id + "." + UUID.randomUUID().toString().substring(0, 8) + ".tmp");
+        try {
+            Files.writeString(temp, wrappedHtml);
+            Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            try {
+                Files.deleteIfExists(temp);
+            } catch (IOException ignored) {
+                // best effort
+            }
+            throw new RuntimeException("Failed to write page file", e);
+        }
+        if (!pageRepository.updateContent(id, title, expiresAt)) {
+            try {
+                Files.deleteIfExists(target);
+            } catch (IOException e) {
+                log.warn("Could not remove file of page {} deleted during an update", id, e);
+            }
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id);
+        }
+        healthService.invalidateCache();
+        return new PublishResponse(baseUrl + "/" + id + ".html", id, expiresAt);
     }
 
     private PublishResponse publishHtml(String html, String title) {

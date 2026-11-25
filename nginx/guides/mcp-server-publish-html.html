@@ -93,13 +93,13 @@
     <h1>An MCP server that publishes HTML</h1>
     <p class="guide-lead">The pushpage MCP server gives an AI agent one job it is usually missing: turn the HTML it just wrote into a link someone can open. It is hosted, free to try without a key, and also installable locally.</p>
 <h2>What it is</h2>
-<p>An <a href="https://modelcontextprotocol.io" rel="noopener" target="_blank">MCP</a> server with four tools: <code>publish_page</code>, <code>list_pages</code>, <code>delete_page</code> and <code>health</code>. The agent sends HTML and receives a public URL. The hosted endpoint is <code>https://pushpage.link/mcp</code> (streamable HTTP). It is listed in the official MCP Registry as <code>io.github.rgf2004/pushpage</code>.</p>
+<p>An <a href="https://modelcontextprotocol.io" rel="noopener" target="_blank">MCP</a> server with five tools: <code>publish_page</code>, <code>update_page</code>, <code>list_pages</code>, <code>delete_page</code> and <code>health</code>. The agent sends HTML and receives a public URL. The hosted endpoint is <code>https://pushpage.link/mcp</code> (streamable HTTP). It is listed in the official MCP Registry as <code>io.github.rgf2004/pushpage</code>.</p>
 
 <h2>Two ways to connect</h2>
 <h3>Guest mode (no key)</h3>
-<p>Connect with just the URL. <code>publish_page</code> works and the page is deleted after 30 minutes. The tool result tells the agent (and you) to sign up or sign in for an API key if you want more. <code>list_pages</code> and <code>delete_page</code> need an account.</p>
+<p>Connect with just the URL. <code>publish_page</code> works and the page is deleted after 30 minutes. The tool result tells the agent (and you) to sign up or sign in for an API key if you want more. <code>list_pages</code>, <code>update_page</code> and <code>delete_page</code> need an account.</p>
 <h3>With an API key</h3>
-<p>Create a named key under <strong>Account</strong> in the <a href="/dashboard">dashboard</a>, then send it as <code>X-Api-Key</code> or <code>Authorization: Bearer</code>. Pages then follow your account's retention, and all four tools work. A wrong key is rejected with a 401; it is never silently treated as a guest.</p>
+<p>Create a named key under <strong>Account</strong> in the <a href="/dashboard">dashboard</a>, then send it as <code>X-Api-Key</code> or <code>Authorization: Bearer</code>. Pages then follow your account's retention, and all five tools work. A wrong key is rejected with a 401; it is never silently treated as a guest.</p>
 
 <h2>Claude Code</h2>
 <pre><code># try it, no key
