@@ -264,22 +264,7 @@ class PageServiceTest {
     }
 
     @Test
-    void updatePage_whenQuotaIsExhausted_throws429_andKeepsTheOldFile() throws Exception {
-        java.nio.file.Files.writeString(tempDir.resolve("abc12345.html"), "old");
-        when(pageRepository.findById("abc12345")).thenReturn(Optional.of(livePage()));
-        doThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Daily publish limit reached"))
-                .when(quotaPolicy).check(ADMIN_USER);
-
-        assertThatThrownBy(() -> pageService.update("abc12345", new PublishRequest("<p>new</p>", "t")))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Daily publish limit");
-
-        assertThat(java.nio.file.Files.readString(tempDir.resolve("abc12345.html"))).isEqualTo("old");
-        verify(pageRepository, never()).updateContent(any(), any(), any());
-    }
-
-    @Test
-    void updatePage_checksQuota_writesFile_andInvalidatesTheHealthCache() throws Exception {
+    void updatePage_writesFile_updatesRow_doesNotTouchQuota_andInvalidatesTheHealthCache() throws Exception {
         java.nio.file.Files.writeString(tempDir.resolve("abc12345.html"), "old");
         when(pageRepository.findById("abc12345")).thenReturn(Optional.of(livePage()));
         when(pageRepository.updateContent(eq("abc12345"), eq("t"), any())).thenReturn(true);
@@ -288,12 +273,14 @@ class PageServiceTest {
 
         assertThat(response.id()).isEqualTo("abc12345");
         assertThat(java.nio.file.Files.readString(tempDir.resolve("abc12345.html"))).contains("<p>new</p>");
-        verify(quotaPolicy).check(ADMIN_USER);
+        verifyNoInteractions(quotaPolicy);
         verify(healthService).invalidateCache();
+        assertThat(tempDir.toFile().list()).containsExactly("abc12345.html");
     }
 
     @Test
-    void updatePage_whenDeletedMeanwhile_throws404_andLeavesNoTempFile() {
+    void updatePage_whenTheRowWasDeletedMeanwhile_removesTheFileItWroteAnd404s() throws Exception {
+        java.nio.file.Files.writeString(tempDir.resolve("abc12345.html"), "old");
         when(pageRepository.findById("abc12345")).thenReturn(Optional.of(livePage()));
         when(pageRepository.updateContent(any(), any(), any())).thenReturn(false);
 
@@ -302,5 +289,22 @@ class PageServiceTest {
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
         assertThat(tempDir.toFile().list()).isEmpty();
+        verify(healthService, never()).invalidateCache();
+    }
+
+    @Test
+    void updatePage_whenTheFileCannotBeMoved_changesNothingInTheDatabase() throws Exception {
+        // A non-empty directory where the page file should be makes the rename fail.
+        java.nio.file.Path blocker = tempDir.resolve("abc12345.html");
+        java.nio.file.Files.createDirectory(blocker);
+        java.nio.file.Files.writeString(blocker.resolve("x"), "x");
+        when(pageRepository.findById("abc12345")).thenReturn(Optional.of(livePage()));
+
+        assertThatThrownBy(() -> pageService.update("abc12345", new PublishRequest("<p>new</p>", "t")))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to write page file");
+
+        verify(pageRepository, never()).updateContent(any(), any(), any());
+        assertThat(tempDir.toFile().list()).containsExactly("abc12345.html");
     }
 }

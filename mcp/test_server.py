@@ -234,6 +234,34 @@ class TestGuestMode(unittest.TestCase):
             self.assertEqual(out["status_code"], status)
             self.assertNotIn("guest_mode", out)
 
+    def test_update_403_for_a_missing_oauth_scope_explains_how_to_reconnect(self):
+        self.response = _FakeResponse(status=403)
+        self.response.text = "This access token's scope does not allow this request"
+        with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_real"}):
+            out = self.server.update_page("a", "<h1>new</h1>")
+        self.assertEqual(out["status_code"], 403)
+        self.assertEqual(out["error"], "Failed to update page")
+        self.assertIn("Connected apps", out["message"])
+
+    def test_update_403_not_your_page_has_no_reconnect_hint(self):
+        self.response = _FakeResponse(status=403)
+        self.response.text = "You can only update your own pages"
+        with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_real"}):
+            out = self.server.update_page("a", "<h1>new</h1>")
+        self.assertNotIn("message", out)
+
+    def test_invalid_ids_are_rejected_without_calling_the_api(self):
+        with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_real"}):
+            for bad in ("../x", "a/b", "a?x=1", "a#f", "", " ", "abc def", "a%2fb"):
+                self.assertEqual(self.server.update_page(bad, "<h1>x</h1>")["error"], "Invalid page id", bad)
+                self.assertEqual(self.server.delete_page(bad)["error"], "Invalid page id", bad)
+        self.assertEqual(self.created, [])
+
+    def test_valid_id_still_reaches_the_api_for_delete(self):
+        with patch.dict(os.environ, {"PUSHPAGE_API_KEY": "pp_real"}):
+            out = self.server.delete_page("a1B2c3d4")
+        self.assertEqual(out, {"deleted": True, "id": "a1B2c3d4"})
+
     def test_update_tool_annotations(self):
         tool = next(t for t in asyncio.run(self.server.mcp.list_tools()) if t.name == "update_page")
         ann = tool.annotations

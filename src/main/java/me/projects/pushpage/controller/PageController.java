@@ -67,7 +67,7 @@ public class PageController {
     @Operation(summary = "Update a published page (JSON)", operationId = "updatePageJson",
             description = "Replaces the HTML (and title) of a page you own, keeping its id and URL. " +
                     "Expiry restarts from now under the owner's retention. Counts against the publish rate limit " +
-                    "and is blocked when the daily quota is already used up. Guest pages cannot be updated.")
+                    "(not the daily quota). Guest pages cannot be updated.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page updated",
                     content = @Content(schema = @Schema(implementation = PublishResponse.class))),
@@ -76,7 +76,7 @@ public class PageController {
             @ApiResponse(responseCode = "403", description = "Not your page, or a guest page", content = @Content),
             @ApiResponse(responseCode = "404", description = "Page not found (or deleted/expired)", content = @Content),
             @ApiResponse(responseCode = "413", description = "Payload exceeds the configured size limit", content = @Content),
-            @ApiResponse(responseCode = "429", description = "Rate limit or daily quota reached", content = @Content)
+            @ApiResponse(responseCode = "429", description = "Rate limit reached", content = @Content)
     })
     @PutMapping(value = "/pages/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PublishResponse> update(

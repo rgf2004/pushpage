@@ -32,6 +32,7 @@ import java.util.Base64;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -201,23 +202,56 @@ class OAuthIT extends PostgresTestSupport {
     }
 
     @Test
-    void publishScope_canUpdateAPage_readOnlyScopeCannot() throws Exception {
+    void updateScope_isSeparate_publishAloneCannotUpdate_updateAloneCannotPublish_fullScopeDoesBoth() throws Exception {
         String clientId = registerClient(REDIRECT);
         String publisher = signIn(clientId, "pages:publish").get("access_token").asText();
+        String updater = signIn(clientId, "pages:update").get("access_token").asText();
         String reader = signIn(clientId, "pages:read").get("access_token").asText();
+        String full = signIn(clientId, null).get("access_token").asText();
         String id = json(mockMvc.perform(post("/pages").header("Authorization", "Bearer " + publisher)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v1</p>\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("id").asText();
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/pages/" + id)
-                .header("Authorization", "Bearer " + reader)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v2</p>\"}"))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/pages/" + id)
-                .header("Authorization", "Bearer " + publisher)
+        for (String denied : new String[]{publisher, reader}) {
+            mockMvc.perform(put("/pages/" + id).header("Authorization", "Bearer " + denied)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>nope</p>\"}"))
+                    .andExpect(status().isForbidden());
+        }
+        assertThat(java.nio.file.Files.readString(tempDir.resolve(id + ".html"))).contains("v1");
+
+        mockMvc.perform(put("/pages/" + id).header("Authorization", "Bearer " + updater)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v2</p>\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(id));
         assertThat(java.nio.file.Files.readString(tempDir.resolve(id + ".html"))).contains("v2");
+        mockMvc.perform(post("/pages").header("Authorization", "Bearer " + updater)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>x</p>\"}"))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(put("/pages/" + id).header("Authorization", "Bearer " + full)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v3</p>\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/pages").header("Authorization", "Bearer " + full)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>y</p>\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void grantsMadeBeforeUpdateScopeExisted_keepWorking_butCannotUpdateAfterRefresh() throws Exception {
+        String clientId = registerClient(REDIRECT);
+        // A legacy grant: the three scopes that existed before pages:update.
+        JsonNode tokens = signIn(clientId, "pages:publish pages:read pages:delete");
+        String id = json(mockMvc.perform(post("/pages").header("Authorization", "Bearer " + tokens.get("access_token").asText())
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v1</p>\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("id").asText();
+
+        String refreshed = json(token("grant_type", "refresh_token", "refresh_token", tokens.get("refresh_token").asText(),
+                "client_id", clientId).andExpect(status().isOk()).andReturn().getResponse().getContentAsString())
+                .get("access_token").asText();
+
+        mockMvc.perform(get("/pages").header("Authorization", "Bearer " + refreshed)).andExpect(status().isOk());
+        mockMvc.perform(put("/pages/" + id).header("Authorization", "Bearer " + refreshed)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>v2</p>\"}"))
+                .andExpect(status().isForbidden());
     }
 
     // ── authorization endpoint ────────────────────────────────────────────────

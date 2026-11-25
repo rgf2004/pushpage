@@ -10,8 +10,9 @@ public final class OAuthScopes {
 
     public static final String PUBLISH = "pages:publish";
     public static final String READ = "pages:read";
+    public static final String UPDATE = "pages:update";
     public static final String DELETE = "pages:delete";
-    public static final List<String> SUPPORTED = List.of(PUBLISH, READ, DELETE);
+    public static final List<String> SUPPORTED = List.of(PUBLISH, UPDATE, READ, DELETE);
 
     private OAuthScopes() {}
 
@@ -39,8 +40,8 @@ public final class OAuthScopes {
             if (method.equals("POST")) return scopes.contains(PUBLISH);
             if (method.equals("GET")) return scopes.contains(READ);
         }
-        // Replacing a page's content is a publish: the same scope covers it.
-        if (path.startsWith("/pages/") && method.equals("PUT")) return scopes.contains(PUBLISH);
+        // Replacing a page's content has its own scope: grants made before it existed do not carry it.
+        if (path.startsWith("/pages/") && method.equals("PUT")) return scopes.contains(UPDATE);
         if (path.startsWith("/pages/") && method.equals("DELETE")) return scopes.contains(DELETE);
         return false;
     }

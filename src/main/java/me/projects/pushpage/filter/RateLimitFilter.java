@@ -40,7 +40,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         String path = requestPath(request);
         boolean isUpdate = PUT.equalsIgnoreCase(request.getMethod()) && path.startsWith(PUBLISH_PATH + "/")
+                && path.length() > PUBLISH_PATH.length() + 1
                 && path.indexOf('/', PUBLISH_PATH.length() + 1) < 0;
+        // Failed PUTs (403, 404, 413...) take a token like any request: the limit is per request, not per success.
         if (!POST.equalsIgnoreCase(request.getMethod()) && !isUpdate) {
             chain.doFilter(request, response);
             return;

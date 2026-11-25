@@ -143,9 +143,8 @@ public class PageService {
         if (!currentUser.admin() && !currentUser.id().equals(page.userId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own pages");
         }
-        // An update is checked against the daily quota like a publish, but does not use any of it
-        // (usage counts pages created today, and an update creates none).
-        quotaPolicy.check(currentUser);
+        // No quota check: updates are limited by the per-minute rate limit only (they create no page,
+        // so they never use up the daily publish quota either).
         long sizeBytes = html.getBytes(StandardCharsets.UTF_8).length;
         if (sizeBytes > maxFileSize.toBytes()) {
             throw new ResponseStatusException(HttpStatus.CONTENT_TOO_LARGE,
@@ -161,16 +160,22 @@ public class PageService {
                         .map(retentionPolicy::expiresAt)
                         .orElseGet(() -> retentionPolicy.expiresAt(currentUser));
 
-        // Write a temp file first (a dotfile: nginx never serves it), then rename over the page, so a
-        // reader sees either the old or the new content, never a partial file.
+        // Order matters. 1) write a temp file (a dotfile: nginx never serves it), 2) rename it over the
+        // page (atomic: readers see the old or the new content, never a partial file), 3) only then
+        // update the row. A failure in 1 or 2 leaves the old file AND the old title/expiry untouched.
+        // Interleavings with deletePage / CleanupService, which do "delete file, then soft-delete row":
+        //  - they finish before our move: the page row is gone, so our move re-creates a file, but step 3
+        //    matches 0 rows (updateContent requires deleted_at IS NULL), and we remove that file again and
+        //    answer 404. Nothing stays served without a live row.
+        //  - they run between our move and our updateContent: they delete the file we just wrote and
+        //    soft-delete the row; updateContent then matches 0 rows and we delete the (already gone) file.
+        //  - they run after our updateContent: the page is simply deleted after being updated.
+        // In no ordering does a soft-deleted page keep a file on disk. (A reader can briefly see the new
+        // content of a page that is being deleted at that same moment; that is harmless.)
         Path target = Path.of(pagesDir, id + ".html");
         Path temp = Path.of(pagesDir, "." + id + "." + UUID.randomUUID().toString().substring(0, 8) + ".tmp");
         try {
             Files.writeString(temp, wrappedHtml);
-            if (!pageRepository.updateContent(id, title, expiresAt)) {
-                Files.deleteIfExists(temp);
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id);
-            }
             Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             try {
@@ -179,6 +184,14 @@ public class PageService {
                 // best effort
             }
             throw new RuntimeException("Failed to write page file", e);
+        }
+        if (!pageRepository.updateContent(id, title, expiresAt)) {
+            try {
+                Files.deleteIfExists(target);
+            } catch (IOException e) {
+                log.warn("Could not remove file of page {} deleted during an update", id, e);
+            }
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found: " + id);
         }
         healthService.invalidateCache();
         return new PublishResponse(baseUrl + "/" + id + ".html", id, expiresAt);

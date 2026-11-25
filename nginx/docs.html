@@ -653,12 +653,12 @@ Copy these credentials now. They will NOT appear again.
                 <span class="endpoint-path">/api/pages/{id}</span>
                 <span class="endpoint-auth">User</span>
             </div>
-            <p>Replace the HTML (and title) of one of your pages, keeping the same ID and URL. Accepts <code>application/json</code> (<code>{ "html": "...", "title": "optional" }</code>) or <code>multipart/form-data</code>. Owner or admin only; guest pages cannot be updated. Expiry restarts from now and the call counts toward the publish rate limit.</p>
+            <p>Replace the HTML (and title) of one of your pages, keeping the same ID and URL. Accepts <code>application/json</code> (<code>{ "html": "...", "title": "optional" }</code>) or <code>multipart/form-data</code>. Owner or admin only; guest pages cannot be updated. Expiry restarts from now and the call counts toward the publish rate limit (not the daily quota).</p>
 
 <pre><code><span class="token-cmt"># Response: 200</span>
 { <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/pages/abc123.html"</span>, <span class="token-key">"id"</span>: <span class="token-str">"abc123"</span>, <span class="token-key">"expires_at"</span>: <span class="token-str">"2026-07-24T10:00:00Z"</span> }
 
-<span class="token-cmt"># Error: 400 (empty HTML), 403 (not your page / guest page), 404 (not found), 413 (too large), 429 (rate limit / quota)</span></code></pre>
+<span class="token-cmt"># Error: 400 (empty HTML), 403 (not your page / guest page), 404 (not found), 413 (too large), 429 (rate limit)</span></code></pre>
 
             <div class="endpoint">
                 <span class="method get">GET</span>

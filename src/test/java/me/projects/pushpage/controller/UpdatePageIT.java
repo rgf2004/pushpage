@@ -211,4 +211,23 @@ class UpdatePageIT extends PostgresTestSupport {
             update(id, ADMIN_KEY, "<p>" + i + "</p>").andExpect(status().isOk());
         }
     }
+
+    @Test
+    void putWithAnEmptyId_doesNotTakeARateLimitToken() throws Exception {
+        for (int i = 0; i < 12; i++) {
+            mockMvc.perform(put("/pages/").header("X-Api-Key", OWNER_KEY)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"html\":\"<p>x</p>\"}"))
+                    .andExpect(status().is4xxClientError())
+                    .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotEqualTo(429));
+        }
+        publish(OWNER_KEY, "<p>still allowed</p>");
+    }
+
+    @Test
+    void failedUpdates_stillTakeARateLimitToken() throws Exception {
+        for (int i = 0; i < 8; i++) {
+            update("nope1234", OWNER_KEY, "<p>x</p>").andExpect(status().isNotFound());
+        }
+        update("nope1234", OWNER_KEY, "<p>x</p>").andExpect(status().isTooManyRequests());
+    }
 }
