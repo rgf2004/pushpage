@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>pushpage — Support</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <meta name="description" content="How to get help with pushpage: contact addresses, service status, and answers to common questions about pages, API keys and connecting AI agents.">
+    <link rel="canonical" href="https://pushpage.link/support">
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pushpage.link/support">
+    <meta property="og:title" content="pushpage — Support">
+    <meta property="og:description" content="How to get help with pushpage: contact addresses, service status, and answers to common questions about pages, API keys and connecting AI agents.">
+    <meta property="og:image" content="https://pushpage.link/static/og-image.png">
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        .terms-wrap {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 56px 32px 80px;
+        }
+
+        .terms-header {
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terms-header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .terms-header .effective {
+            font-size: .85rem;
+            color: var(--text-muted);
+        }
+
+        .terms-body h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 40px 0 12px;
+        }
+
+        .terms-body h2:first-child { margin-top: 0; }
+
+        .terms-body p,
+        .terms-body li {
+            font-size: .92rem;
+            color: var(--text-secondary);
+            line-height: 1.75;
+        }
+
+        .terms-body ul {
+            margin: 12px 0 12px 20px;
+            padding: 0;
+        }
+
+        .terms-body li { margin-bottom: 6px; }
+
+        .terms-body a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .terms-body a:hover { text-decoration: underline; }
+
+        .terms-body code {
+            font-family: var(--font-mono);
+            font-size: .85em;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+
+        .terms-note {
+            background: var(--accent-bg);
+            border: 1px solid rgba(37,99,235,.2);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin: 32px 0;
+            font-size: .88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .terms-wrap { padding: 32px 20px 60px; }
+            .terms-header h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/" class="logo">push<span>page</span></a>
+        <nav class="site-nav">
+            <a href="/docs" class="nav-link">Docs</a>
+            <a href="/dashboard" class="nav-link">Dashboard</a>
+        </nav>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-ghost btn-sm">Sign in</a>
+            <a href="/dashboard" class="btn btn-primary btn-sm">Get started</a>
+        </div>
+    </div>
+</header>
+
+<div class="terms-wrap">
+    <div class="terms-header">
+        <h1>Support</h1>
+        <p class="effective">How to get help with pushpage</p>
+    </div>
+
+    <div class="terms-body">
+
+        <h2>Contact us</h2>
+        <ul>
+            <li><strong>Email:</strong> <a href="mailto:support@pushpage.link">support@pushpage.link</a> for help with your account, pages or connecting an AI agent.</li>
+            <li><strong>Bugs and ideas:</strong> open an issue on <a href="https://github.com/rgf2004/pushpage/issues" target="_blank" rel="noopener">GitHub</a>.</li>
+            <li><strong>Security problems:</strong> <a href="mailto:security@pushpage.link">security@pushpage.link</a>, please do not post them publicly.</li>
+            <li><strong>Data requests:</strong> <a href="mailto:privacy@pushpage.link">privacy@pushpage.link</a> (see the <a href="/privacy">Privacy Policy</a>).</li>
+        </ul>
+        <p>pushpage is a small project, so replies can take a few days. Please include the page address or id and, for an agent problem, what your client printed.</p>
+
+        <h2>Check the service</h2>
+        <p>Open <a href="/api/health">pushpage.link/api/health</a>. If it answers <code>{"status":"UP"}</code>, the service is running and the problem is probably on the client side.</p>
+
+        <h2>Quick answers</h2>
+
+        <p><strong>My page disappeared.</strong> Pages published without an account (guest mode) are deleted after 30 minutes. Pages from an account are kept for 30 days by default. Sign in to the <a href="/dashboard">dashboard</a> to see what is live and when each page expires.</p>
+
+        <p><strong>I get "Rate limit exceeded" (429).</strong> Guests can publish a few pages per minute per IP address, and accounts have a higher limit. Wait for the time in the <code>Retry-After</code> header and try again.</p>
+
+        <p><strong>I forgot my password.</strong> Use "Forgot password" on the <a href="/dashboard">dashboard</a> sign-in page and follow the emailed link. Resetting the password signs out your sessions and connected apps, but your API keys keep working.</p>
+
+        <p><strong>I lost an API key.</strong> A key is shown only once. Create a new one in the dashboard under Account and revoke the old one.</p>
+
+        <p><strong>How do I connect Claude Code, Cursor or another agent?</strong> Follow <a href="/guides/mcp-server-publish-html">the MCP setup guide</a> or <a href="/guides/share-html-from-claude-code">share HTML from Claude Code</a>. For a quick try with no account, use <code>https://pushpage.link/mcp-guest</code>.</p>
+
+        <p><strong>How do I stop an agent using my account?</strong> In the dashboard, under Account, remove the app from "Connected apps", or revoke its API key. Both take effect immediately.</p>
+
+        <p><strong>How do I delete my account?</strong> Email <a href="mailto:privacy@pushpage.link">privacy@pushpage.link</a> from the address on the account. See the <a href="/privacy">Privacy Policy</a> for what is deleted.</p>
+
+        <h2>Documentation</h2>
+        <ul>
+            <li><a href="/docs">Documentation</a> and the <a href="/api/swagger-ui/index.html">API reference</a></li>
+            <li><a href="/guides/html-hosting-for-ai-agents">HTML hosting for AI agents</a></li>
+            <li><a href="/terms">Terms of Use</a></li>
+        </ul>
+
+    </div>
+</div>
+
+
+<footer>
+    <div class="footer-inner">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="/" class="logo">push<span>page</span></a>
+                <p>A lightweight HTML publishing service for AI agents and developers.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/api/swagger-ui/index.html">API reference</a>
+                <a href="/docs">Documentation</a>
+            </div>
+            <div class="footer-col">
+                <h4>Docs &amp; guides</h4>
+                <a href="/docs#quick-start">Quick start</a>
+                <a href="/docs#authentication">Authentication</a>
+                <a href="/docs#self-hosting">Self-hosting</a>
+                <a href="/docs#configuration">Configuration</a>
+                <a href="/guides/share-html-from-claude-code">Share HTML from Claude Code</a>
+                <a href="/guides/mcp-server-publish-html">MCP server setup</a>
+                <a href="/guides/html-hosting-for-ai-agents">HTML hosting for agents</a>
+            </div>
+            <div class="footer-col">
+                <h4>Links</h4>
+                <a href="https://github.com/rgf2004/pushpage" target="_blank" rel="noopener">GitHub</a>
+                <a href="/llms.txt">llms.txt</a>
+                <a href="/terms">Terms of Use</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/support">Support</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 pushpage &nbsp;·&nbsp; Open source under MIT
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
