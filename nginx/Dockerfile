@@ -9,6 +9,7 @@ COPY nginx/static/ /usr/share/nginx/html/static/
 COPY nginx/terms.html /usr/share/nginx/html/terms.html
 COPY nginx/privacy.html /usr/share/nginx/html/privacy.html
 COPY nginx/support.html /usr/share/nginx/html/support.html
+COPY nginx/report.html /usr/share/nginx/html/report.html
 COPY nginx/guides/ /usr/share/nginx/html/guides/
 COPY nginx/robots.txt /usr/share/nginx/html/robots.txt
 COPY nginx/sitemap.xml /usr/share/nginx/html/sitemap.xml
