@@ -393,6 +393,13 @@
         }
 
         /* ── API key list (Account tab) ──────────────────────────────── */
+        .account-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+        .account-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+        .account-col > .card { margin: 0; }
+        .account-col > .card > .api-key-section:first-child,
+        .account-col > .card > .mcp-setup:first-child { margin-top: 0; }
+        @media (max-width: 900px) { .account-layout { grid-template-columns: minmax(0, 1fr); } }
+        .signin-hint { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
         .key-list { margin-bottom: 12px; }
         .key-row {
             align-items: center;
@@ -406,7 +413,8 @@
             margin-bottom: 8px;
             padding: 10px 14px;
         }
-        .key-row-main { min-width: 0; }
+        .key-row-main { flex: 1 1 220px; min-width: 0; }
+        .key-row .btn { flex: none; }
         .key-row-name { font-size: .88rem; font-weight: 600; word-break: break-word; }
         .key-row-meta { color: var(--text-muted); font-size: .76rem; }
         .key-row-meta code { font-family: var(--font-mono); }
@@ -788,7 +796,9 @@
     <div class="tab-panel" id="tab-account">
       <div class="dash-inner">
         <div class="panel-header"><h2>Account</h2></div>
-        <div class="card" style="max-width:560px">
+        <div class="account-layout">
+        <div class="account-col">
+        <div class="card">
             <div class="info-grid">
                 <div class="info-row">
                     <span class="info-label">Email</span>
@@ -834,15 +844,13 @@
                 </form>
             </div>
 
-            <div class="api-key-section" id="connected-apps-section">
-                <h3>Connected apps</h3>
-                <p>Apps you allowed through the browser sign-in, for example an AI agent that opened a sign-in window. Remove one and it loses access immediately; your other apps and API keys are not affected.</p>
-                <div id="connected-apps-list" class="key-list" aria-live="polite"></div>
-            </div>
-
+        </div>
+        </div>
+        <div class="account-col">
+        <div class="card">
             <div class="mcp-setup" id="mcp-setup">
                 <h3>Connect your AI agent (MCP)</h3>
-                <p id="mcp-status" class="mcp-status">Create an API key above and these commands fill in with it automatically.</p>
+                <p id="mcp-status" class="mcp-status">Create an API key and these commands fill in with it automatically.</p>
                 <div class="mcp-clients" id="mcp-clients" role="tablist" aria-label="MCP client">
                     <button type="button" class="mcp-client-btn active" data-client="claude-code">Claude Code</button>
                     <button type="button" class="mcp-client-btn" data-client="cursor">Cursor</button>
@@ -858,6 +866,22 @@
                     <button class="btn btn-secondary btn-sm" id="mcp-guest-copy-btn" type="button">Copy</button>
                 </div>
             </div>
+
+        </div>
+        </div>
+        <div class="card" style="grid-column: 1 / -1; margin: 0">
+            <div class="api-key-section" id="connected-apps-section">
+                <h3>Connected apps</h3>
+                <p>Apps you allowed through the browser sign-in, for example an AI agent that opened a sign-in window. Remove one and it loses access immediately; your other apps and API keys are not affected.</p>
+                <div id="connected-apps-list" class="key-list" aria-live="polite"></div>
+                <div class="signin-hint">
+                    <p style="margin-bottom:8px"><strong>Connect without an API key.</strong> The app opens your browser, you sign in and allow it, and it shows up here:</p>
+                    <pre class="mcp-code" id="mcp-signin-code"></pre>
+                    <button class="btn btn-secondary btn-sm" id="mcp-signin-copy-btn" type="button">Copy</button>
+                    <div class="mcp-hint" style="margin-top:8px">Other apps: use <code id="mcp-signin-url"></code> as the server URL, if the app supports MCP sign-in.</div>
+                </div>
+            </div>
+        </div>
         </div>
       </div>
     </div>
@@ -1009,6 +1033,7 @@ let jwt = '';
 // MCP setup snippets (Account tab): the key lives only in this variable, never stored.
 const MCP_URL = location.origin + '/mcp';
 const MCP_GUEST_URL = location.origin + '/mcp-guest';
+const MCP_SIGNIN_URL = location.origin + '/mcp/signin';
 const MCP_KEY_PLACEHOLDER = 'pp_your_key_here';
 let mcpKey = null;
 let mcpClient = 'claude-code';
@@ -1756,7 +1781,7 @@ function renderMcpSetup() {
     const status = document.getElementById('mcp-status');
     status.textContent = mcpKey
         ? 'Your new API key is filled in below. Copy the command now: the key is shown only once and these snippets disappear when you leave this page.'
-        : 'Create an API key above and these commands fill in with it automatically. Until then they show a placeholder.';
+        : 'Create an API key and these commands fill in with it automatically. Until then they show a placeholder.';
     status.classList.toggle('ready', !!mcpKey);
     document.getElementById('mcp-guest-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_GUEST_URL;
     document.querySelectorAll('.mcp-client-btn').forEach(b => b.classList.toggle('active', b.dataset.client === mcpClient));
@@ -1772,6 +1797,13 @@ document.getElementById('mcp-copy-btn').addEventListener('click', () => {
     navigator.clipboard.writeText(document.getElementById('mcp-code').textContent)
         .then(() => toast(mcpKey ? 'Copied. It contains your API key, so keep it private.' : 'Copied.'));
 });
+document.getElementById('mcp-signin-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_SIGNIN_URL;
+document.getElementById('mcp-signin-url').textContent = MCP_SIGNIN_URL;
+document.getElementById('mcp-signin-copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('mcp-signin-code').textContent)
+        .then(() => toast('Copied.'), () => toast('Could not copy.', 'error'));
+});
+
 document.getElementById('mcp-guest-copy-btn').addEventListener('click', () => {
     navigator.clipboard.writeText(document.getElementById('mcp-guest-code').textContent)
         .then(() => toast('Copied.'));
