@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>pushpage — Authorize access</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/theme.css">
+    <style>
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+        .auth-card { width: 100%; max-width: 420px; background: var(--bg-card); border: 1px solid var(--border);
+                     border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 32px 28px; }
+        .brand { font-weight: 800; font-size: 1.25rem; margin-bottom: 20px; }
+        .brand span { color: var(--accent); }
+        h1 { font-size: 1.15rem; margin-bottom: 8px; }
+        p { color: var(--text-muted); font-size: .92rem; line-height: 1.5; margin-bottom: 14px; }
+        ul { margin: 0 0 18px 18px; font-size: .92rem; color: var(--text); line-height: 1.7; }
+        label { display: block; font-size: .8rem; font-weight: 600; margin: 12px 0 4px; }
+        input { width: 100%; padding: 9px 11px; border: 1px solid var(--border-soft); border-radius: var(--radius);
+                font: inherit; background: var(--bg-input); }
+        .row { display: flex; gap: 10px; margin-top: 18px; }
+        button { flex: 1; padding: 10px 14px; border-radius: var(--radius); font: inherit; font-weight: 600; cursor: pointer;
+                 border: 1px solid var(--border-soft); background: var(--bg-card); color: var(--text); }
+        button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+        button:disabled { opacity: .6; cursor: default; }
+        .err { color: var(--red); font-size: .88rem; margin-top: 12px; min-height: 1.2em; }
+        .who { font-size: .85rem; color: var(--text-muted); margin-bottom: 14px; }
+        .hint { font-size: .8rem; color: var(--text-dim); margin-top: 16px; }
+        .hint a { color: var(--accent); }
+        [hidden] { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="auth-card">
+    <div class="brand">push<span>page</span></div>
+
+    <div id="view-error" hidden>
+        <h1>This request can't be completed</h1>
+        <p id="error-text"></p>
+    </div>
+
+    <form id="view-login" hidden>
+        <h1>Sign in to continue</h1>
+        <p><strong id="login-client"></strong> wants to connect to your pushpage account.</p>
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="username" required>
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <div class="row"><button class="primary" id="login-btn" type="submit">Sign in</button></div>
+        <div class="err" id="login-err"></div>
+        <div class="hint">No account yet? <a href="/dashboard" target="_blank" rel="noopener">Sign up</a>, then come back to this window.
+            Forgot your password? Use the link on the <a href="/dashboard" target="_blank" rel="noopener">dashboard</a>.</div>
+    </form>
+
+    <div id="view-consent" hidden>
+        <h1>Allow <span id="consent-client"></span>?</h1>
+        <div class="who">Signed in as <strong id="consent-email"></strong> · <a href="#" id="switch-account">not you?</a></div>
+        <p>This app will be able to:</p>
+        <ul id="consent-scopes"></ul>
+        <p>It cannot manage your account or API keys. You can remove its access at any time under Account → Connected apps on the dashboard.</p>
+        <div class="row">
+            <button id="deny-btn" type="button">Deny</button>
+            <button id="allow-btn" class="primary" type="button">Allow</button>
+        </div>
+        <div class="err" id="consent-err"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const q = new URLSearchParams(location.search);
+    const req = {
+        client_id: q.get('client_id') || '',
+        redirect_uri: q.get('redirect_uri') || '',
+        response_type: q.get('response_type') || '',
+        code_challenge: q.get('code_challenge') || '',
+        code_challenge_method: q.get('code_challenge_method') || '',
+        scope: q.get('scope') || '',
+        state: q.get('state') || ''
+    };
+    const SCOPE_TEXT = {
+        'pages:publish': 'Publish pages from your account',
+        'pages:read': 'List your pages',
+        'pages:delete': 'Delete your pages'
+    };
+    const $ = id => document.getElementById(id);
+    const show = id => ['view-error', 'view-login', 'view-consent'].forEach(v => { $(v).hidden = v !== id; });
+    let clientName = '';
+
+    function fail(msg) { $('error-text').textContent = msg; show('view-error'); }
+
+    function jwt() { try { return sessionStorage.getItem('pp_jwt') || ''; } catch (e) { return ''; } }
+    function setJwt(v) { try { v ? sessionStorage.setItem('pp_jwt', v) : sessionStorage.removeItem('pp_jwt'); } catch (e) {} }
+
+    async function init() {
+        if (req.response_type !== 'code' || !req.client_id || !req.redirect_uri
+            || !req.code_challenge || req.code_challenge_method !== 'S256') {
+            return fail('The application sent an incomplete sign-in request. Go back to it and try again.');
+        }
+        // Never redirect (not even with an error) until the client and redirect URI are known to match.
+        let r;
+        try {
+            r = await fetch('/api/oauth/client?' + new URLSearchParams({ client_id: req.client_id, redirect_uri: req.redirect_uri }));
+        } catch (e) { return fail('Could not reach pushpage. Try again in a moment.'); }
+        if (r.status === 401) {
+            return fail("pushpage doesn't know this app. Its registration may have been removed or reset. Remove the pushpage server in your app and add it again, or clear the app's saved sign-in, then retry.");
+        }
+        if (!r.ok) return fail("This app's return address does not match the one it registered with, so pushpage will not send you back to it. Remove the server in your app and add it again.");
+        clientName = (await r.json()).client_name || 'This app';
+        $('login-client').textContent = clientName;
+        $('consent-client').textContent = clientName;
+
+        const scopes = (req.scope ? req.scope.split(/\s+/) : Object.keys(SCOPE_TEXT)).filter(s => SCOPE_TEXT[s]);
+        const list = $('consent-scopes');
+        (scopes.length ? scopes : Object.keys(SCOPE_TEXT)).forEach(s => {
+            const li = document.createElement('li'); li.textContent = SCOPE_TEXT[s]; list.appendChild(li);
+        });
+
+        if (jwt()) {
+            const me = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + jwt() } }).catch(() => null);
+            if (me && me.ok) {
+                $('consent-email').textContent = (await me.json()).email || '';
+                return show('view-consent');
+            }
+            setJwt('');
+        }
+        show('view-login');
+    }
+
+    $('view-login').addEventListener('submit', async e => {
+        e.preventDefault();
+        $('login-err').textContent = '';
+        $('login-btn').disabled = true;
+        try {
+            const r = await fetch('/api/auth/login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: $('email').value.trim(), password: $('password').value })
+            });
+            if (!r.ok) {
+                let msg = 'Sign-in failed. Check your email and password.';
+                if (r.status === 429) msg = 'Too many attempts. Wait a minute and try again.';
+                else if (r.status === 403) msg = 'Verify your email address first (check your inbox), then sign in.';
+                $('login-err').textContent = msg;
+                return;
+            }
+            setJwt((await r.json()).jwt);
+            $('password').value = '';
+            await init();
+        } catch (x) {
+            $('login-err').textContent = 'Could not reach pushpage.';
+        } finally {
+            $('login-btn').disabled = false;
+        }
+    });
+
+    $('switch-account').addEventListener('click', e => { e.preventDefault(); setJwt(''); show('view-login'); });
+
+    $('allow-btn').addEventListener('click', async () => {
+        $('consent-err').textContent = '';
+        $('allow-btn').disabled = true;
+        try {
+            const r = await fetch('/api/oauth/authorize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + jwt() },
+                body: JSON.stringify({
+                    client_id: req.client_id, redirect_uri: req.redirect_uri, code_challenge: req.code_challenge,
+                    code_challenge_method: req.code_challenge_method, scope: req.scope, state: req.state
+                })
+            });
+            if (r.status === 401) { setJwt(''); return show('view-login'); }
+            if (!r.ok) { $('consent-err').textContent = 'Could not authorize this request.'; $('allow-btn').disabled = false; return; }
+            location.href = (await r.json()).redirect_to;
+        } catch (x) {
+            $('consent-err').textContent = 'Could not reach pushpage.';
+            $('allow-btn').disabled = false;
+        }
+    });
+
+    $('deny-btn').addEventListener('click', () => {
+        const sep = req.redirect_uri.includes('?') ? '&' : '?';
+        location.href = req.redirect_uri + sep + 'error=access_denied' + (req.state ? '&state=' + encodeURIComponent(req.state) : '');
+    });
+
+    init();
+})();
+</script>
+</body>
+</html>

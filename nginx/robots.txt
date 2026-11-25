@@ -1,5 +1,6 @@
 User-agent: *
 Disallow: /dashboard
 Disallow: /api/
+Disallow: /oauth/
 
 Sitemap: https://pushpage.link/sitemap.xml

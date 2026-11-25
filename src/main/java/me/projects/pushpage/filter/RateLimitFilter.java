@@ -22,6 +22,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final String PUBLISH_PATH = "/pages";
     private static final String SIGNUP_PATH = "/auth/signup";
+    private static final String OAUTH_REGISTER_PATH = "/oauth/register";
     private static final String POST = "POST";
 
     private final AuthContext authContext;
@@ -43,6 +44,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
         if (path.equals(SIGNUP_PATH)) {
             enforce(request, response, chain, "signup:ip:" + resolveClientIp(request),
+                    rateLimitService.getSignupRequestsPerMinute());
+            return;
+        }
+        if (path.equals(OAUTH_REGISTER_PATH)) {
+            // Anonymous registration creates rows, so it shares the sign-up limit (own bucket per IP).
+            enforce(request, response, chain, "register:ip:" + resolveClientIp(request),
                     rateLimitService.getSignupRequestsPerMinute());
             return;
         }

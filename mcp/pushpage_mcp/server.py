@@ -68,12 +68,21 @@ def _client_ip_headers() -> dict:
     return {"X-Real-IP": ip, "X-Forwarded-For": ip} if ip else {}
 
 
+def _auth_headers(token: str) -> dict:
+    """How to present a credential to the API.
+
+    API keys (``pp_...``) go in X-Api-Key. An OAuth access token is a JWT (it contains dots) and
+    goes in Authorization. Nothing at all for guests: the API treats an empty key as invalid.
+    """
+    if not token:
+        return {}
+    if token.startswith("pp_") or "." not in token:
+        return {"X-Api-Key": token}
+    return {"Authorization": f"Bearer {token}"}
+
+
 def _client() -> httpx.Client:
-    headers = {"Content-Type": "application/json", **_client_ip_headers()}
-    key = _api_key()
-    if key:
-        # Omit the header entirely for guests: the API treats an empty key as invalid.
-        headers["X-Api-Key"] = key
+    headers = {"Content-Type": "application/json", **_client_ip_headers(), **_auth_headers(_api_key())}
     return httpx.Client(base_url=_url, headers=headers, timeout=30)
 
 
@@ -81,7 +90,8 @@ def _signup_message(reason: str) -> str:
     return (
         f"{reason} Sign up or sign in at {_public_url}/dashboard to get an API key, "
         "then set it as the X-Api-Key header (or the PUSHPAGE_API_KEY environment variable "
-        "for the local uvx server) and reconnect."
+        "for the local uvx server) and reconnect. Clients that support OAuth can instead connect to "
+        f"{_public_url}/mcp/signin and sign in with the browser, with no key to copy."
     )
 
 
@@ -231,6 +241,89 @@ def health() -> dict:
         return r.json()
 
 
+# ── Browser sign-in endpoint (OAuth) ──────────────────────────────────────────
+
+_SIGNIN_PATH = "/mcp/signin"
+_GUEST_PATH = "/mcp-guest"
+_CREDENTIAL_HEADERS = {"authorization", "x-api-key"}
+_SIGNIN_SCOPES = "pages:publish pages:read pages:delete"
+
+
+def _bearer_or_key(headers) -> str:
+    auth = headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        return auth[len("Bearer "):].strip()
+    return headers.get("x-api-key", "").strip()
+
+
+async def _token_is_valid(token: str) -> bool:
+    """Ask the API whether this credential belongs to an active account."""
+    async with httpx.AsyncClient(base_url=_url, timeout=10) as client:
+        r = await client.get("/api/me", headers=_auth_headers(token))
+    return r.status_code == 200
+
+
+async def _send_unauthorized(send, invalid: bool) -> None:
+    challenge = f'Bearer resource_metadata="{_public_url}/.well-known/oauth-protected-resource/mcp/signin", scope="{_SIGNIN_SCOPES}"'
+    if invalid:
+        challenge = 'Bearer error="invalid_token", ' + challenge[len("Bearer "):]
+    body = b'{"error":"unauthorized","message":"Sign in to pushpage to use this endpoint"}'
+    await send({"type": "http.response.start", "status": 401, "headers": [
+        (b"content-type", b"application/json"),
+        (b"www-authenticate", challenge.encode()),
+        (b"content-length", str(len(body)).encode()),
+    ]})
+    await send({"type": "http.response.body", "body": body})
+
+
+async def _send_unavailable(send) -> None:
+    body = b'{"error":"unavailable","message":"pushpage could not check your sign-in right now, try again shortly"}'
+    await send({"type": "http.response.start", "status": 503, "headers": [
+        (b"content-type", b"application/json"),
+        (b"retry-after", b"5"),
+        (b"content-length", str(len(body)).encode()),
+    ]})
+    await send({"type": "http.response.body", "body": body})
+
+
+class SignInGateway:
+    """ASGI wrapper that serves the same MCP server at more than one URL.
+
+    - ``/mcp``: unchanged, guests or a key.
+    - ``/mcp/signin``: signed-in callers only. It answers 401 with the OAuth discovery pointer until
+      the client presents a valid access token (or API key), which is what makes a client open the
+      browser sign-in. Accepted calls are passed on to the normal ``/mcp`` route.
+    - ``/mcp-guest``: always a guest. Any credential sent is dropped, so the session is keyless
+      whatever the client has configured.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope["path"].rstrip("/") == _GUEST_PATH:
+            headers = [(k, v) for k, v in scope["headers"] if k.decode().lower() not in _CREDENTIAL_HEADERS]
+            scope = dict(scope, path="/mcp", raw_path=b"/mcp", headers=headers)
+        elif scope["type"] == "http" and scope["path"].rstrip("/") == _SIGNIN_PATH:
+            headers = {k.decode().lower(): v.decode() for k, v in scope["headers"]}
+            token = _bearer_or_key(headers)
+            if not token:
+                await _send_unauthorized(send, invalid=False)
+                return
+            try:
+                valid = await _token_is_valid(token)
+            except Exception:
+                # The API is unreachable: refuse, but not as "invalid token", which would send
+                # the client through the browser sign-in again for no reason.
+                await _send_unavailable(send)
+                return
+            if not valid:
+                await _send_unauthorized(send, invalid=True)
+                return
+            scope = dict(scope, path="/mcp", raw_path=b"/mcp")
+        await self.app(scope, receive, send)
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main(argv: list[str] | None = None, *, default_transport: str = "stdio",
@@ -264,7 +357,7 @@ def main(argv: list[str] | None = None, *, default_transport: str = "stdio",
         # Launched by an MCP client; the API key comes from the environment.
         mcp.run(transport="stdio")
         return
-    app = mcp.http_app(path="/mcp", transport="streamable-http")
+    app = SignInGateway(mcp.http_app(path="/mcp", transport="streamable-http"))
     uvicorn.run(app, host=args.host, port=args.port)
 
 

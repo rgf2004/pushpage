@@ -37,6 +37,14 @@ Pages then follow your plan's retention, and `list_pages` / `delete_page` work. 
 
 In the compose files `PUSHPAGE_PUBLIC_URL` is set from `APP_SERVER_URL`, so a self-hosted deployment needs no extra setup. If you run the local `uvx` server against your own instance, set both: `PUSHPAGE_URL` to point at it and `PUSHPAGE_PUBLIC_URL` to its public address, otherwise the sign-up links still point to pushpage.link.
 
+## Guest endpoint
+
+`https://pushpage.link/mcp-guest` is always keyless: any API key or token a client sends to it is ignored, so the session is a guest session (30-minute pages, publish only). Use it for "try it with no account" setups; use `/mcp` with a key for your own pages.
+
+## Signing in with the browser (OAuth)
+
+Clients that support the MCP authorization flow can connect to `https://pushpage.link/mcp/signin` instead of `/mcp`: the client opens the browser, you sign in with your pushpage account and allow it, and no API key is copied. `/mcp` itself is unchanged (guest mode, or a key). Access is limited to publishing, listing and deleting your pages. See [oauth.md](oauth.md) for the flow and its security model.
+
 ## Connecting
 
 The MCP server is available at `{APP_SERVER_URL}/mcp` (proxied by nginx). Replace `http://your-domain` with your actual `APP_SERVER_URL`.

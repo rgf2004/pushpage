@@ -119,7 +119,7 @@ A FastMCP server is available at `https://pushpage.link/mcp` (streamable-http tr
 ### Try it with no key (guest mode)
 
 ```bash
-claude mcp add --transport http pushpage https://pushpage.link/mcp
+claude mcp add --transport http pushpage https://pushpage.link/mcp-guest
 ```
 
 ### Claude Desktop config
@@ -159,6 +159,10 @@ If you prefer a local process over the hosted endpoint and have [uv](https://doc
   }
 }
 ```
+
+### Sign in with the browser (no key to copy)
+
+Clients that support the MCP OAuth flow can connect to `https://pushpage.link/mcp/signin` instead: the client opens the browser, the user signs in and allows it. Only publish, list and delete of that user's pages are allowed. Use `/mcp` for guest mode or an API key.
 
 ### Other MCP clients
 

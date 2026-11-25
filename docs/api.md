@@ -283,6 +283,14 @@ Revoke one of your keys. Anything using it stops working immediately; your other
 
 ---
 
+## OAuth (MCP sign-in)
+
+`GET /api/me/connected-apps` lists the apps a user allowed through the browser sign-in and `DELETE /api/me/connected-apps/{id}` removes one, cutting it off immediately (session only; `403` with an API key or an OAuth token, `404` for someone else's).
+
+Endpoints that let an MCP client sign a user in with the browser. The flow, scopes and security model are in [oauth.md](oauth.md); the endpoints are listed there too. Access tokens are accepted wherever a JWT is (`Authorization: Bearer <token>`) but only for `POST /api/pages`, `GET /api/pages`, `DELETE /api/pages/{id}` and `GET /api/me`; any other call with one returns `403`.
+
+---
+
 ## Health
 
 ### GET /api/health

@@ -25,6 +25,7 @@ All endpoints are under `/api` (Spring Boot context path). Most require an API k
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/pages` | Optional | Publish HTML (JSON or file upload), returns `{ url, id }` |
+| `POST` | `/api/oauth/register`, `/api/oauth/token` | None | OAuth for MCP browser sign-in (see `docs/oauth.md`) |
 | `GET` | `/api/health` | None | Health check |
 | `GET` | `/api/admin/health` | Admin | Runtime stats (version, uptime, page counts, storage, user counts) |
 | `GET` | `/api/config` | None | Public frontend config (enabled feature flags) |

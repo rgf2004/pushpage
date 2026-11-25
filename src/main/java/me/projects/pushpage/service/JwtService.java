@@ -25,6 +25,7 @@ public class JwtService {
     private long expirationHours;
 
     private static final String PASSWORD_VERSION_CLAIM = "pwd_v";
+    private static final String SCOPE_CLAIM = "scope";
 
     private SecretKey signingKey;
 
@@ -49,6 +50,22 @@ public class JwtService {
                 .compact();
     }
 
+    /** A short-lived access token for an OAuth client, restricted to the granted scopes. */
+    public String generateAccessToken(User user, java.util.Set<String> scopes, String clientId, String grantId, long minutes) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .subject(user.id())
+                .claim("email", user.email())
+                .claim(PASSWORD_VERSION_CLAIM, JwtClaims.passwordVersionOf(user))
+                .claim(SCOPE_CLAIM, String.join(" ", scopes))
+                .claim("client_id", clientId)
+                .claim("gid", grantId)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(minutes, ChronoUnit.MINUTES)))
+                .signWith(signingKey)
+                .compact();
+    }
+
     public Optional<String> validateToken(String token) {
         return parseToken(token).map(JwtClaims::userId);
     }
@@ -64,7 +81,12 @@ public class JwtService {
             // Tokens issued before this claim existed have none, which is version 0 (never changed).
             Object version = claims.get(PASSWORD_VERSION_CLAIM);
             long passwordVersion = version instanceof Number n ? n.longValue() : 0L;
-            return Optional.of(new JwtClaims(claims.getSubject(), passwordVersion));
+            Object scope = claims.get(SCOPE_CLAIM);
+            java.util.Set<String> scopes = scope instanceof String s
+                    ? new java.util.LinkedHashSet<>(java.util.Arrays.asList(s.trim().split("\\s+")))
+                    : null;
+            Object gid = claims.get("gid");
+            return Optional.of(new JwtClaims(claims.getSubject(), passwordVersion, scopes, gid instanceof String g ? g : null));
         } catch (Exception e) {
             return Optional.empty();
         }
