@@ -103,7 +103,10 @@
         try {
             r = await fetch('/api/oauth/client?' + new URLSearchParams({ client_id: req.client_id, redirect_uri: req.redirect_uri }));
         } catch (e) { return fail('Could not reach pushpage. Try again in a moment.'); }
-        if (!r.ok) return fail('This application is not registered with pushpage, or its return address does not match.');
+        if (r.status === 401) {
+            return fail("pushpage doesn't know this app. Its registration may have been removed or reset. Remove the pushpage server in your app and add it again, or clear the app's saved sign-in, then retry.");
+        }
+        if (!r.ok) return fail("This app's return address does not match the one it registered with, so pushpage will not send you back to it. Remove the server in your app and add it again.");
         clientName = (await r.json()).client_name || 'This app';
         $('login-client').textContent = clientName;
         $('consent-client').textContent = clientName;
