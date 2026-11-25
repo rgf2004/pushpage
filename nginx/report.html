@@ -90,7 +90,10 @@
         }
 
         .report-box { margin: 16px 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-input); font-family: var(--font-mono); font-size: .85rem; word-break: break-all; color: var(--text); }
-        .report-cta { display: inline-block; margin: 8px 0 4px; }
+        .report-cta { display: inline-block; margin: 8px 0 4px; color: #fff; }
+        .terms-body a.report-cta, .terms-body a.report-cta:hover { color: #fff; text-decoration: none; }
+        .report-addr { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 1rem; }
+        .report-addr #abuse-addr { user-select: all; }
     </style>
 </head>
 <body>
@@ -121,11 +124,20 @@
         <h2>Page address</h2>
         <div class="report-box" id="reported">No page address given. Add the address of the page to your email.</div>
 
+        <h2>Send the report by email</h2>
         <p>
-            <a class="btn btn-primary report-cta" id="mail-link" href="mailto:abuse@pushpage.link?subject=Report%20abusive%20page">Email a report</a>
+            <!--email_off--><a class="btn btn-primary report-cta" id="mail-link" href="mailto:abuse@pushpage.link?subject=Report%20abusive%20page">Email a report</a><!--/email_off-->
         </p>
         <p>
-            If your mail app does not open, write to <!--email_off--><a href="mailto:abuse@pushpage.link">abuse@pushpage.link</a><!--/email_off--> and include the page address and a short description of the problem. Reports arrive as ordinary email and contain only what you send. We aim to look at them within a few days; pages that clearly break the rules are removed.
+            Opened from a published page, this tab runs inside that page's browser sandbox, which can stop the button above from opening your mail app. If nothing happens, copy the address and the page address above and write the email yourself:
+        </p>
+        <div class="report-box report-addr">
+            <!--email_off--><span id="abuse-addr">abuse@pushpage.link</span><!--/email_off-->
+            <button type="button" class="btn btn-ghost btn-sm" id="copy-addr">Copy address</button>
+            <span id="copied" aria-live="polite"></span>
+        </div>
+        <p>
+            Include the page address and a short description of the problem. Reports arrive as ordinary email and contain only what you send. We aim to look at them within a few days; pages that clearly break the rules are removed. You can also open <code>/report</code> directly, without the bar.
         </p>
     </div>
 </div>
@@ -170,16 +182,38 @@
 
 <script>
 (function () {
-    // The "page" parameter is untrusted. Accept only a bare page id or a pushpage page address, and
-    // rebuild the canonical address from the id, so nothing else from the query string is ever shown or linked.
+    // Single place to change for forks: the address in #abuse-addr above (and the two mailto hrefs, as
+    // the no-JS default). Everything below reads the address from #abuse-addr.
+    var addr = document.getElementById('abuse-addr').textContent.trim();
+    var link = document.getElementById('mail-link');
+    var origin = location.origin;
+    var esc = origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // The "page" parameter is untrusted. Accept only a bare page id or an address on this origin, and
+    // rebuild the address from the id, so nothing else from the query string is ever shown or linked.
     var raw = new URLSearchParams(location.search).get('page') || '';
-    var m = /^(?:https:\/\/pushpage\.link\/pages\/)?([a-zA-Z0-9]{1,64})(?:\.html)?$/.exec(raw.trim());
-    if (!m) return;
-    var url = 'https://pushpage.link/pages/' + m[1] + '.html';
-    document.getElementById('reported').textContent = url;
-    var body = 'Page: ' + url + '\n\nWhat is wrong with this page?\n';
-    document.getElementById('mail-link').href = 'mailto:abuse@pushpage.link?subject=' +
-        encodeURIComponent('Report abusive page ' + m[1]) + '&body=' + encodeURIComponent(body);
+    var m = new RegExp('^(?:' + esc + '/pages/)?([a-zA-Z0-9]{1,64})(?:\\.html)?$').exec(raw.trim());
+    var subject = 'Report abusive page', body = 'Page: \n\nWhat is wrong with this page?\n';
+    if (m) {
+        var url = origin + '/pages/' + m[1] + '.html';
+        document.getElementById('reported').textContent = url;
+        subject = 'Report abusive page ' + m[1];
+        body = 'Page: ' + url + '\n\nWhat is wrong with this page?\n';
+    }
+    link.href = 'mailto:' + addr + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+
+    document.getElementById('copy-addr').addEventListener('click', function () {
+        var done = function (ok) { document.getElementById('copied').textContent = ok ? 'Copied' : 'Select the address and copy it'; };
+        var legacy = function () {
+            try {
+                var r = document.createRange(); r.selectNodeContents(document.getElementById('abuse-addr'));
+                var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+                done(document.execCommand('copy'));
+            } catch (e) { done(false); }
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(addr).then(function () { done(true); }, legacy);
+        else legacy();
+    });
 })();
 </script>
 
