@@ -45,6 +45,17 @@ In the compose files `PUSHPAGE_PUBLIC_URL` is set from `APP_SERVER_URL`, so a se
 
 Clients that support the MCP authorization flow can connect to `https://pushpage.link/mcp/signin` instead of `/mcp`: the client opens the browser, you sign in with your pushpage account and allow it, and no API key is copied. `/mcp` itself is unchanged (guest mode, or a key). Access is limited to publishing, listing and deleting your pages. See [oauth.md](oauth.md) for the flow and its security model.
 
+### One-click install links
+
+The dashboard (Account, Connected apps) and the [MCP setup guide](https://pushpage.link/guides/mcp-server-publish-html) offer "Add to Cursor" and "Add to VS Code" buttons that add `<origin>/mcp/signin` with no key in the link. Formats, from the vendors' documentation:
+
+| Client | Link | Source |
+|--------|------|--------|
+| Cursor | `cursor://anysphere.cursor-deeplink/mcp/install?name=pushpage&config=<base64 of {"url":"<origin>/mcp/signin"}>` | https://cursor.com/docs/context/mcp/install-links |
+| VS Code | `vscode:mcp/install?<encodeURIComponent of {"name":"pushpage","type":"http","url":"<origin>/mcp/signin"}>` (Insiders: `vscode-insiders:`); web wrapper `https://vscode.dev/redirect?url=<encoded vscode: URL>` | https://code.visualstudio.com/api/extension-guides/ai/mcp |
+
+The dashboard builds them in JS from `MCP_SIGNIN_URL`, so a self-hosted instance links to itself. Static pages hard-code the pushpage.link URL (update them with the `/mcp/signin` flip, see CLAUDE.md). Claude Code and Claude Desktop have no documented install deep link; Claude Code uses `claude mcp add --transport http pushpage <origin>/mcp/signin`.
+
 ## Connecting
 
 The MCP server is available at `{APP_SERVER_URL}/mcp` (proxied by nginx). Replace `http://your-domain` with your actual `APP_SERVER_URL`.

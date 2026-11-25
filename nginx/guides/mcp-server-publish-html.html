@@ -120,6 +120,13 @@ claude mcp add --transport http pushpage https://pushpage.link/mcp \
   }
 }</code></pre>
 
+<h2>One-click install (Cursor and VS Code)</h2>
+<!-- /mcp/signin is a temporary URL; see CLAUDE.md ("MCP URLs") before changing it. -->
+<p>These buttons add pushpage with browser sign-in, so no API key is involved: the app asks you to confirm, then opens your browser to sign in with your pushpage account the first time it connects. They need the desktop app installed.</p>
+<p><a class="btn btn-secondary" href="cursor://anysphere.cursor-deeplink/mcp/install?name=pushpage&amp;config=eyJ1cmwiOiJodHRwczovL3B1c2hwYWdlLmxpbmsvbWNwL3NpZ25pbiJ9">Add to Cursor</a>
+<a class="btn btn-secondary" href="vscode:mcp/install?%7B%22name%22%3A%22pushpage%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fpushpage.link%2Fmcp%2Fsignin%22%7D">Add to VS Code</a></p>
+<p>Self-hosting? The dashboard (Account tab) shows the same buttons pointing at your own instance.</p>
+
 <h2>Claude Desktop</h2>
 <p>Claude Desktop does not always forward custom headers to remote servers, so use the <code>mcp-remote</code> bridge (needs Node.js). Add this to <code>claude_desktop_config.json</code> and restart the app:</p>
 <pre><code>{
