@@ -96,7 +96,7 @@ Every such page needs:
 
 Footers must not link to raw API endpoints such as `/mcp`: they answer crawlers with an error.
 
-**Contact addresses.** `support@`, `privacy@` and `security@pushpage.link` (plus `noreply@`, which only sends) are Cloudflare Email Routing rules that forward to the maintainer's Gmail; system email is sent through Mailtrap. The Privacy Policy (`nginx/privacy.html`) names Cloudflare, Mailtrap and Google as the parties that handle data: update it, and its effective date, if a processor, a retention period (`CLEANUP_RETENTION_DAYS`, token lifetimes) or what is stored changes.
+**Contact addresses.** `support@`, `privacy@` and `security@pushpage.link` (plus `noreply@`, which only sends) are Cloudflare Email Routing rules that forward to the maintainer's Gmail; system email is sent through Mailtrap. **Cloudflare rewrites email addresses in HTML** (Email Address Obfuscation, on by default) into `[email protected]` for anything that is not a full browser, which hides the contact from crawlers and directory scanners. Wrap every address in a page as `<!--email_off--><a href="mailto:…">…</a><!--/email_off-->` (Cloudflare strips the comment and leaves the address). The Privacy Policy (`nginx/privacy.html`) names Cloudflare, Mailtrap and Google as the parties that handle data: update it, and its effective date, if a processor, a retention period (`CLEANUP_RETENTION_DAYS`, token lifetimes) or what is stored changes.
 
 **Where the files go**
 - **Site pages** (landing, docs, terms, privacy, support): `nginx/<name>.html`, which needs **four** changes:
