@@ -93,8 +93,8 @@ def _signup_message(reason: str) -> str:
     return (
         f"{reason} Sign up or sign in at {_public_url}/dashboard to get an API key, "
         "then set it as the X-Api-Key header (or the PUSHPAGE_API_KEY environment variable "
-        "for the local uvx server) and reconnect. Clients that support OAuth can instead connect to "
-        f"{_public_url}/mcp/signin and sign in with the browser, with no key to copy."
+        "for the local uvx server or a headless setup) and reconnect. Clients that support OAuth can instead "
+        f"connect to {_public_url}/mcp and sign in with the browser when prompted, with no key to copy."
     )
 
 
@@ -369,6 +369,8 @@ _MCP_PATH = "/mcp"
 # POST bodies are buffered (and replayed unchanged) to read the JSON-RPC method only up to this
 # many bytes. A bigger body (the publish_page HTML limit is far smaller) is passed on untouched
 # and its tool calls are not inspected here; the tools still refuse guests themselves.
+# nginx's default client_max_body_size (1m) on the /mcp location means such bodies normally never reach
+# the gateway; the in-tool and API checks still apply for direct access to the MCP container.
 _MAX_INSPECT_BYTES = 10 * 1024 * 1024
 
 
@@ -380,7 +382,7 @@ def _protected_scopes(body: bytes) -> list[str]:
     """Scopes needed by the protected ``tools/call`` messages in a JSON-RPC body (single or batch)."""
     try:
         message = json.loads(body)
-    except ValueError:
+    except Exception:  # ValueError, or RecursionError on deeply nested JSON: pass the body on untouched
         return []
     needed: list[str] = []
     for item in message if isinstance(message, list) else [message]:
@@ -404,26 +406,19 @@ def _token_scopes(token: str) -> set[str] | None:
         payload = token.split(".")[1]
         claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
         scope = claims.get("scope")
-    except (IndexError, ValueError, AttributeError):
+    except Exception:
         return None
     return set(scope.split()) if isinstance(scope, str) else None
 
 
-async def _send_challenge(send, status: int, error: str | None, description: str | None,
-                          scopes: list[str], resource: str = "mcp") -> None:
-    parts = []
-    if error:
-        parts.append(f'error="{error}"')
+async def _send_challenge(send, status: int, error: str, description: str | None, scopes: list[str]) -> None:
+    parts = [f'error="{error}"']
     if description:
         parts.append(f'error_description="{description}"')
-    if error == "insufficient_scope":
+    parts.append(f'resource_metadata="{_public_url}/.well-known/oauth-protected-resource/mcp"')
+    if scopes:
         parts.append(f'scope="{" ".join(scopes)}"')
-        parts.append(f'resource_metadata="{_public_url}/.well-known/oauth-protected-resource/{resource}"')
-    else:
-        parts.append(f'resource_metadata="{_public_url}/.well-known/oauth-protected-resource/{resource}"')
-        if scopes:
-            parts.append(f'scope="{" ".join(scopes)}"')
-    body = json.dumps({"error": error or "unauthorized",
+    body = json.dumps({"error": error,
                        "message": description or "Authentication required"}).encode()
     await send({"type": "http.response.start", "status": status, "headers": [
         (b"content-type", b"application/json"),

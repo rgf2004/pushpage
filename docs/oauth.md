@@ -28,8 +28,13 @@ Challenges (`resource_metadata` is `<public url>/.well-known/oauth-protected-res
 ```
 401  WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required for this tool", resource_metadata="...", scope="pages:read"
 401  WWW-Authenticate: Bearer error="invalid_token", error_description="The access token is invalid or expired", resource_metadata="..."[, scope="..."]
-403  WWW-Authenticate: Bearer error="insufficient_scope", scope="pages:read pages:update", resource_metadata="..."
+403  WWW-Authenticate: Bearer error="insufficient_scope", resource_metadata="...", scope="pages:read pages:update"
 ```
+
+Known behaviours:
+
+- A client that does not support MCP OAuth gets a plain `401` on `list_pages`, `update_page` and `delete_page` on `/mcp`. Such clients should use `/mcp-guest` (never prompts) or an API key instead.
+- `publish_page` is public at the gateway, so a valid token that lacks `pages:publish` is refused by the API as a tool error, not by a `403 insufficient_scope` challenge.
 
 An OAuth token (a JWT) is validated against the API on every POST, with no cache, so removing a connected app takes effect at once. The `scope` claim is read from the token only after the API accepted it; a token without one is a dashboard session and is unrestricted. The protected tools and scopes live in `_PROTECTED_TOOL_SCOPES` in `mcp/pushpage_mcp/server.py`.
 
@@ -83,7 +88,7 @@ sequenceDiagram
     P-->>C: new access token + new refresh token (old one is dead)
 ```
 
-**Where each URL fits:** `/mcp-guest` (always keyless) skips all of this. `/mcp` starts the flow above only when a protected tool is called without a credential (step 1 is then that `401`, with `/.well-known/oauth-protected-resource/mcp`); `/mcp/signin` starts it on any call (deprecated). An OAuth token can only publish, list and delete pages; admin, API-key management and issuing more tokens return `403`.
+**Where each URL fits:** `/mcp-guest` (always keyless) skips all of this. `/mcp` starts the flow above only when a protected tool is called without a credential (step 1 is then that `401`, with `/.well-known/oauth-protected-resource/mcp`); `/mcp/signin` starts it on any call (deprecated). An OAuth token can only publish, update, list and delete pages; admin, API-key management and issuing more tokens return `403`.
 
 The same flow in words:
 

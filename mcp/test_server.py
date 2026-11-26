@@ -375,8 +375,11 @@ class TestSignInEndpoint(unittest.TestCase):
         self.assertEqual(self.server._auth_headers("eyJ.a.b"), {"Authorization": "Bearer eyJ.a.b"})
         self.assertEqual(self.server._auth_headers(""), {})
 
-    def test_guest_message_points_to_the_sign_in_endpoint(self):
-        self.assertIn("https://my.example/mcp/signin", self.server._signup_message("x"))
+    def test_guest_message_points_to_mcp_and_browser_sign_in(self):
+        msg = self.server._signup_message("x")
+        self.assertIn("https://my.example/mcp and sign in with the browser when prompted", msg)
+        self.assertNotIn("/mcp/signin", msg)
+        self.assertIn("PUSHPAGE_API_KEY", msg)
 
     def test_http_server_is_wrapped_by_the_gateway(self):
         with patch.object(self.server.uvicorn, "run") as uv, patch.object(self.server.mcp, "http_app"):
@@ -527,7 +530,7 @@ class TestLazyAuthOnMcp(unittest.TestCase):
                    {"authorization": "Bearer " + _jwt("pages:publish pages:read")})
         self.assertEqual(self._status(), 403)
         self.assertEqual(self._challenge(),
-                         'Bearer error="insufficient_scope", scope="pages:read pages:update", ' + self.META)
+                         'Bearer error="insufficient_scope", ' + self.META + ', scope="pages:read pages:update"')
         self.assertEqual(self.forwarded, [])
 
     def test_jwt_missing_scope_is_fine_for_public_calls(self):
@@ -569,6 +572,19 @@ class TestLazyAuthOnMcp(unittest.TestCase):
         self._post(_rpc("tools/call", "list_pages"), {"authorization": "Bearer " + _jwt("x")}, path="/mcp-guest")
         self.assertEqual(self.sent, [])
         self.assertEqual(self.forwarded[0][0], "/mcp")
+
+    def test_deeply_nested_body_is_passed_through_not_crashed(self):
+        body = b"[" * 200000
+        self._post(body)
+        self.assertPassed(body)
+        self.sent.clear()
+        self.forwarded.clear()
+        self._post(body, {"authorization": "Bearer " + _jwt("pages:read")})
+        self.assertPassed(body)
+
+    def test_malformed_jwt_scope_claim_does_not_crash(self):
+        self.assertIsNone(self.server._token_scopes("a.%%%.c"))
+        self.assertIsNone(self.server._token_scopes("nodots"))
 
     def test_signin_endpoint_still_requires_a_credential_for_everything(self):
         self._post(_rpc("tools/list"), path="/mcp/signin")
