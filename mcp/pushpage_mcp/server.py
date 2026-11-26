@@ -1,4 +1,6 @@
 import argparse
+import base64
+import json
 import os
 import re
 
@@ -352,13 +354,123 @@ async def _send_unavailable(send) -> None:
     await send({"type": "http.response.body", "body": body})
 
 
+# ── Lazy authentication on /mcp ───────────────────────────────────────────────
+
+# Tools that need an account on /mcp, and the OAuth scope each needs. A call to one of them without
+# a credential is answered with a transport-level 401 so the client shows its sign-in prompt.
+# UPDATE THIS TABLE whenever a tool that needs an account is added (and the matching scope in
+# OAuthScopes.java); everything not listed here is public and never challenged.
+_PROTECTED_TOOL_SCOPES = {
+    "list_pages": "pages:read",
+    "delete_page": "pages:delete",
+    "update_page": "pages:update",
+}
+_MCP_PATH = "/mcp"
+# POST bodies are buffered (and replayed unchanged) to read the JSON-RPC method only up to this
+# many bytes. A bigger body (the publish_page HTML limit is far smaller) is passed on untouched
+# and its tool calls are not inspected here; the tools still refuse guests themselves.
+_MAX_INSPECT_BYTES = 10 * 1024 * 1024
+
+
+def _is_oauth_jwt(token: str) -> bool:
+    return bool(token) and not token.startswith("pp_") and "." in token
+
+
+def _protected_scopes(body: bytes) -> list[str]:
+    """Scopes needed by the protected ``tools/call`` messages in a JSON-RPC body (single or batch)."""
+    try:
+        message = json.loads(body)
+    except ValueError:
+        return []
+    needed: list[str] = []
+    for item in message if isinstance(message, list) else [message]:
+        if not isinstance(item, dict) or item.get("method") != "tools/call":
+            continue
+        params = item.get("params")
+        name = params.get("name") if isinstance(params, dict) else None
+        scope = _PROTECTED_TOOL_SCOPES.get(name) if isinstance(name, str) else None
+        if scope and scope not in needed:
+            needed.append(scope)
+    return needed
+
+
+def _token_scopes(token: str) -> set[str] | None:
+    """The ``scope`` claim of a JWT the API already accepted, or None when it has none.
+
+    Read only to compare scopes; the signature is not checked here because the API did that.
+    No scope claim means a dashboard session (unrestricted).
+    """
+    try:
+        payload = token.split(".")[1]
+        claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+        scope = claims.get("scope")
+    except (IndexError, ValueError, AttributeError):
+        return None
+    return set(scope.split()) if isinstance(scope, str) else None
+
+
+async def _send_challenge(send, status: int, error: str | None, description: str | None,
+                          scopes: list[str], resource: str = "mcp") -> None:
+    parts = []
+    if error:
+        parts.append(f'error="{error}"')
+    if description:
+        parts.append(f'error_description="{description}"')
+    if error == "insufficient_scope":
+        parts.append(f'scope="{" ".join(scopes)}"')
+        parts.append(f'resource_metadata="{_public_url}/.well-known/oauth-protected-resource/{resource}"')
+    else:
+        parts.append(f'resource_metadata="{_public_url}/.well-known/oauth-protected-resource/{resource}"')
+        if scopes:
+            parts.append(f'scope="{" ".join(scopes)}"')
+    body = json.dumps({"error": error or "unauthorized",
+                       "message": description or "Authentication required"}).encode()
+    await send({"type": "http.response.start", "status": status, "headers": [
+        (b"content-type", b"application/json"),
+        (b"www-authenticate", ("Bearer " + ", ".join(parts)).encode()),
+        (b"content-length", str(len(body)).encode()),
+    ]})
+    await send({"type": "http.response.body", "body": body})
+
+
+async def _read_body(receive) -> tuple[list[dict], bytes]:
+    """Read request body messages up to the inspection cap. Returns (messages read, body bytes)."""
+    messages: list[dict] = []
+    body = b""
+    while True:
+        message = await receive()
+        messages.append(message)
+        if message["type"] != "http.request":  # disconnect
+            return messages, body
+        body += message.get("body", b"")
+        if not message.get("more_body", False) or len(body) > _MAX_INSPECT_BYTES:
+            return messages, body
+
+
+def _replaying(messages: list[dict], receive):
+    """A receive callable that hands the inner app the buffered messages, then the live stream."""
+    queue = list(messages)
+
+    async def replay():
+        if queue:
+            return queue.pop(0)
+        return await receive()
+
+    return replay
+
+
 class SignInGateway:
     """ASGI wrapper that serves the same MCP server at more than one URL.
 
-    - ``/mcp``: unchanged, guests or a key.
+    - ``/mcp``: lazy authentication. Anonymous callers can initialize, list tools and use the public
+      tools (publish_page, health). A call to a protected tool (``_PROTECTED_TOOL_SCOPES``) without a
+      credential gets a 401 with the OAuth discovery pointer, so the client prompts for sign-in and
+      retries. A JWT access token is checked with the API on every POST (401 if invalid, 503 if the
+      API is down, 403 insufficient_scope if it lacks a scope the call needs). API keys (``pp_``) pass
+      through untouched. GET (event stream) and DELETE (end session) are never inspected.
     - ``/mcp/signin``: signed-in callers only. It answers 401 with the OAuth discovery pointer until
       the client presents a valid access token (or API key), which is what makes a client open the
-      browser sign-in. Accepted calls are passed on to the normal ``/mcp`` route.
+      browser sign-in. Accepted calls are passed on to the normal ``/mcp`` route. Deprecated.
     - ``/mcp-guest``: always a guest. Any credential sent is dropped, so the session is keyless
       whatever the client has configured.
     """
@@ -387,7 +499,38 @@ class SignInGateway:
                 await _send_unauthorized(send, invalid=True)
                 return
             scope = dict(scope, path="/mcp", raw_path=b"/mcp")
+        elif (scope["type"] == "http" and scope["path"].rstrip("/") == _MCP_PATH
+              and scope.get("method", "").upper() == "POST"):
+            receive = await self._lazy_auth(scope, receive, send)
+            if receive is None:
+                return
         await self.app(scope, receive, send)
+
+    async def _lazy_auth(self, scope, receive, send):
+        """Decide a POST to /mcp. Returns the receive to give the app, or None if already answered."""
+        headers = {k.decode().lower(): v.decode() for k, v in scope["headers"]}
+        token = _bearer_or_key(headers)
+        messages, body = await _read_body(receive)
+        needed = _protected_scopes(body) if len(body) <= _MAX_INSPECT_BYTES else []
+        replay = _replaying(messages, receive)
+
+        if _is_oauth_jwt(token):
+            try:
+                valid = await _token_is_valid(token)
+            except Exception:
+                await _send_unavailable(send)
+                return None
+            if not valid:
+                await _send_challenge(send, 401, "invalid_token", "The access token is invalid or expired", needed)
+                return None
+            granted = _token_scopes(token)
+            if needed and granted is not None and not set(needed) <= granted:
+                await _send_challenge(send, 403, "insufficient_scope", None, needed)
+                return None
+        elif needed and not token:
+            await _send_challenge(send, 401, "invalid_token", "Authentication required for this tool", needed)
+            return None
+        return replay
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

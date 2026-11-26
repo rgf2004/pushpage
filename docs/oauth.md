@@ -4,11 +4,34 @@ MCP clients that implement the [MCP authorization spec](https://modelcontextprot
 
 | Endpoint | Behavior |
 |----------|----------|
-| `https://pushpage.link/mcp` | Unchanged: guest mode without a key, or `X-Api-Key` / `Authorization: Bearer pp_...` with one. |
+| `https://pushpage.link/mcp` | Lazy authentication. Anonymous callers can initialize, list tools and use `publish_page` and `health` (guest mode). A call to `list_pages`, `update_page` or `delete_page` without a credential gets `401` with the discovery pointer, which makes the client open the browser sign-in and retry. `X-Api-Key` / `Authorization: Bearer pp_...` work as before, with no OAuth challenge. |
 | `https://pushpage.link/mcp-guest` | Always a guest, whatever the client sends: any key or token is dropped. The URL to give people for trying it with no account. |
 | `https://pushpage.link/mcp/signin` | The same MCP server, but only for signed-in callers. Without a valid credential it answers `401` with a `WWW-Authenticate` header pointing at the discovery document, which is what makes the client open the browser. |
 
-Guest mode never answers `401`, so a client can only discover the sign-in flow through the second URL.
+`/mcp/signin` is deprecated: it stays unchanged until real clients are confirmed with lazy authentication on `/mcp`, then it is removed.
+
+## Lazy authentication on `/mcp`
+
+The gateway reads the JSON-RPC body of each `POST /mcp` (single message or batch) and decides per call; the body is then replayed unchanged to the MCP app. `GET` (event stream) and `DELETE` (end session) are not inspected. Bodies over 10 MiB are passed on without inspection.
+
+| Credential | Public call (`initialize`, `tools/list`, `publish_page`, `health`, ...) | Protected call (`list_pages` needs `pages:read`, `delete_page` `pages:delete`, `update_page` `pages:update`) |
+|---|---|---|
+| none | passes (guest) | `401` challenge |
+| `pp_` API key | passes | passes (the API checks the key; an invalid one is a tool error) |
+| OAuth token, valid, has the scopes | passes | passes |
+| OAuth token, valid, lacks a scope | passes | `403` `insufficient_scope` |
+| OAuth token, invalid or expired | `401` | `401` |
+| OAuth token, API unreachable | `503` | `503` |
+
+Challenges (`resource_metadata` is `<public url>/.well-known/oauth-protected-resource/mcp`; `scope` lists the scopes needed by every protected call in the request):
+
+```
+401  WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required for this tool", resource_metadata="...", scope="pages:read"
+401  WWW-Authenticate: Bearer error="invalid_token", error_description="The access token is invalid or expired", resource_metadata="..."[, scope="..."]
+403  WWW-Authenticate: Bearer error="insufficient_scope", scope="pages:read pages:update", resource_metadata="..."
+```
+
+An OAuth token (a JWT) is validated against the API on every POST, with no cache, so removing a connected app takes effect at once. The `scope` claim is read from the token only after the API accepted it; a token without one is a dashboard session and is unrestricted. The protected tools and scopes live in `_PROTECTED_TOOL_SCOPES` in `mcp/pushpage_mcp/server.py`.
 
 ## Flow
 
@@ -60,7 +83,7 @@ sequenceDiagram
     P-->>C: new access token + new refresh token (old one is dead)
 ```
 
-**Where each URL fits:** `/mcp` (guests or an API key) and `/mcp-guest` (always keyless) skip all of this. Only `/mcp/signin` starts the flow above. An OAuth token can only publish, list and delete pages; admin, API-key management and issuing more tokens return `403`.
+**Where each URL fits:** `/mcp-guest` (always keyless) skips all of this. `/mcp` starts the flow above only when a protected tool is called without a credential (step 1 is then that `401`, with `/.well-known/oauth-protected-resource/mcp`); `/mcp/signin` starts it on any call (deprecated). An OAuth token can only publish, list and delete pages; admin, API-key management and issuing more tokens return `403`.
 
 The same flow in words:
 
@@ -86,7 +109,8 @@ All under `/api` except the discovery documents and the consent page, which ngin
 
 | Method | Path | Auth |
 |--------|------|------|
-| `GET` | `/.well-known/oauth-protected-resource/mcp/signin` (→ `/api/oauth/protected-resource`) | none |
+| `GET` | `/.well-known/oauth-protected-resource/mcp` (→ `/api/oauth/protected-resource/mcp`), `resource` = `<base>/mcp` | none |
+| `GET` | `/.well-known/oauth-protected-resource/mcp/signin` (→ `/api/oauth/protected-resource`), `resource` = `<base>/mcp/signin` | none |
 | `GET` | `/.well-known/oauth-authorization-server` (→ `/api/oauth/metadata`) | none |
 | `POST` | `/api/oauth/register` | none, rate-limited per IP (`RATE_LIMIT_SIGNUP_RPM`) |
 | `GET` | `/oauth/authorize` | the consent page (static HTML, `noindex`) |

@@ -171,7 +171,7 @@ If you prefer a local process over the hosted endpoint and have [uv](https://doc
 
 ### Sign in with the browser (no key to copy)
 
-Clients that support the MCP OAuth flow can connect to `https://pushpage.link/mcp/signin` instead: the client opens the browser, the user signs in and allows it. Only publish, list and delete of that user's pages are allowed. Use `/mcp` for guest mode or an API key.
+On `/mcp`, `publish_page` and `health` work without any credential (guest mode). Calling `list_pages`, `update_page` or `delete_page` without one makes the server answer HTTP `401` with a `WWW-Authenticate` header; clients that support the MCP OAuth flow then show a sign-in prompt, open the browser where the user signs in and allows the app, and retry the call. If you see this prompt, or a `401` / `403 insufficient_scope` for one of those tools, tell the user to complete the sign-in (or remove and re-add the app if a permission is missing); do not retry in a loop. An API key (`X-Api-Key`) skips the prompt. Only publish, update, list and delete of that user's pages are allowed. `https://pushpage.link/mcp/signin` (deprecated) asks for sign-in on every call.
 
 ### Other MCP clients
 

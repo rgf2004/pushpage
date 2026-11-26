@@ -65,9 +65,15 @@ public class OAuthService {
         return serverUrl.replaceAll("/+$", "");
     }
 
+    /** Metadata for the {@code /mcp/signin} resource (RFC 9728: resource must equal the URL the client connects to). */
     public Map<String, Object> protectedResourceMetadata() {
+        return protectedResourceMetadata("/mcp/signin");
+    }
+
+    /** Metadata for another MCP resource path, for example {@code /mcp} (lazy authentication). */
+    public Map<String, Object> protectedResourceMetadata(String resourcePath) {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("resource", base() + "/mcp/signin");
+        m.put("resource", base() + resourcePath);
         m.put("authorization_servers", List.of(base()));
         m.put("scopes_supported", OAuthScopes.SUPPORTED);
         m.put("bearer_methods_supported", List.of("header"));

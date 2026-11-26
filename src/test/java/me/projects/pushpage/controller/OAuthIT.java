@@ -147,6 +147,19 @@ class OAuthIT extends PostgresTestSupport {
     }
 
     @Test
+    void protectedResourceMetadata_forMcpResourceIsSeparateFromSignin() throws Exception {
+        mockMvc.perform(get("/oauth/protected-resource/mcp"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resource").value(org.hamcrest.Matchers.matchesPattern(".*[^n]/mcp$")))
+                .andExpect(jsonPath("$.authorization_servers[0]").exists())
+                .andExpect(jsonPath("$.scopes_supported", org.hamcrest.Matchers.hasItems(
+                        "pages:publish", "pages:update", "pages:read", "pages:delete")))
+                .andExpect(jsonPath("$.bearer_methods_supported[0]").value("header"));
+        mockMvc.perform(get("/oauth/protected-resource"))
+                .andExpect(jsonPath("$.resource").value(org.hamcrest.Matchers.endsWith("/mcp/signin")));
+    }
+
+    @Test
     void register_acceptsHttpsLoopbackAndCustomSchemes() throws Exception {
         registerClient("https://claude.ai/api/mcp/auth_callback");
         registerClient("http://localhost:3000/cb");

@@ -44,7 +44,7 @@ In the compose files `PUSHPAGE_PUBLIC_URL` is set from `APP_SERVER_URL`, so a se
 
 ## Signing in with the browser (OAuth)
 
-Clients that support the MCP authorization flow can connect to `https://pushpage.link/mcp/signin` instead of `/mcp`: the client opens the browser, you sign in with your pushpage account and allow it, and no API key is copied. `/mcp` itself is unchanged (guest mode, or a key). Access is limited to publishing, listing and deleting your pages. See [oauth.md](oauth.md) for the flow and its security model.
+`https://pushpage.link/mcp` uses lazy authentication: anonymous callers get `initialize`, `tools/list`, `publish_page` and `health` (guest mode); calling `list_pages`, `update_page` or `delete_page` without a credential makes the server answer `401` with a pointer to the OAuth discovery document, so a client that supports the MCP authorization flow opens the browser, you sign in with your pushpage account and allow it, and the call is retried with no API key copied. An API key (`X-Api-Key` or `Authorization: Bearer pp_...`) keeps working with no OAuth challenge. `https://pushpage.link/mcp/signin` (deprecated, to be removed once clients are confirmed on `/mcp`) asks for sign-in on every call. Access is limited to publishing, listing and deleting your pages. See [oauth.md](oauth.md) for the flow and its security model.
 
 ### One-click install links
 
