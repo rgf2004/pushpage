@@ -54,6 +54,12 @@ public class OAuthController {
         return oauth.protectedResourceMetadata();
     }
 
+    @Operation(summary = "Protected resource metadata for /mcp (RFC 9728)", description = "Public. Served at /.well-known/oauth-protected-resource/mcp.")
+    @GetMapping("/protected-resource/mcp")
+    public Map<String, Object> protectedResourceMcp() {
+        return oauth.protectedResourceMetadata("/mcp");
+    }
+
     @Operation(summary = "Authorization server metadata (RFC 8414)", description = "Public. Served at /.well-known/oauth-authorization-server.")
     @GetMapping("/metadata")
     public Map<String, Object> metadata() {

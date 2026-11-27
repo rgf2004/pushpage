@@ -375,13 +375,246 @@ class TestSignInEndpoint(unittest.TestCase):
         self.assertEqual(self.server._auth_headers("eyJ.a.b"), {"Authorization": "Bearer eyJ.a.b"})
         self.assertEqual(self.server._auth_headers(""), {})
 
-    def test_guest_message_points_to_the_sign_in_endpoint(self):
-        self.assertIn("https://my.example/mcp/signin", self.server._signup_message("x"))
+    def test_guest_message_points_to_mcp_and_browser_sign_in(self):
+        msg = self.server._signup_message("x")
+        self.assertIn("https://my.example/mcp and sign in with the browser when prompted", msg)
+        self.assertNotIn("/mcp/signin", msg)
+        self.assertIn("PUSHPAGE_API_KEY", msg)
 
     def test_http_server_is_wrapped_by_the_gateway(self):
         with patch.object(self.server.uvicorn, "run") as uv, patch.object(self.server.mcp, "http_app"):
             self.server.main(["--http"])
         self.assertIsInstance(uv.call_args.args[0], self.server.SignInGateway)
+
+
+def _jwt(scope=None) -> str:
+    import base64
+    import json
+    claims = {"sub": "u"} if scope is None else {"sub": "u", "scope": scope}
+    payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).decode().rstrip("=")
+    return f"eyJhbGciOiJIUzI1NiJ9.{payload}.sig"
+
+
+def _rpc(method, name=None, **params):
+    msg = {"jsonrpc": "2.0", "id": 1, "method": method}
+    if name:
+        msg["params"] = {"name": name, "arguments": params}
+    return msg
+
+
+class TestLazyAuthOnMcp(unittest.TestCase):
+    """/mcp: public calls pass anonymously; protected tools get a 401/403 challenge."""
+
+    ALL = "pages:publish pages:update pages:read pages:delete"
+    META = 'resource_metadata="https://my.example/.well-known/oauth-protected-resource/mcp"'
+
+    def setUp(self):
+        self.server = _load_server()
+        self.server._public_url = "https://my.example"
+        self.sent = []
+        self.forwarded = []
+        self.valid = True
+        self.api_down = False
+
+        async def inner(scope, receive, send):
+            body = b""
+            while True:
+                m = await receive()
+                body += m.get("body", b"")
+                if not m.get("more_body", False):
+                    break
+            self.forwarded.append((scope["path"], body))
+
+        self.gateway = self.server.SignInGateway(inner)
+
+        async def check(token):
+            if self.api_down:
+                raise ConnectionError("down")
+            return self.valid
+
+        patcher = patch("pushpage_mcp.server._token_is_valid", side_effect=check)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _post(self, payload, headers=None, path="/mcp", method="POST", chunks=None):
+        import json
+        body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+        parts = chunks or [body]
+        scope = {"type": "http", "method": method, "path": path, "raw_path": path.encode(),
+                 "headers": [(k.encode(), v.encode()) for k, v in (headers or {}).items()]}
+        queue = [{"type": "http.request", "body": c, "more_body": i < len(parts) - 1} for i, c in enumerate(parts)]
+
+        async def receive():
+            return queue.pop(0)
+
+        async def send(message):
+            self.sent.append(message)
+
+        asyncio.run(self.gateway(scope, receive, send))
+        return body
+
+    def _status(self):
+        return next(m["status"] for m in self.sent if m["type"] == "http.response.start")
+
+    def _challenge(self):
+        start = next(m for m in self.sent if m["type"] == "http.response.start")
+        return dict(start["headers"])[b"www-authenticate"].decode()
+
+    def assertPassed(self, body):
+        self.assertEqual(self.sent, [])
+        self.assertEqual(self.forwarded, [("/mcp", body)])
+
+    def test_anonymous_public_calls_pass_and_body_is_replayed_byte_for_byte(self):
+        for payload in (_rpc("initialize"), _rpc("ping"), _rpc("tools/list"),
+                        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+                        _rpc("tools/call", "publish_page", html="<h1>é</h1>"), _rpc("tools/call", "health")):
+            self.sent.clear()
+            self.forwarded.clear()
+            body = self._post(payload)
+            self.assertPassed(body)
+
+    def test_large_publish_body_is_replayed_intact_across_chunks(self):
+        body = ('{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"publish_page","arguments":{"html":"'
+                + "x" * 3_000_000 + '"}}}').encode()
+        self._post(body, chunks=[body[:1_000_000], body[1_000_000:2_000_000], body[2_000_000:]])
+        self.assertPassed(body)
+
+    def test_anonymous_protected_tools_get_401_with_exact_challenge(self):
+        for tool in ("list_pages", "delete_page", "update_page"):
+            self.sent.clear()
+            self._post(_rpc("tools/call", tool))
+            self.assertEqual(self._status(), 401)
+            self.assertEqual(self._challenge(),
+                             'Bearer error="invalid_token", error_description="Authentication required for this tool", '
+                             + self.META + f', scope="{self.ALL}"')
+        self.assertEqual(self.forwarded, [])
+
+    def test_batch_with_protected_call_is_challenged_with_all_scopes(self):
+        self._post([_rpc("tools/call", "publish_page"), _rpc("tools/call", "list_pages"),
+                    _rpc("tools/call", "update_page"), _rpc("tools/call", "list_pages")])
+        self.assertEqual(self._status(), 401)
+        self.assertIn(f'scope="{self.ALL}"', self._challenge())
+        self.assertEqual(self.forwarded, [])
+
+    def test_batch_of_only_public_calls_passes(self):
+        body = self._post([_rpc("tools/list"), _rpc("tools/call", "health")])
+        self.assertPassed(body)
+
+    def test_jwt_with_required_scope_passes(self):
+        body = self._post(_rpc("tools/call", "list_pages"), {"authorization": "Bearer " + _jwt("pages:read pages:publish")})
+        self.assertPassed(body)
+
+    def test_jwt_without_scope_claim_is_a_dashboard_session_and_passes(self):
+        body = self._post(_rpc("tools/call", "delete_page"), {"authorization": "Bearer " + _jwt()})
+        self.assertPassed(body)
+
+    def test_invalid_jwt_gets_401_even_for_a_public_call(self):
+        self.valid = False
+        for payload in (_rpc("tools/list"), _rpc("tools/call", "list_pages")):
+            self.sent.clear()
+            self._post(payload, {"authorization": "Bearer " + _jwt("pages:read")})
+            self.assertEqual(self._status(), 401)
+            self.assertEqual(self._challenge(),
+                             'Bearer error="invalid_token", error_description="The access token is invalid or expired", '
+                             + self.META + f', scope="{self.ALL}"')
+        self.assertEqual(self.forwarded, [])
+
+    def test_api_down_answers_503_never_401(self):
+        self.api_down = True
+        self._post(_rpc("tools/call", "list_pages"), {"authorization": "Bearer " + _jwt("pages:read")})
+        self.assertEqual(self._status(), 503)
+        self.assertEqual(self.forwarded, [])
+
+    def test_jwt_without_needed_scope_gets_403_insufficient_scope_with_all_scopes(self):
+        self._post([_rpc("tools/call", "list_pages"), _rpc("tools/call", "update_page")],
+                   {"authorization": "Bearer " + _jwt("pages:publish pages:read")})
+        self.assertEqual(self._status(), 403)
+        self.assertEqual(self._challenge(),
+                         'Bearer error="insufficient_scope", ' + self.META + f', scope="{self.ALL}"')
+        self.assertEqual(self.forwarded, [])
+
+    def test_read_only_jwt_calling_publish_page_gets_403_with_all_scopes(self):
+        self._post(_rpc("tools/call", "publish_page"), {"authorization": "Bearer " + _jwt("pages:read")})
+        self.assertEqual(self._status(), 403)
+        self.assertEqual(self._challenge(),
+                         'Bearer error="insufficient_scope", ' + self.META + f', scope="{self.ALL}"')
+        self.assertEqual(self.forwarded, [])
+
+    def test_jwt_with_publish_scope_and_other_public_calls_pass(self):
+        for payload, scope in ((_rpc("tools/call", "publish_page"), "pages:publish"),
+                               (_rpc("tools/call", "health"), "pages:read"),
+                               (_rpc("tools/list"), "pages:read")):
+            self.sent.clear()
+            self.forwarded.clear()
+            body = self._post(payload, {"authorization": "Bearer " + _jwt(scope)})
+            self.assertPassed(body)
+
+    def test_dashboard_session_jwt_without_scope_claim_can_publish(self):
+        body = self._post(_rpc("tools/call", "publish_page"), {"authorization": "Bearer " + _jwt()})
+        self.assertPassed(body)
+
+    def test_pp_key_publish_untouched(self):
+        body = self._post(_rpc("tools/call", "publish_page"), {"x-api-key": "pp_abc"})
+        self.assertPassed(body)
+
+    def test_challenge_scope_set_covers_every_tool_scope(self):
+        needed = set(self.server._PROTECTED_TOOL_SCOPES.values()) | set(self.server._TOKEN_HOLDER_TOOL_SCOPES.values())
+        self.assertEqual(set(self.server._ALL_ACCOUNT_SCOPES), needed)
+
+    def test_api_keys_pass_through_in_both_header_forms_without_api_call(self):
+        for headers in ({"authorization": "Bearer pp_abc"}, {"x-api-key": "pp_abc"}):
+            self.sent.clear()
+            self.forwarded.clear()
+            self.valid = False  # would 401 if the key were treated as a JWT
+            body = self._post(_rpc("tools/call", "delete_page"), headers)
+            self.assertPassed(body)
+
+    def test_non_json_body_passes_through(self):
+        body = self._post(b"not json at all")
+        self.assertPassed(body)
+
+    def test_oversized_body_passes_through_uninspected_and_intact(self):
+        self.server._MAX_INSPECT_BYTES = 100
+        body = (b'{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_pages","arguments":{"pad":"'
+                + b"x" * 500 + b'"}}}')
+        self._post(body, chunks=[body[:200], body[200:]])
+        self.assertPassed(body)
+
+    def test_get_and_delete_are_untouched(self):
+        for method in ("GET", "DELETE"):
+            self.forwarded.clear()
+            self._post(b"", {"authorization": "Bearer " + _jwt()}, method=method)
+            self.assertEqual(self.forwarded, [("/mcp", b"")])
+            self.assertEqual(self.sent, [])
+
+    def test_trailing_slash_is_also_covered(self):
+        self._post(_rpc("tools/call", "list_pages"), path="/mcp/")
+        self.assertEqual(self._status(), 401)
+
+    def test_guest_endpoint_never_challenges_and_drops_credentials(self):
+        self.valid = False
+        self._post(_rpc("tools/call", "list_pages"), {"authorization": "Bearer " + _jwt("x")}, path="/mcp-guest")
+        self.assertEqual(self.sent, [])
+        self.assertEqual(self.forwarded[0][0], "/mcp")
+
+    def test_deeply_nested_body_is_passed_through_not_crashed(self):
+        body = b"[" * 200000
+        self._post(body)
+        self.assertPassed(body)
+        self.sent.clear()
+        self.forwarded.clear()
+        self._post(body, {"authorization": "Bearer " + _jwt("pages:read")})
+        self.assertPassed(body)
+
+    def test_malformed_jwt_scope_claim_does_not_crash(self):
+        self.assertIsNone(self.server._token_scopes("a.%%%.c"))
+        self.assertIsNone(self.server._token_scopes("nodots"))
+
+    def test_signin_endpoint_still_requires_a_credential_for_everything(self):
+        self._post(_rpc("tools/list"), path="/mcp/signin")
+        self.assertEqual(self._status(), 401)
+        self.assertIn("oauth-protected-resource/mcp/signin", self._challenge())
+        self.assertEqual(self.forwarded, [])
 
 
 if __name__ == "__main__":

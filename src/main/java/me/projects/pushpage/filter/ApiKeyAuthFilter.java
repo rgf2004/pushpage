@@ -30,7 +30,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     );
     /** OAuth endpoints a client calls before it has any token. /oauth/authorize is not here: it needs a session. */
     private static final Set<String> OAUTH_PUBLIC_PATHS = Set.of(
-            "/oauth/token", "/oauth/register", "/oauth/metadata", "/oauth/protected-resource", "/oauth/client"
+            "/oauth/token", "/oauth/register", "/oauth/metadata", "/oauth/protected-resource", "/oauth/protected-resource/mcp", "/oauth/client"
     );
     private static final String OAUTH_AUTHORIZE_PATH = "/oauth/authorize";
     private static final String ADMIN_PATH_PREFIX = "/admin";
