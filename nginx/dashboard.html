@@ -393,13 +393,26 @@
         }
 
         /* ── API key list (Account tab) ──────────────────────────────── */
-        .account-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
-        .account-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
-        .account-col > .card { margin: 0; }
-        .account-col > .card > .api-key-section:first-child,
-        .account-col > .card > .mcp-setup:first-child { margin-top: 0; }
-        @media (max-width: 900px) { .account-layout { grid-template-columns: minmax(0, 1fr); } }
+        /* Wide screens: connect card on the right, spanning the three cards on the left.
+           DOM order (info, connect, apps, keys) is the reading order on narrow screens. */
+        .account-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; gap: 24px; align-items: start; }
+        .account-layout > .card { margin: 0; min-width: 0; grid-column: 1; }
+        .account-layout > .account-connect { grid-column: 2; grid-row: 1 / span 4; }
+        .account-layout > .card > .api-key-section:first-child,
+        .account-layout > .card > .mcp-setup:first-child { margin-top: 0; }
+        @media (max-width: 900px) {
+            .account-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+            .account-layout > .card, .account-layout > .account-connect { grid-column: 1; grid-row: auto; }
+        }
         .signin-hint { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
+        .mcp-headless { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 14px; }
+        .mcp-headless > summary { cursor: pointer; font-size: .85rem; font-weight: 600; }
+        .mcp-headless[open] > summary { margin-bottom: 10px; }
+        .first-run { background: var(--accent-bg); border: 1px solid var(--accent); border-radius: var(--radius-lg); margin: 0 auto; max-width: 640px; padding: 24px; text-align: left; }
+        .first-run h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+        .first-run p { color: var(--text-muted); font-size: .85rem; margin-bottom: 12px; }
+        .first-run .mcp-code { margin-bottom: 10px; }
+        .empty-state .empty-hint { font-size: .8rem; margin-top: 10px; }
         .key-list { margin-bottom: 12px; }
         .key-row {
             align-items: center;
@@ -786,8 +799,18 @@
             </div>
             <div class="pagination" id="pages-pagination"></div>
         </div>
+        <div id="first-run-card" class="empty-state" style="display:none">
+            <div class="first-run">
+                <h3>Connect your agent</h3>
+                <p>No pages yet. Add pushpage to your AI agent with one command, sign in once in your browser when it asks, then ask the agent to publish a page.</p>
+                <pre class="mcp-code" id="first-run-code"></pre>
+                <button class="btn btn-primary btn-sm" id="first-run-copy-btn" type="button">Copy</button>
+                <a class="btn btn-secondary btn-sm" href="#" data-goto-connect>More ways to connect</a>
+            </div>
+        </div>
         <div id="pages-empty" class="empty-state" style="display:none">
-            <p>No pages yet. Publish one via <code>POST /api/pages</code>.</p>
+            <p>No pages yet. Ask your connected agent to publish one. Not connected yet? <a href="#" data-goto-connect>Connect your agent</a>.</p>
+            <p class="empty-hint">Scripting instead? <code>POST /api/pages</code> with an API key works too (<a href="/docs#publishing">REST API</a>).</p>
         </div>
       </div>
     </div>
@@ -797,7 +820,6 @@
       <div class="dash-inner">
         <div class="panel-header"><h2>Account</h2></div>
         <div class="account-layout">
-        <div class="account-col">
         <div class="card">
             <div class="info-grid">
                 <div class="info-row">
@@ -824,10 +846,55 @@
                     </span>
                 </div>
             </div>
+        </div>
 
+        <div class="card account-connect">
+            <div class="mcp-setup" id="mcp-setup">
+                <h3>Connect your AI agent (MCP)</h3>
+                <p><strong>Recommended: browser sign-in.</strong> Add pushpage with one command. No API key to copy.</p>
+                <!-- id is historical: this is the primary (browser sign-in) command, built from MCP_URL -->
+                <pre class="mcp-code" id="mcp-signin-code"></pre>
+                <button class="btn btn-secondary btn-sm" id="mcp-signin-copy-btn" type="button">Copy</button>
+                <p style="margin-top:12px">Publishing works right away. The first time you list, update or delete pages, your client asks you to sign in in the browser. In Claude Code, run <code>/mcp</code>, pick <strong>pushpage</strong> and choose <strong>Authenticate</strong>. The app then shows up under Connected apps.</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <a class="btn btn-secondary btn-sm" id="mcp-install-cursor" href="#">Add to Cursor</a>
+                    <a class="btn btn-secondary btn-sm" id="mcp-install-vscode" href="#">Add to VS Code</a>
+                </div>
+                <div class="mcp-hint" style="margin-top:8px">These buttons add the sign-in endpoint <code>/mcp/signin</code> (deprecated; it asks you to sign in on first use). Not yet verified in Cursor or VS Code. No key is in the link; the app asks you to confirm.</div>
+                <div class="mcp-hint">Confirmed with Claude Code and the MCP Inspector. For other apps the API-key setup under Headless / CI is the dependable path; apps that support MCP sign-in can try <code id="mcp-signin-url"></code> as the server URL.</div>
+                <div class="mcp-guest">
+                    <p style="margin-bottom:8px"><strong>Just trying it?</strong> No account needed. Guest mode lets <code>publish_page</code> work, never asks you to sign in, and pages last 30 minutes:</p>
+                    <pre class="mcp-code" id="mcp-guest-code"></pre>
+                    <button class="btn btn-secondary btn-sm" id="mcp-guest-copy-btn" type="button">Copy</button>
+                </div>
+                <details class="mcp-headless" id="mcp-headless">
+                    <summary>Headless / CI (API key)</summary>
+                    <p id="mcp-status" class="mcp-status">For servers, CI, the local uvx server and clients without browser sign-in. Create an API key under API keys below and these commands fill in with it automatically.</p>
+                    <div class="mcp-clients" id="mcp-clients" role="tablist" aria-label="MCP client">
+                        <button type="button" class="mcp-client-btn active" data-client="claude-code">Claude Code</button>
+                        <button type="button" class="mcp-client-btn" data-client="cursor">Cursor</button>
+                        <button type="button" class="mcp-client-btn" data-client="claude-desktop">Claude Desktop</button>
+                        <button type="button" class="mcp-client-btn" data-client="local">Local (uvx)</button>
+                    </div>
+                    <pre class="mcp-code" id="mcp-code"></pre>
+                    <div class="mcp-hint" id="mcp-hint"></div>
+                    <button class="btn btn-secondary btn-sm" id="mcp-copy-btn" type="button">Copy</button>
+                </details>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="api-key-section" id="connected-apps-section">
+                <h3>Connected apps</h3>
+                <p>Apps you allowed through the browser sign-in, for example an AI agent that opened a sign-in window. Remove one and it loses access immediately; your other apps and API keys are not affected.</p>
+                <div id="connected-apps-list" class="key-list" aria-live="polite"></div>
+            </div>
+        </div>
+
+        <div class="card">
             <div class="api-key-section">
                 <h3>API keys</h3>
-                <p>Give each agent or tool its own key. Creating a key never affects your other keys, and you can revoke one key without touching the rest. A key is shown only once, when you create it.</p>
+                <p>For scripts, CI and clients without browser sign-in. To connect an AI agent, use <a href="#" data-goto-connect>Connect your AI agent</a> instead: no key to copy. Give each script or tool its own key. Creating a key never affects your other keys, and you can revoke one key without touching the rest. A key is shown only once, when you create it.</p>
                 <div id="acc-key-box" style="display:none">
                     <div class="key-reveal-label">Your new API key — copy it now</div>
                     <div class="api-key-revealed" id="acc-key-value"></div>
@@ -842,49 +909,6 @@
                            placeholder="Name, e.g. Claude Code on my laptop" aria-label="Name for the new API key">
                     <button class="btn btn-primary btn-sm" id="create-key-btn" type="submit">Create API key</button>
                 </form>
-            </div>
-
-        </div>
-        </div>
-        <div class="account-col">
-        <div class="card">
-            <div class="mcp-setup" id="mcp-setup">
-                <h3>Connect your AI agent (MCP)</h3>
-                <p id="mcp-status" class="mcp-status">Create an API key and these commands fill in with it automatically.</p>
-                <div class="mcp-clients" id="mcp-clients" role="tablist" aria-label="MCP client">
-                    <button type="button" class="mcp-client-btn active" data-client="claude-code">Claude Code</button>
-                    <button type="button" class="mcp-client-btn" data-client="cursor">Cursor</button>
-                    <button type="button" class="mcp-client-btn" data-client="claude-desktop">Claude Desktop</button>
-                    <button type="button" class="mcp-client-btn" data-client="local">Local (uvx)</button>
-                </div>
-                <pre class="mcp-code" id="mcp-code"></pre>
-                <div class="mcp-hint" id="mcp-hint"></div>
-                <button class="btn btn-secondary btn-sm" id="mcp-copy-btn" type="button">Copy</button>
-                <div class="mcp-guest">
-                    <p style="margin-bottom:8px"><strong>Just trying it?</strong> No key needed. Guest mode lets <code>publish_page</code> work and pages last 30 minutes:</p>
-                    <pre class="mcp-code" id="mcp-guest-code"></pre>
-                    <button class="btn btn-secondary btn-sm" id="mcp-guest-copy-btn" type="button">Copy</button>
-                </div>
-            </div>
-
-        </div>
-        </div>
-        <div class="card" style="grid-column: 1 / -1; margin: 0">
-            <div class="api-key-section" id="connected-apps-section">
-                <h3>Connected apps</h3>
-                <p>Apps you allowed through the browser sign-in, for example an AI agent that opened a sign-in window. Remove one and it loses access immediately; your other apps and API keys are not affected.</p>
-                <div id="connected-apps-list" class="key-list" aria-live="polite"></div>
-                <div class="signin-hint">
-                    <p style="margin-bottom:8px"><strong>Connect without an API key.</strong> The app opens your browser, you sign in and allow it, and it shows up here:</p>
-                    <pre class="mcp-code" id="mcp-signin-code"></pre>
-                    <button class="btn btn-secondary btn-sm" id="mcp-signin-copy-btn" type="button">Copy</button>
-                    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-                        <a class="btn btn-secondary btn-sm" id="mcp-install-cursor" href="#">Add to Cursor</a>
-                        <a class="btn btn-secondary btn-sm" id="mcp-install-vscode" href="#">Add to VS Code</a>
-                    </div>
-                    <div class="mcp-hint" style="margin-top:8px">One-click links open the app to add pushpage (no key in the link); the app asks you to confirm.</div>
-                    <div class="mcp-hint" style="margin-top:8px">Other apps: use <code id="mcp-signin-url"></code> as the server URL, if the app supports MCP sign-in.</div>
-                </div>
             </div>
         </div>
         </div>
@@ -1038,9 +1062,12 @@ let jwt = '';
 // MCP setup snippets (Account tab): the key lives only in this variable, never stored.
 const MCP_URL = location.origin + '/mcp';
 const MCP_GUEST_URL = location.origin + '/mcp-guest';
+// Only the one-click Cursor / VS Code install links use this until lazy auth on /mcp is confirmed with those clients.
 const MCP_SIGNIN_URL = location.origin + '/mcp/signin';
 const MCP_KEY_PLACEHOLDER = 'pp_your_key_here';
 let mcpKey = null;
+let connectedAppCount = null;   // null = still loading, -1 = request failed (unknown), else the number of apps
+let pagesRendered = false;
 let mcpClient = 'claude-code';
 let currentUser = null;
 let allPages = [];
@@ -1358,6 +1385,8 @@ async function loadDashboard() {
     document.getElementById('acc-email').textContent = email;
     document.getElementById('acc-key-box').style.display = 'none';
     mcpKey = null;
+    connectedAppCount = null;
+    pagesRendered = false;
     renderMcpSetup();
     loadApiKeys();
     loadConnectedApps();
@@ -1403,6 +1432,10 @@ document.getElementById('logout-btn').addEventListener('click', () => {
     ['confirm-modal', 'deactivate-modal', 'promote-modal', 'reset-link-modal', 'revoke-key-modal', 'revoke-app-modal'].forEach(hideModal);
     document.getElementById('reset-link-value').textContent = '';
     mcpKey = null;
+    connectedAppCount = null;
+    pagesRendered = false;
+    document.getElementById('pages-empty').style.display = 'none';
+    document.getElementById('first-run-card').style.display = 'none';
     renderMcpSetup();
     sessionStorage.removeItem('pp_jwt');
     jwt = '';
@@ -1434,15 +1467,34 @@ function switchTab(name) {
 async function renderPages() {
     document.getElementById('pages-loading').style.display = 'none';
 
-    if (allPages.length === 0) {
-        document.getElementById('pages-empty').style.display = 'block';
-        return;
-    }
+    pagesRendered = true;
+    renderEmptyState();
+    if (allPages.length === 0) return;
 
     document.getElementById('pages-table-wrap').style.display = 'block';
     renderInsights();
     renderPageRows();
 }
+
+// Empty Pages tab: a first-run "Connect your agent" card when no app is connected yet,
+// otherwise the plain empty state. Needs both the page list and the connected-apps count.
+function renderEmptyState() {
+    const emptyEl = document.getElementById('pages-empty');
+    const cardEl = document.getElementById('first-run-card');
+    if (!pagesRendered || allPages.length > 0) { emptyEl.style.display = 'none'; cardEl.style.display = 'none'; return; }
+    // null = connected apps still loading: show neither, so the plain message does not flash before the card.
+    if (connectedAppCount === null) { emptyEl.style.display = 'none'; cardEl.style.display = 'none'; return; }
+    const firstRun = connectedAppCount === 0;   // -1 (failed) and > 0 get the plain empty state
+    cardEl.style.display = firstRun ? 'block' : 'none';
+    emptyEl.style.display = firstRun ? 'none' : 'block';
+}
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-goto-connect]')) return;
+    e.preventDefault();
+    switchTab('account');
+    document.getElementById('mcp-setup').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 // ── Pages insights ────────────────────────────────────────────────────────
 let soonOnly = false;
@@ -1582,7 +1634,7 @@ document.getElementById('confirm-delete').addEventListener('click', async () => 
             allPages = allPages.filter(p => p.id !== id);
             if (allPages.length === 0) {
                 document.getElementById('pages-table-wrap').style.display = 'none';
-                document.getElementById('pages-empty').style.display = 'block';
+                renderEmptyState();
             } else {
                 renderPageRows();
             }
@@ -1654,6 +1706,7 @@ document.getElementById('create-key-form').addEventListener('submit', async (e) 
         document.getElementById('acc-key-box').style.display = 'block';
         mcpKey = data.api_key;
         renderMcpSetup();
+        document.getElementById('mcp-headless').open = true;
         input.value = '';
         toast('API key created.');
         loadApiKeys();
@@ -1695,8 +1748,14 @@ async function loadConnectedApps() {
     const list = document.getElementById('connected-apps-list');
     try {
         const r = await api('/me/connected-apps');
-        if (!r.ok) { list.innerHTML = '<div class="key-empty">Could not load your connected apps.</div>'; return; }
+        if (!r.ok) {
+            list.innerHTML = '<div class="key-empty">Could not load your connected apps.</div>';
+            connectedAppCount = -1; renderEmptyState();
+            return;
+        }
         const apps = await r.json();
+        connectedAppCount = apps.length;
+        renderEmptyState();
         if (!apps.length) {
             list.innerHTML = '<div class="key-empty">No apps connected through the browser sign-in.</div>';
             return;
@@ -1714,6 +1773,7 @@ async function loadConnectedApps() {
         }).join('');
     } catch {
         list.innerHTML = '<div class="key-empty">Network error loading your connected apps.</div>';
+        connectedAppCount = -1; renderEmptyState();
     }
 }
 
@@ -1786,7 +1846,7 @@ function renderMcpSetup() {
     const status = document.getElementById('mcp-status');
     status.textContent = mcpKey
         ? 'Your new API key is filled in below. Copy the command now: the key is shown only once and these snippets disappear when you leave this page.'
-        : 'Create an API key and these commands fill in with it automatically. Until then they show a placeholder.';
+        : 'For servers, CI, the local uvx server and clients without browser sign-in. Create an API key under API keys below and these commands fill in with it automatically. Until then they show a placeholder.';
     status.classList.toggle('ready', !!mcpKey);
     document.getElementById('mcp-guest-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_GUEST_URL;
     document.querySelectorAll('.mcp-client-btn').forEach(b => b.classList.toggle('active', b.dataset.client === mcpClient));
@@ -1802,8 +1862,13 @@ document.getElementById('mcp-copy-btn').addEventListener('click', () => {
     navigator.clipboard.writeText(document.getElementById('mcp-code').textContent)
         .then(() => toast(mcpKey ? 'Copied. It contains your API key, so keep it private.' : 'Copied.'));
 });
-document.getElementById('mcp-signin-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_SIGNIN_URL;
-document.getElementById('mcp-signin-url').textContent = MCP_SIGNIN_URL;
+document.getElementById('mcp-signin-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_URL;
+document.getElementById('first-run-code').textContent = 'claude mcp add --transport http pushpage ' + MCP_URL;
+document.getElementById('first-run-copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('first-run-code').textContent)
+        .then(() => toast('Copied.'), () => toast('Could not copy.', 'error'));
+});
+document.getElementById('mcp-signin-url').textContent = MCP_URL;
 // One-click install deep links. Formats from the vendors' docs (Cursor: cursor.com/docs/context/mcp/install-links,
 // VS Code: code.visualstudio.com/api/extension-guides/ai/mcp). No credentials are embedded.
 document.getElementById('mcp-install-cursor').href = 'cursor://anysphere.cursor-deeplink/mcp/install?name=pushpage&config='

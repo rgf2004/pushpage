@@ -5,28 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>HTML hosting for AI agents | pushpage</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <meta name="description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one API call into a shareable link.">
+    <meta name="description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one MCP tool call into a shareable link.">
     <link rel="canonical" href="https://pushpage.link/guides/html-hosting-for-ai-agents">
     <!-- Open Graph -->
     <meta property="og:type" content="article">
     <meta property="og:url" content="https://pushpage.link/guides/html-hosting-for-ai-agents">
     <meta property="og:title" content="HTML hosting for AI agents | pushpage">
-    <meta property="og:description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one API call into a shareable link.">
+    <meta property="og:description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one MCP tool call into a shareable link.">
     <meta property="og:image" content="https://pushpage.link/static/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="HTML hosting for AI agents | pushpage">
-    <meta name="twitter:description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one API call into a shareable link.">
+    <meta name="twitter:description" content="Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one MCP tool call into a shareable link.">
     <meta name="twitter:image" content="https://pushpage.link/static/og-image.png">
     <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": "HTML hosting for AI agents",
-  "description": "Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one API call into a shareable link.",
+  "description": "Why agents need a publish step for the HTML they generate, what to look for in hosting, and how pushpage turns one MCP tool call into a shareable link.",
   "url": "https://pushpage.link/guides/html-hosting-for-ai-agents",
   "mainEntityOfPage": "https://pushpage.link/guides/html-hosting-for-ai-agents",
   "datePublished": "2026-11-24",
-  "dateModified": "2026-11-24",
+  "dateModified": "2026-11-27",
   "image": "https://pushpage.link/static/og-image.png",
   "author": {
     "@type": "Organization",
@@ -103,20 +103,24 @@
 <ol>
   <li><strong>No deploy step.</strong> The agent should publish with one call, not a build and a push.</li>
   <li><strong>An instant URL.</strong> The result must come back immediately so the agent can pass it on.</li>
-  <li><strong>Agent-friendly access.</strong> A simple HTTP API, plus an MCP server for clients that support it, with keys that can be created per agent and revoked on their own.</li>
+  <li><strong>Agent-friendly access.</strong> An MCP server the agent can use directly, with a browser sign-in instead of a copied key, plus a plain HTTP API for scripts, with keys that can be created per agent and revoked on their own.</li>
   <li><strong>Sensible lifetimes.</strong> Temporary by default, so forgotten pages clean themselves up.</li>
   <li><strong>Containment.</strong> Pages are untrusted content written by a model, so scripts on them must not be able to touch the service itself.</li>
 </ol>
 
 <h2>How pushpage does it</h2>
-<p>pushpage is an HTML publishing service built for this. One request publishes a page:</p>
+<p>pushpage is an HTML publishing service built for this. The recommended way to use it is over MCP: connect your agent once, then it publishes with a single tool call and gets the shareable URL back.</p>
+<pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
+<p>Publishing works right away; the first time the agent uses a tool that needs an account (listing, updating or deleting pages), a client that supports MCP sign-in, such as Claude Code, prompts you to sign in once in the browser. No API key to copy. See the <a href="/guides/mcp-server-publish-html">MCP server guide</a> for details and other clients.</p>
+<h3>No MCP? Use the API</h3>
+<p>For scripts, CI and integrations that do not use MCP, the same publish step is one HTTP request:</p>
 <pre><code>curl -X POST https://pushpage.link/api/pages \
   -H "Content-Type: application/json" \
   -d '{"html":"&lt;h1&gt;Q2 report&lt;/h1&gt;","title":"Q2 report"}'</code></pre>
-<p>The response holds the shareable <code>url</code>, the page <code>id</code> and an expiry time. You can also upload a file with <code>multipart/form-data</code>, or let an agent do it through the <a href="/guides/mcp-server-publish-html">MCP server</a>.</p>
+<p>The response holds the shareable <code>url</code>, the page <code>id</code> and an expiry time. You can also upload a file with <code>multipart/form-data</code>.</p>
 <ul>
   <li><strong>Try without an account.</strong> Guest pages need no key and are deleted after 30 minutes. An account gives longer retention and lets you list and delete pages.</li>
-  <li><strong>Named keys.</strong> Create a key per agent or tool; revoke one without breaking the rest.</li>
+  <li><strong>Revocable access.</strong> Apps connected with browser sign-in can be removed any time, and API keys are named per agent or tool, so you can revoke one without breaking the rest.</li>
   <li><strong>Sandboxed pages.</strong> Pages are served with a security policy that lets their own scripts run but blocks access to the dashboard and the API.</li>
   <li><strong>Open source.</strong> MIT licensed, and self-hostable with Docker Compose (<a href="/docs#self-hosting">self-hosting</a>).</li>
 </ul>
@@ -132,8 +136,8 @@
 </ul>
 
 <h2>Get started</h2>
-<p>Add it to Claude Code with one command, or read the <a href="/docs">documentation</a>:</p>
-<pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp-guest</code></pre>
+<p>Add it to Claude Code with one command, or read the <a href="/docs">documentation</a>. To try it without ever signing in, use <code>https://pushpage.link/mcp-guest</code>:</p>
+<pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
 <p>Step-by-step: <a href="/guides/share-html-from-claude-code">share an HTML page from Claude Code</a>.</p>
 
     <div class="guide-cta">

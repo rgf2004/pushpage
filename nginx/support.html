@@ -144,7 +144,9 @@
 
         <p><strong>I lost an API key.</strong> A key is shown only once. Create a new one in the dashboard under Account and revoke the old one.</p>
 
-        <p><strong>How do I connect Claude Code, Cursor or another agent?</strong> Follow <a href="/guides/mcp-server-publish-html">the MCP setup guide</a> or <a href="/guides/share-html-from-claude-code">share HTML from Claude Code</a>. For a quick try with no account, use <code>https://pushpage.link/mcp-guest</code>.</p>
+        <p><strong>How do I connect Claude Code, Cursor or another agent?</strong> Run <code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code> and, in Claude Code (confirmed with browser sign-in), sign in once in the browser when it asks; there is no key to copy. For other clients the API-key setup is the dependable path. Follow <a href="/guides/mcp-server-publish-html">the MCP setup guide</a> or <a href="/guides/share-html-from-claude-code">share HTML from Claude Code</a> for details and other clients. For a quick try with no account, use <code>https://pushpage.link/mcp-guest</code>. Clients that cannot do browser sign-in, and CI, can use an API key instead.</p>
+
+        <p><strong>I see "needs you to sign in again" in Claude Code.</strong> That is the sign-in prompt, not an error. The first time you use a tool that needs an account (<code>list_pages</code>, <code>update_page</code> or <code>delete_page</code>) the call fails once. Run <code>/mcp</code> in Claude Code, pick <strong>pushpage</strong> and choose <strong>Authenticate</strong>, then approve in the browser. After that, publish, update, list and delete all work. If it keeps asking, remove the app under Account, Connected apps in the dashboard and connect again.</p>
 
         <p><strong>How do I stop an agent using my account?</strong> In the dashboard, under Account, remove the app from "Connected apps", or revoke its API key. Both take effect immediately.</p>
 
