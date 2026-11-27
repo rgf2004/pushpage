@@ -5,18 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>pushpage — Publish HTML &amp; Get a Shareable Link | HTML Hosting for AI Agents</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <meta name="description" content="Free HTML hosting API for AI agents and developers. POST HTML, get a shareable public URL back instantly. No deploy step, MCP server and REST API, self-hostable.">
+    <meta name="description" content="Free HTML hosting for AI agents. Connect your agent over MCP with one command, sign in once in the browser, and it publishes pages and returns a shareable public URL. REST API for scripts, self-hostable.">
     <link rel="canonical" href="https://pushpage.link">
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pushpage.link">
     <meta property="og:title" content="pushpage — Publish HTML &amp; Get a Shareable Link | HTML Hosting for AI Agents">
-    <meta property="og:description" content="Free HTML hosting API for AI agents and developers. POST HTML, get a shareable public URL back instantly. No deploy step, MCP server and REST API, self-hostable.">
+    <meta property="og:description" content="Free HTML hosting for AI agents. Connect your agent over MCP with one command, sign in once in the browser, and it publishes pages and returns a shareable public URL. REST API for scripts, self-hostable.">
     <meta property="og:image" content="https://pushpage.link/static/og-image.png">
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="pushpage — Publish HTML &amp; Get a Shareable Link | HTML Hosting for AI Agents">
-    <meta name="twitter:description" content="Free HTML hosting API for AI agents and developers. POST HTML, get a shareable public URL back instantly. No deploy step, MCP server and REST API, self-hostable.">
+    <meta name="twitter:description" content="Free HTML hosting for AI agents. Connect your agent over MCP with one command, sign in once in the browser, and it publishes pages and returns a shareable public URL. REST API for scripts, self-hostable.">
     <meta name="twitter:image" content="https://pushpage.link/static/og-image.png">
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -28,7 +28,7 @@
       "url": "https://pushpage.link",
       "image": "https://pushpage.link/static/og-image.png",
       "keywords": "HTML hosting, publish HTML, share HTML page, AI agent publishing, MCP server",
-      "description": "Free HTML hosting API for AI agents and developers. POST HTML, get a shareable public URL back instantly. No deploy step, MCP server and REST API, self-hostable.",
+      "description": "Free HTML hosting for AI agents. Connect your agent over MCP with one command, sign in once in the browser, and it publishes pages and returns a shareable public URL. REST API for scripts, self-hostable.",
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "Any",
       "offers": {
@@ -470,8 +470,8 @@
     <h1>Publish HTML.<br>Get a <span class="accent">link</span>.</h1>
 
     <p class="hero-sub">
-        A publishing service for AI agents and developers.
-        POST any HTML and get a shareable URL back in milliseconds. No browser needed.
+        A publishing service for AI agents. Connect your agent once with a single MCP command,
+        then ask it to publish. It gets a shareable URL back in milliseconds. Prefer scripts? There is a REST API too.
     </p>
 
     <div class="hero-actions">
@@ -505,18 +505,18 @@
         <div class="steps">
             <div class="step">
                 <div class="step-number">1</div>
-                <h3>Sign up &amp; get an API key</h3>
-                <p>Create an account in the dashboard, then generate an API key under the Account tab. Your key looks like <code>pp_abc123…</code> Want to try first? Publishing works without a key; guest pages last 30 minutes.</p>
+                <h3>Connect your agent</h3>
+                <p>Run one command: <code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code>. Sign in once in the browser when your client asks; there is no key to copy. Want to try first? Publishing works without an account; guest pages last 30 minutes.</p>
             </div>
             <div class="step">
                 <div class="step-number">2</div>
-                <h3>POST your HTML</h3>
-                <p>Send a <code>POST /api/pages</code> request with your HTML content, as JSON or a raw file upload. Or add the MCP server to your agent with one command. No key needed to try it.</p>
+                <h3>Ask it to publish</h3>
+                <p>Tell your agent to publish a report, a chart or a page. It calls the <code>publish_page</code> tool and gets the URL back. Scripts and CI can use the REST API instead.</p>
             </div>
             <div class="step">
                 <div class="step-number">3</div>
-                <h3>Share the URL</h3>
-                <p>The response includes a permanent shareable URL. Drop it in a message, an email, or any workflow with no additional hosting required.</p>
+                <h3>Share the link</h3>
+                <p>The result includes a shareable URL. Drop it in a message, an email, or any workflow with no additional hosting required.</p>
             </div>
         </div>
     </div>
@@ -538,7 +538,7 @@
             <div class="feature-card">
                 <div class="feature-icon">🤖</div>
                 <h3>Agent-ready</h3>
-                <p>REST API and MCP server included. Wire it into Claude, GPT, OpenClaw, Hermes, or any agent framework in minutes. Returns a URL the agent can pass downstream.</p>
+                <p>MCP server with browser sign-in, plus a REST API for scripts. Connect Claude Code with one command, or wire any agent framework in through the API. Returns a URL the agent can pass downstream.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🔒</div>
@@ -567,8 +567,8 @@
             </div>
             <div class="feature-card">
                 <div class="feature-icon">✏️</div>
-                <h3>In-place updates <span class="badge-soon">Coming soon</span></h3>
-                <p>PUT new HTML to an existing page ID and the URL stays the same. Fix a typo or refresh data without breaking any links you've already shared.</p>
+                <h3>In-place updates</h3>
+                <p>Update an existing page by ID with the <code>update_page</code> tool or <code>PUT /api/pages/{id}</code>, and the URL stays the same. Fix a typo or refresh data without breaking links you've already shared.</p>
             </div>
         </div>
     </div>
@@ -579,19 +579,19 @@
     <div class="section-inner">
         <div class="section-label">Integrations</div>
         <h2 class="section-title">Works anywhere</h2>
-        <p class="section-sub">A standard HTTP call is all it takes. Use curl, any HTTP library, or the MCP server.</p>
+        <p class="section-sub">Connect an agent through MCP, or call the REST API from scripts with curl or any HTTP library.</p>
 
         <div class="tab-pills" role="tablist">
             <button class="tab-pill active" data-tab="mcp">MCP</button>
-            <button class="tab-pill" data-tab="curl">curl</button>
-            <button class="tab-pill" data-tab="python">Python</button>
-            <button class="tab-pill" data-tab="js">JavaScript</button>
+            <button class="tab-pill" data-tab="curl">REST API: curl</button>
+            <button class="tab-pill" data-tab="python">REST API: Python</button>
+            <button class="tab-pill" data-tab="js">REST API: JavaScript</button>
         </div>
 
         <div class="code-panel" id="ex-curl">
             <div class="code-window">
                 <div class="code-body">
-<span class="dim"># JSON variant</span><br>
+<span class="dim"># REST API for scripts and CI (needs an API key). JSON variant</span><br>
 <span class="hl">curl</span> -s -X POST https://pushpage.link/api/pages \<br>
 &nbsp; -H <span class="str">"X-Api-Key: $PUSHPAGE_API_KEY"</span> \<br>
 &nbsp; -H <span class="str">"Content-Type: application/json"</span> \<br>
@@ -647,24 +647,17 @@ console.log(url); <span class="dim">// https://pushpage.link/pages/abc123.html</
         <div class="code-panel active" id="ex-mcp">
             <div class="code-window">
                 <div class="code-body">
-<span class="dim"># Try it now, no sign-up: add the server with just the URL</span><br>
+<span class="dim"># Recommended: add the server with just the URL</span><br>
+claude mcp add --transport http pushpage https://pushpage.link/mcp<br>
+<span class="dim"># Publishing works right away. The first time you list, update or</span><br>
+<span class="dim"># delete pages, sign in once in the browser (in Claude Code: run /mcp).</span><br>
+<span class="dim"># No key to copy; revoke access any time under Connected apps.</span><br>
+<br>
+<span class="dim"># Just trying it? Guest mode never asks you to sign in</span><br>
+<span class="dim"># (publish only, pages last 30 minutes):</span><br>
 claude mcp add --transport http pushpage https://pushpage.link/mcp-guest<br>
-<span class="dim"># Guest pages last 30 minutes. Sign up for permanent pages and your own key.</span><br>
 <br>
-<span class="dim"># With an account, add your key to your MCP config</span><br>
-{<br>
-&nbsp; <span class="key">"mcpServers"</span>: {<br>
-&nbsp; &nbsp; <span class="key">"pushpage"</span>: {<br>
-&nbsp; &nbsp; &nbsp; <span class="key">"type"</span>: <span class="str">"streamable-http"</span>,<br>
-&nbsp; &nbsp; &nbsp; <span class="key">"url"</span>: <span class="str">"https://pushpage.link/mcp"</span>,<br>
-&nbsp; &nbsp; &nbsp; <span class="key">"headers"</span>: {<br>
-&nbsp; &nbsp; &nbsp; &nbsp; <span class="key">"X-Api-Key"</span>: <span class="str">"&lt;your-api-key&gt;"</span><br>
-&nbsp; &nbsp; &nbsp; }<br>
-&nbsp; &nbsp; }<br>
-&nbsp; }<br>
-}<br>
-<br>
-<span class="dim"># Claude can now call publish_page, list_pages, delete_page</span>
+<span class="dim"># Your agent can now call publish_page, update_page, list_pages, delete_page</span>
                 </div>
             </div>
         </div>
@@ -692,7 +685,7 @@ claude mcp add --transport http pushpage https://pushpage.link/mcp-guest<br>
     <div class="section-inner">
         <div class="cta-box">
             <h2>Start publishing today</h2>
-            <p>Sign up for free and publish your first page in under a minute. No credit card required.</p>
+            <p>Connect your agent and publish your first page in under a minute. No credit card required.</p>
             <div class="cta-actions">
                 <a href="/dashboard" class="btn btn-primary">Create free account</a>
                 <a href="/docs" class="btn btn-secondary">Read the docs →</a>

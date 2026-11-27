@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>pushpage — Documentation</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <meta name="description" content="Full documentation for pushpage: quick start, authentication, API reference, and self-hosting guide.">
+    <meta name="description" content="Full documentation for pushpage: connect your agent over MCP with browser sign-in, authentication, REST API reference, and self-hosting guide.">
     <link rel="canonical" href="https://pushpage.link/docs">
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pushpage.link/docs">
     <meta property="og:title" content="pushpage — Documentation">
-    <meta property="og:description" content="Full documentation for pushpage: quick start, authentication, API reference, and self-hosting guide.">
+    <meta property="og:description" content="Full documentation for pushpage: connect your agent over MCP with browser sign-in, authentication, REST API reference, and self-hosting guide.">
     <meta property="og:image" content="https://pushpage.link/static/og-image.png">
     <link rel="stylesheet" href="/static/theme.css">
     <style>
@@ -365,13 +365,13 @@
     </button>
     <nav class="mobile-toc-menu" id="toc-menu">
         <a href="#quick-start"      class="sidebar-link">Quick start</a>
+        <a href="#mcp"              class="sidebar-link">MCP server</a>
         <a href="#authentication"   class="sidebar-link">Authentication</a>
         <a href="#publishing"       class="sidebar-link">Publishing pages</a>
         <a href="#rate-limits"      class="sidebar-link">Rate limits</a>
         <a href="#api-reference"    class="sidebar-link">API reference</a>
         <a href="#self-hosting"     class="sidebar-link">Self-hosting</a>
         <a href="#configuration"    class="sidebar-link">Configuration</a>
-        <a href="#mcp"              class="sidebar-link">MCP server</a>
     </nav>
 </div>
 
@@ -382,6 +382,7 @@
         <div class="sidebar-group">
             <div class="sidebar-group-title">Getting started</div>
             <a href="#quick-start"    class="sidebar-link">Quick start</a>
+            <a href="#mcp"            class="sidebar-link">MCP server</a>
             <a href="#authentication" class="sidebar-link">Authentication</a>
         </div>
         <div class="sidebar-group">
@@ -391,7 +392,7 @@
             <a href="#dashboard"   class="sidebar-link">Dashboard</a>
         </div>
         <div class="sidebar-group">
-            <div class="sidebar-group-title">API reference</div>
+            <div class="sidebar-group-title">REST API reference</div>
             <a href="#api-auth"    class="sidebar-link">Auth</a>
             <a href="#api-pages"   class="sidebar-link">Pages</a>
             <a href="#api-account" class="sidebar-link">Account</a>
@@ -402,7 +403,6 @@
             <div class="sidebar-group-title">Self-hosting</div>
             <a href="#self-hosting"  class="sidebar-link">Self-hosting</a>
             <a href="#configuration" class="sidebar-link">Configuration</a>
-            <a href="#mcp"           class="sidebar-link">MCP server</a>
         </div>
     </aside>
 
@@ -412,51 +412,126 @@
         <!-- Quick start -->
         <section class="docs-section" id="quick-start">
             <h2>Quick start</h2>
-            <p>Get from zero to a published page in under two minutes.</p>
+            <p>Connect your AI agent over MCP and have it publish a page, in about two minutes. The REST API for scripts is covered under <a href="#publishing">Publishing pages</a> and the <a href="#api-reference">API reference</a>.</p>
 
             <ol class="step-list">
                 <li>
-                    <strong>Create an account</strong>
-                    <span>Go to <a href="/dashboard">/dashboard</a>, click <em>Sign up</em>, and enter your email and password.</span>
+                    <strong>Create an account (optional to try)</strong>
+                    <span>Go to <a href="/dashboard">/dashboard</a>, click <em>Sign up</em>, and enter your email and password. You can skip this to try pushpage as a guest: pages then last 30 minutes.</span>
                 </li>
                 <li>
-                    <strong>Create an API key</strong>
-                    <span>After signing in, open the <strong>Account</strong> tab, give the key a name (for example the agent that will use it) and click <strong>Create API key</strong>. Copy the key — it is shown only once.</span>
-                </li>
-                <li>
-                    <strong>Publish your first page</strong>
-                    <span>Send a POST request with your HTML content:</span>
+                    <strong>Connect your agent</strong>
+                    <span>Run one command. There is no API key to copy:</span>
                 </li>
             </ol>
 
-<pre><code><span class="token-hl">curl</span> -s -X POST https://pushpage.link/api/pages \
-  -H <span class="token-str">"X-Api-Key: pp_your_key_here"</span> \
-  -H <span class="token-str">"Content-Type: application/json"</span> \
-  -d <span class="token-str">'{"html": "&lt;h1&gt;Hello, pushpage!&lt;/h1&gt;", "title": "My First Page"}'</span>
+<pre><code><span class="token-hl">claude</span> mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
 
-<span class="token-cmt"># Response</span>
-{
-  <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/pages/abc123.html"</span>,
-  <span class="token-key">"id"</span>: <span class="token-str">"abc123"</span>
-}</code></pre>
-
-            <p>Open the URL in your browser — your page is live. That's it.</p>
+            <ol class="step-list" style="counter-reset: step 2">
+                <li>
+                    <strong>Sign in once in the browser</strong>
+                    <span>The first time you use a tool that needs an account (<code>list_pages</code>, <code>update_page</code> or <code>delete_page</code>), a client that supports MCP sign-in (for example Claude Code) prompts you to sign in in the browser. In Claude Code the first such call fails once with <em>needs you to sign in again</em>: run <code>/mcp</code>, pick <strong>pushpage</strong> and choose <strong>Authenticate</strong>. After that, publish, update, list and delete all work with your account. Until you sign in, <code>publish_page</code> works as a guest.</span>
+                </li>
+                <li>
+                    <strong>Ask your agent to publish</strong>
+                    <span>For example: <em>"Publish this report and give me the link."</em> The agent calls <code>publish_page</code> and returns the URL. Open it in your browser and share it.</span>
+                </li>
+            </ol>
 
             <div class="callout">
-                <strong>Guest publishing:</strong> You can call <code>POST /api/pages</code> without any credentials. Guest pages expire after 30 minutes and are not listed in any dashboard.
+                <strong>Just trying it?</strong> Use <code>https://pushpage.link/mcp-guest</code> instead. It never asks you to sign in and only publishes (guest pages expire after 30 minutes). <strong>Scripts, CI or a client without browser sign-in?</strong> Use an <a href="#authentication">API key</a>: see <a href="#mcp-headless">Headless / CI</a> for MCP, or the <a href="#publishing">REST API</a>.
+            </div>
+        </section>
+
+        <!-- MCP -->
+        <section class="docs-section" id="mcp">
+            <h2>MCP server</h2>
+            <p>pushpage ships a <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> server that lets AI assistants like Claude publish and manage pages directly, without shell access or custom tool definitions. It is the recommended way to connect an agent. There are three ways to use it, in this order of preference: browser sign-in, guest mode, and an API key for headless setups.</p>
+
+            <h3>Connect with browser sign-in (recommended)</h3>
+            <p>Add the server with just its URL:</p>
+
+<pre><code><span class="token-hl">claude</span> mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
+
+            <p>Anyone can connect, list the tools and publish as a guest. The first time a tool that needs an account is called (<code>list_pages</code>, <code>update_page</code>, <code>delete_page</code>), the server answers <code>401</code> and a client that supports MCP sign-in prompts you to sign in in the browser. You sign in and allow the app; no API key is created or stored. After that, publish, update, list and delete work with your account. The app can publish, update, list and delete your pages, nothing else, and you can remove it any time under Account, Connected apps in the <a href="/dashboard">dashboard</a>.</p>
+            <p><strong>In Claude Code:</strong> the first call to such a tool fails once with <code>MCP server "pushpage" needs you to sign in again (run /mcp to re-authenticate)</code>. Run <code>/mcp</code>, pick <strong>pushpage</strong> and choose <strong>Authenticate</strong>; approve once in the browser. If the app's permissions change later, reconnect the same way.</p>
+            <p>Browser sign-in is confirmed with Claude Code and the MCP Inspector. Other clients that support MCP sign-in can use the same URL; if yours cannot, use <code>/mcp-guest</code> or an API key (see <a href="#mcp-headless">Headless / CI</a>). One-click install buttons for Cursor and VS Code are in the <a href="/guides/mcp-server-publish-html">MCP setup guide</a>. The dashboard's <a href="/dashboard">Account</a> tab shows these commands ready to copy.</p>
+
+            <h3>Try it with no account (guest mode)</h3>
+            <p>You do not need an account to try the MCP server. Add it with just the URL:</p>
+
+<pre><code><span class="token-hl">claude</span> mcp add --transport http pushpage https://pushpage.link/mcp-guest</code></pre>
+
+            <p>This endpoint never prompts you to sign in. In guest mode <code>publish_page</code> works and the page is deleted after 30 minutes. The tool result includes <code>guest_mode: true</code> and a message telling the user how to sign up or sign in. <code>list_pages</code>, <code>update_page</code> and <code>delete_page</code> need an account. An invalid key is rejected with <code>401</code>, never downgraded to guest mode.</p>
+
+            <h3 id="mcp-headless">Headless / CI (API key)</h3>
+            <p>For servers, CI, the local <code>uvx pushpage-mcp</code> server and clients that cannot do browser sign-in, use an API key. Create a named key in the dashboard's <a href="/dashboard">Account</a> tab (see <a href="#authentication">Authentication</a>) and send it in the <code>X-Api-Key</code> header. Add pushpage and your key to your Claude MCP configuration (<code>~/.claude/mcp.json</code> or via Claude Desktop settings):</p>
+
+<pre><code>{
+  <span class="token-key">"mcpServers"</span>: {
+    <span class="token-key">"pushpage"</span>: {
+      <span class="token-key">"type"</span>: <span class="token-str">"streamable-http"</span>,
+      <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/mcp"</span>,
+      <span class="token-key">"headers"</span>: {
+        <span class="token-key">"X-Api-Key"</span>: <span class="token-str">"&lt;your-api-key&gt;"</span>
+      }
+    }
+  }
+}</code></pre>
+
+            <p>If your client does not support the streamable-http transport natively, use <code>mcp-remote</code> as a bridge:</p>
+
+<pre><code>{
+  <span class="token-key">"mcpServers"</span>: {
+    <span class="token-key">"pushpage"</span>: {
+      <span class="token-key">"command"</span>: <span class="token-str">"npx"</span>,
+      <span class="token-key">"args"</span>: [
+        <span class="token-str">"mcp-remote"</span>,
+        <span class="token-str">"https://pushpage.link/mcp"</span>,
+        <span class="token-str">"--header"</span>,
+        <span class="token-str">"X-Api-Key:&lt;your-api-key&gt;"</span>
+      ]
+    }
+  }
+}</code></pre>
+
+            <p>With a key in the header the server never starts a sign-in. The dashboard's Account tab shows these commands, with your key filled in, under <em>Headless / CI (API key)</em>.</p>
+
+            <h4>Keeping the key out of your config</h4>
+            <p>Store the key in <code>~/.config/pushpage/credentials</code> (<code>chmod 600</code>) and export it as <code>PUSHPAGE_API_KEY</code>. Claude Code supports <code>"X-Api-Key": "${PUSHPAGE_API_KEY}"</code> in <code>.mcp.json</code> and Cursor supports <code>"${env:PUSHPAGE_API_KEY}"</code>. Claude Desktop does not expand variables in <code>headers</code>, so use the key directly there (or the <code>mcp-remote</code> bridge with an <code>env</code> block) and keep the file private.</p>
+
+            <h3>Available tools</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <thead><tr><th>Tool</th><th>Description</th></tr></thead>
+                    <tbody>
+                        <tr><td>publish_page</td><td>Publish HTML content and return the URL.</td></tr>
+                        <tr><td>update_page</td><td>Replace the HTML of a page you published, keeping the same URL.</td></tr>
+                        <tr><td>list_pages</td><td>List your published pages.</td></tr>
+                        <tr><td>delete_page</td><td>Delete a page by ID.</td></tr>
+                        <tr><td>health</td><td>Check service health and stats.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p>Once connected, Claude can call these tools naturally. For example: <em>"Publish this HTML report and give me the link"</em>. Claude will call <code>publish_page</code> and return the URL inline.</p>
+
+            <div class="callout">
+                <strong>Self-hosted MCP:</strong> If you're running your own instance, point the <code>url</code> at your own domain: <code>https://your-domain.com/mcp</code>.
             </div>
         </section>
 
         <!-- Authentication -->
         <section class="docs-section" id="authentication">
             <h2>Authentication</h2>
-            <p>Two credential types are accepted interchangeably on all protected endpoints.</p>
+            <p><strong>For MCP you usually need no credential to copy:</strong> connect to <code>https://pushpage.link/mcp</code> and sign in once in the browser (see <a href="#mcp">MCP server</a>). The app gets a scoped, revocable token that works only for the page tools, and you can remove it under Account, Connected apps.</p>
+            <p>API keys and JWTs are the credentials for the <strong>REST API</strong> and for <a href="#mcp-headless">headless MCP setups</a> (CI, <code>uvx pushpage-mcp</code>, clients without browser sign-in). Both are accepted interchangeably on all protected endpoints.</p>
 
             <div class="docs-table-wrap">
                 <table class="docs-table">
                     <thead><tr><th>Method</th><th>Header</th><th>Notes</th></tr></thead>
                     <tbody>
-                        <tr><td>API key</td><td><code>X-Api-Key: pp_&lt;key&gt;</code></td><td>Long-lived. Ideal for scripts, CI, and agents. Create named keys in the dashboard or via <code>POST /api/me/keys</code>.</td></tr>
+                        <tr><td>API key</td><td><code>X-Api-Key: pp_&lt;key&gt;</code></td><td>Long-lived. Ideal for scripts, CI, and headless agents. Create named keys in the dashboard or via <code>POST /api/me/keys</code>.</td></tr>
                         <tr><td>JWT Bearer</td><td><code>Authorization: Bearer &lt;jwt&gt;</code></td><td>Short-lived (24 h). Issued by <code>POST /api/auth/login</code>. Used by the dashboard.</td></tr>
                     </tbody>
                 </table>
@@ -515,7 +590,7 @@ Copy these credentials now. They will NOT appear again.
         <!-- Publishing -->
         <section class="docs-section" id="publishing">
             <h2>Publishing pages</h2>
-            <p><code>POST /api/pages</code> is the core endpoint. It accepts two content types:</p>
+            <p>This section is for scripts and non-MCP integrations that call the REST API directly. If you use an AI agent, <a href="#mcp">connect it over MCP</a> instead. <code>POST /api/pages</code> is the core endpoint. It accepts two content types:</p>
 
             <h3>JSON (application/json)</h3>
             <p>Send an object with an <code>html</code> field and an optional <code>title</code>.</p>
@@ -590,7 +665,7 @@ Copy these credentials now. They will NOT appear again.
             <p>Lists all pages you've published, with their URL, creation date, and expiry date. You can delete individual pages.</p>
 
             <h3>Account tab</h3>
-            <p>Displays your email and role, and lists your API keys (name, key prefix, last used). You can create a named key and revoke any key here. A new key is shown once — copy it before leaving the page.</p>
+            <p>Shows copy-paste commands to connect your AI agent (browser sign-in first), the apps you have connected through sign-in (remove one to cut it off at once), and your API keys for scripts, CI and clients without browser sign-in (name, key prefix, last used). You can create a named key and revoke any key here. A new key is shown once, so copy it before leaving the page.</p>
 
             <h3>Users tab (admin only)</h3>
             <p>Lists all registered users. Admins can promote users to admin or deactivate accounts. Deactivated users retain their pages but can no longer authenticate.</p>
@@ -868,79 +943,6 @@ Copy these credentials now. They will NOT appear again.
 
 <span class="token-cmt"># Python</span>
 <span class="token-hl">python3</span> -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(32)).decode())"</code></pre>
-        </section>
-
-        <!-- MCP -->
-        <section class="docs-section" id="mcp">
-            <h2>MCP server</h2>
-            <p>pushpage ships a <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> server that lets AI assistants like Claude publish and manage pages directly — without shell access or custom tool definitions.</p>
-
-            <h3>Copy-paste setup from the dashboard</h3>
-            <p>After you generate an API key in the dashboard's <a href="/dashboard">Account</a> tab, a <strong>Connect your AI agent</strong> section shows ready-to-copy commands for Claude Code, Cursor, Claude Desktop and the local <code>uvx</code> server, with your key already filled in. The key is shown once, so copy the command right away.</p>
-
-            <h3>Try it with no key (guest mode)</h3>
-            <p>You do not need an account to try the MCP server. Add it with just the URL:</p>
-
-<pre><code><span class="token-hl">claude</span> mcp add --transport http pushpage https://pushpage.link/mcp-guest</code></pre>
-
-            <p>In guest mode <code>publish_page</code> works and the page is deleted after 30 minutes. The tool result includes <code>guest_mode: true</code> and a message telling the user to <a href="/dashboard">sign up or sign in</a> to get an API key. <code>list_pages</code> and <code>delete_page</code> need an account. An invalid key is rejected with <code>401</code>, never downgraded to guest mode.</p>
-
-            <h3>Sign in with your browser</h3>
-            <p>Both buttons add the browser sign-in endpoint (<code>/mcp/signin</code>) instead of the plain <code>/mcp</code> one. The first time the app calls a pushpage tool it opens your browser, where you sign in and allow it; no API key is created or stored. The app can publish, update, list and delete your pages, nothing else, and you can remove it any time under Account, Connected apps in the dashboard. For a no-account try-out use <code>/mcp-guest</code>. One-click install buttons for Cursor and VS Code are in the <a href="/guides/mcp-server-publish-html">MCP setup guide</a>.</p>
-
-            <h3>Connecting Claude</h3>
-            <p>With an account, add pushpage and your API key to your Claude MCP configuration (<code>~/.claude/mcp.json</code> or via Claude Desktop settings):</p>
-
-<pre><code>{
-  <span class="token-key">"mcpServers"</span>: {
-    <span class="token-key">"pushpage"</span>: {
-      <span class="token-key">"type"</span>: <span class="token-str">"streamable-http"</span>,
-      <span class="token-key">"url"</span>: <span class="token-str">"https://pushpage.link/mcp"</span>,
-      <span class="token-key">"headers"</span>: {
-        <span class="token-key">"X-Api-Key"</span>: <span class="token-str">"&lt;your-api-key&gt;"</span>
-      }
-    }
-  }
-}</code></pre>
-
-            <p>If your client does not support the streamable-http transport natively, use <code>mcp-remote</code> as a bridge:</p>
-
-<pre><code>{
-  <span class="token-key">"mcpServers"</span>: {
-    <span class="token-key">"pushpage"</span>: {
-      <span class="token-key">"command"</span>: <span class="token-str">"npx"</span>,
-      <span class="token-key">"args"</span>: [
-        <span class="token-str">"mcp-remote"</span>,
-        <span class="token-str">"https://pushpage.link/mcp"</span>,
-        <span class="token-str">"--header"</span>,
-        <span class="token-str">"X-Api-Key:&lt;your-api-key&gt;"</span>
-      ]
-    }
-  }
-}</code></pre>
-
-            <h3>Keeping the key out of your config</h3>
-            <p>Store the key in <code>~/.config/pushpage/credentials</code> (<code>chmod 600</code>) and export it as <code>PUSHPAGE_API_KEY</code>. Claude Code supports <code>"X-Api-Key": "${PUSHPAGE_API_KEY}"</code> in <code>.mcp.json</code> and Cursor supports <code>"${env:PUSHPAGE_API_KEY}"</code>. Claude Desktop does not expand variables in <code>headers</code>, so use the key directly there (or the <code>mcp-remote</code> bridge with an <code>env</code> block) and keep the file private.</p>
-
-            <h3>Available tools</h3>
-            <div class="docs-table-wrap">
-                <table class="docs-table">
-                    <thead><tr><th>Tool</th><th>Description</th></tr></thead>
-                    <tbody>
-                        <tr><td>publish_page</td><td>Publish HTML content and return the URL.</td></tr>
-                        <tr><td>update_page</td><td>Replace the HTML of a page you published, keeping the same URL.</td></tr>
-                        <tr><td>list_pages</td><td>List your published pages.</td></tr>
-                        <tr><td>delete_page</td><td>Delete a page by ID.</td></tr>
-                        <tr><td>health</td><td>Check service health and stats.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <p>Once connected, Claude can call these tools naturally. For example: <em>"Publish this HTML report and give me the link"</em> — Claude will call <code>publish_page</code> and return the URL inline.</p>
-
-            <div class="callout">
-                <strong>Self-hosted MCP:</strong> If you're running your own instance, point the <code>url</code> at your own domain: <code>https://your-domain.com/mcp</code>.
-            </div>
         </section>
 
     </main>

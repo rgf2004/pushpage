@@ -26,7 +26,7 @@
   "url": "https://pushpage.link/guides/share-html-from-claude-code",
   "mainEntityOfPage": "https://pushpage.link/guides/share-html-from-claude-code",
   "datePublished": "2026-11-24",
-  "dateModified": "2026-11-25",
+  "dateModified": "2026-11-27",
   "image": "https://pushpage.link/static/og-image.png",
   "author": {
     "@type": "Organization",
@@ -94,8 +94,8 @@
     <p class="guide-lead">Claude Code is good at building rich HTML: reports, dashboards, prototypes. Sharing that output is the awkward part. This guide gives Claude a publish step, so you ask for a page and get back a link.</p>
 <h2>1. Add the MCP server (one command)</h2>
 <p>pushpage runs a hosted MCP server. In your terminal:</p>
-<pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp-guest</code></pre>
-<p>That is the whole setup. Without an API key the server runs in <strong>guest mode</strong>: Claude can publish pages, and each page is deleted after 30 minutes. Run <code>claude mcp list</code> (or <code>/mcp</code> inside Claude Code) to check that <code>pushpage</code> is connected with five tools.</p>
+<pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
+<p>That is the whole setup, and there is no API key to copy. Until you sign in (step 3), Claude publishes as a <strong>guest</strong>: each page is deleted after 30 minutes. Just want to try it and never be asked to sign in? Use <code>https://pushpage.link/mcp-guest</code> instead. Run <code>claude mcp list</code> (or <code>/mcp</code> inside Claude Code) to check that <code>pushpage</code> is connected with five tools.</p>
 
 <h2>2. Ask for a page</h2>
 <p>Describe what you want and tell Claude to publish it:</p>
@@ -103,20 +103,23 @@
 then publish it with pushpage and give me the link.</code></pre>
 <p>Claude writes a self-contained HTML document, calls the <code>publish_page</code> tool, and replies with a URL such as <code>https://pushpage.link/pages/a1b2c3d4.html</code>. Open it in a browser or send it to someone. The agent returns the link instead of pasting a wall of HTML into the chat.</p>
 
-<h2>3. Keep your pages longer with an API key</h2>
-<p>Guest pages last 30 minutes. For longer retention, and to list, update or delete your own pages through the tools, create an account and an API key:</p>
+<h2>3. Keep your pages longer with a browser sign-in</h2>
+<p>Guest pages last 30 minutes. For longer retention, and to list, update or delete your own pages through the tools, sign in once:</p>
 <ol>
-  <li>Sign up at <a href="/dashboard">pushpage.link/dashboard</a>.</li>
-  <li>Open the <strong>Account</strong> tab, name a key (for example &ldquo;Claude Code on my laptop&rdquo;) and create it. The key is shown once.</li>
-  <li>Re-add the server with the key:</li>
+  <li>Sign up at <a href="/dashboard">pushpage.link/dashboard</a> if you do not have an account yet.</li>
+  <li>Ask Claude to list your pages. The first call to a tool that needs an account fails once with <code>MCP server "pushpage" needs you to sign in again (run /mcp to re-authenticate)</code>.</li>
+  <li>Run <code>/mcp</code> inside Claude Code, pick <strong>pushpage</strong>, choose <strong>Authenticate</strong> and approve in the browser.</li>
 </ol>
+<p>After that, publish, update, list and delete all work with your account. No key is created or stored, and you can remove the connection any time under Account, Connected apps in the dashboard.</p>
+<h3>Alternative: an API key</h3>
+<p>For headless machines, CI or if you prefer a key, create one in the dashboard's <strong>Account</strong> tab (name it, for example &ldquo;Claude Code on my laptop&rdquo;; it is shown once) and re-add the server with it:</p>
 <pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp \
   --header "Authorization: Bearer pp_your_key_here"</code></pre>
-<p>Create a separate key for each agent or tool. Revoking one key never affects the others. The dashboard's Account tab also shows these commands with your new key already filled in.</p>
+<p>Create a separate key for each agent or tool. Revoking one key never affects the others.</p>
 
 <h2>What Claude can do with it</h2>
 <table>
-  <thead><tr><th>Tool</th><th>What it does</th><th>Needs a key?</th></tr></thead>
+  <thead><tr><th>Tool</th><th>What it does</th><th>Needs an account?</th></tr></thead>
   <tbody>
     <tr><td><code>publish_page</code></td><td>Publish an HTML document and return its URL.</td><td>No (guest pages last 30 minutes)</td></tr>
     <tr><td><code>update_page</code></td><td>Replace the HTML of one of your pages and keep its URL.</td><td>Yes</td></tr>
@@ -127,7 +130,7 @@ then publish it with pushpage and give me the link.</code></pre>
 </table>
 
 <h2>No MCP? Use the API directly</h2>
-<p>If you would rather not add a server, the same publish step is one HTTP request:</p>
+<p>If you would rather not add a server, or you are scripting, the same publish step is one HTTP request (the REST API):</p>
 <pre><code>curl -X POST https://pushpage.link/api/pages \
   -H "Content-Type: application/json" \
   -d '{"html":"&lt;h1&gt;Hello&lt;/h1&gt;","title":"Hello"}'</code></pre>
@@ -142,7 +145,7 @@ then publish it with pushpage and give me the link.</code></pre>
 
 <h2>Common questions</h2>
 <h3>Do I need an account?</h3>
-<p>Not to try it. Guest mode needs no account and no key. You need an account for longer retention and for listing or deleting pages.</p>
+<p>Not to try it: publishing as a guest needs no account and no key. You need an account (a one-time browser sign-in) for longer retention and for listing, updating or deleting pages.</p>
 <h3>Is it open source?</h3>
 <p>Yes, MIT licensed. You can self-host it with Docker Compose. See <a href="/docs#self-hosting">self-hosting</a>.</p>
 <h3>What if I use Cursor or Claude Desktop?</h3>
@@ -150,8 +153,8 @@ then publish it with pushpage and give me the link.</code></pre>
 
     <div class="guide-cta">
         <h2>Try it now</h2>
-        <p>No account needed. Add the server to Claude Code and ask for a page:</p>
-        <pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp-guest</code></pre>
+        <p>Add the server to Claude Code and ask for a page. No account needed to start; sign in once when you want longer retention:</p>
+        <pre><code>claude mcp add --transport http pushpage https://pushpage.link/mcp</code></pre>
         <a href="/dashboard" class="btn btn-primary">Create a free account</a>
         <a href="/docs" class="btn btn-ghost">Read the docs</a>
     </div>
