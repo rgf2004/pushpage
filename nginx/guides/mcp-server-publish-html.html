@@ -97,7 +97,7 @@
 
 <h2>Three ways to connect</h2>
 <h3>Browser sign-in (recommended)</h3>
-<p>Connect with just the URL. Publishing works right away, and the first time you use a tool that needs an account (<code>list_pages</code>, <code>update_page</code>, <code>delete_page</code>), a client that supports MCP sign-in opens your browser so you can sign in and allow the app. No API key to copy or store, your pages follow your account's retention, and you can remove the app any time under Account, Connected apps in the <a href="/dashboard">dashboard</a>. Sign-in is confirmed with Claude Code and the MCP Inspector.</p>
+<p>Connect with just the URL. Publishing works right away, and the first time you use a tool that needs an account (<code>list_pages</code>, <code>update_page</code>, <code>delete_page</code>), a client that supports MCP sign-in opens your browser so you can sign in and allow the app. No API key to copy or store, your pages follow your account's retention, and you can remove the app any time under Account, Connected apps in the <a href="/dashboard">dashboard</a>. Sign-in is confirmed with Claude Code and the MCP Inspector only; for other clients the API-key setup is the dependable path.</p>
 <h3>Guest mode (no account)</h3>
 <p>Connect to <code>/mcp-guest</code>, which never asks you to sign in. <code>publish_page</code> works and the page is deleted after 30 minutes. The tool result tells the agent (and you) how to sign up or sign in if you want more. <code>list_pages</code>, <code>update_page</code> and <code>delete_page</code> need an account.</p>
 <h3>API key (headless, CI, clients without sign-in)</h3>
@@ -116,7 +116,7 @@ claude mcp add --transport http pushpage https://pushpage.link/mcp \
 <p>The first call to <code>list_pages</code>, <code>update_page</code> or <code>delete_page</code> fails once with <code>MCP server "pushpage" needs you to sign in again (run /mcp to re-authenticate)</code>. Run <code>/mcp</code>, pick <strong>pushpage</strong>, choose <strong>Authenticate</strong> and approve in the browser. After that, publish, update, list and delete all work.</p>
 
 <h2>Cursor</h2>
-<p>The one-click button in the next section is the quickest way. To configure it by hand with an API key, add this to <code>~/.cursor/mcp.json</code> (or your project's <code>.cursor/mcp.json</code>) and restart Cursor. Omit the <code>headers</code> block to use guest mode.</p>
+<p>The dependable way to set up Cursor is an API key. Add this to <code>~/.cursor/mcp.json</code> (or your project's <code>.cursor/mcp.json</code>) and restart Cursor. For a no-account setup that never prompts, use <code>https://pushpage.link/mcp-guest</code> as the <code>url</code> instead (publishing as a guest also works on <code>/mcp</code>, but account tools there trigger a sign-in challenge that Cursor is not verified to handle).</p>
 <pre><code>{
   "mcpServers": {
     "pushpage": {
@@ -128,7 +128,7 @@ claude mcp add --transport http pushpage https://pushpage.link/mcp \
 
 <h2>One-click install (Cursor and VS Code)</h2>
 <!-- /mcp/signin is a temporary URL; see CLAUDE.md ("MCP URLs") before changing it. -->
-<p>Both buttons add a browser sign-in variant of the server that always asks you to sign in. The first time the app calls a pushpage tool it opens your browser, where you sign in and allow it; no API key is created or stored. The app can publish, update, list and delete your pages, nothing else, and you can remove it any time under Account, Connected apps in the dashboard. For a no-account try-out use <code>/mcp-guest</code> as in the Claude Code section above. The links need the desktop app installed and ask you to confirm before anything is added.</p>
+<p>These buttons add the sign-in endpoint <code>/mcp/signin</code> (deprecated; it asks you to sign in on first use). They are not yet verified in Cursor or VS Code; if they do not work, use the API-key setup, which is the dependable path. When it works, the app opens your browser on first use, where you sign in and allow it; no API key is created or stored. The app can publish, update, list and delete your pages, nothing else, and you can remove it any time under Account, Connected apps in the dashboard. For a no-account try-out use <code>/mcp-guest</code> as in the Claude Code section above. The links need the desktop app installed and ask you to confirm before anything is added.</p>
 <!-- Cursor config (base64 below) decodes to {"url":"https://pushpage.link/mcp/signin"}. Regenerate: node -e 'const U="https://pushpage.link/mcp/signin";console.log(btoa(JSON.stringify({url:U})))' -->
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0">
 <a class="btn btn-secondary" href="cursor://anysphere.cursor-deeplink/mcp/install?name=pushpage&amp;config=eyJ1cmwiOiJodHRwczovL3B1c2hwYWdlLmxpbmsvbWNwL3NpZ25pbiJ9">Add to Cursor</a>

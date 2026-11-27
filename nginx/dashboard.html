@@ -802,7 +802,7 @@
         <div id="first-run-card" class="empty-state" style="display:none">
             <div class="first-run">
                 <h3>Connect your agent</h3>
-                <p>No pages yet, and no agent connected. Add pushpage to your AI agent with one command, sign in once in your browser when it asks, then ask the agent to publish a page.</p>
+                <p>No pages yet. Add pushpage to your AI agent with one command, sign in once in your browser when it asks, then ask the agent to publish a page.</p>
                 <pre class="mcp-code" id="first-run-code"></pre>
                 <button class="btn btn-primary btn-sm" id="first-run-copy-btn" type="button">Copy</button>
                 <a class="btn btn-secondary btn-sm" href="#" data-goto-connect>More ways to connect</a>
@@ -860,8 +860,8 @@
                     <a class="btn btn-secondary btn-sm" id="mcp-install-cursor" href="#">Add to Cursor</a>
                     <a class="btn btn-secondary btn-sm" id="mcp-install-vscode" href="#">Add to VS Code</a>
                 </div>
-                <div class="mcp-hint" style="margin-top:8px">One-click links open the app to add pushpage with browser sign-in (no key in the link); the app asks you to confirm.</div>
-                <div class="mcp-hint">Other apps that support MCP sign-in: use <code id="mcp-signin-url"></code> as the server URL.</div>
+                <div class="mcp-hint" style="margin-top:8px">These buttons add the sign-in endpoint <code>/mcp/signin</code> (deprecated; it asks you to sign in on first use). Not yet verified in Cursor or VS Code. No key is in the link; the app asks you to confirm.</div>
+                <div class="mcp-hint">Confirmed with Claude Code and the MCP Inspector. For other apps the API-key setup under Headless / CI is the dependable path; apps that support MCP sign-in can try <code id="mcp-signin-url"></code> as the server URL.</div>
                 <div class="mcp-guest">
                     <p style="margin-bottom:8px"><strong>Just trying it?</strong> No account needed. Guest mode lets <code>publish_page</code> work, never asks you to sign in, and pages last 30 minutes:</p>
                     <pre class="mcp-code" id="mcp-guest-code"></pre>
@@ -1066,7 +1066,7 @@ const MCP_GUEST_URL = location.origin + '/mcp-guest';
 const MCP_SIGNIN_URL = location.origin + '/mcp/signin';
 const MCP_KEY_PLACEHOLDER = 'pp_your_key_here';
 let mcpKey = null;
-let connectedAppCount = null;   // null until /me/connected-apps answered
+let connectedAppCount = null;   // null = still loading, -1 = request failed (unknown), else the number of apps
 let pagesRendered = false;
 let mcpClient = 'claude-code';
 let currentUser = null;
@@ -1432,6 +1432,10 @@ document.getElementById('logout-btn').addEventListener('click', () => {
     ['confirm-modal', 'deactivate-modal', 'promote-modal', 'reset-link-modal', 'revoke-key-modal', 'revoke-app-modal'].forEach(hideModal);
     document.getElementById('reset-link-value').textContent = '';
     mcpKey = null;
+    connectedAppCount = null;
+    pagesRendered = false;
+    document.getElementById('pages-empty').style.display = 'none';
+    document.getElementById('first-run-card').style.display = 'none';
     renderMcpSetup();
     sessionStorage.removeItem('pp_jwt');
     jwt = '';
@@ -1464,10 +1468,8 @@ async function renderPages() {
     document.getElementById('pages-loading').style.display = 'none';
 
     pagesRendered = true;
-    if (allPages.length === 0) {
-        renderEmptyState();
-        return;
-    }
+    renderEmptyState();
+    if (allPages.length === 0) return;
 
     document.getElementById('pages-table-wrap').style.display = 'block';
     renderInsights();
@@ -1480,7 +1482,9 @@ function renderEmptyState() {
     const emptyEl = document.getElementById('pages-empty');
     const cardEl = document.getElementById('first-run-card');
     if (!pagesRendered || allPages.length > 0) { emptyEl.style.display = 'none'; cardEl.style.display = 'none'; return; }
-    const firstRun = connectedAppCount === 0;
+    // null = connected apps still loading: show neither, so the plain message does not flash before the card.
+    if (connectedAppCount === null) { emptyEl.style.display = 'none'; cardEl.style.display = 'none'; return; }
+    const firstRun = connectedAppCount === 0;   // -1 (failed) and > 0 get the plain empty state
     cardEl.style.display = firstRun ? 'block' : 'none';
     emptyEl.style.display = firstRun ? 'none' : 'block';
 }
@@ -1744,7 +1748,11 @@ async function loadConnectedApps() {
     const list = document.getElementById('connected-apps-list');
     try {
         const r = await api('/me/connected-apps');
-        if (!r.ok) { list.innerHTML = '<div class="key-empty">Could not load your connected apps.</div>'; return; }
+        if (!r.ok) {
+            list.innerHTML = '<div class="key-empty">Could not load your connected apps.</div>';
+            connectedAppCount = -1; renderEmptyState();
+            return;
+        }
         const apps = await r.json();
         connectedAppCount = apps.length;
         renderEmptyState();
@@ -1765,6 +1773,7 @@ async function loadConnectedApps() {
         }).join('');
     } catch {
         list.innerHTML = '<div class="key-empty">Network error loading your connected apps.</div>';
+        connectedAppCount = -1; renderEmptyState();
     }
 }
 
