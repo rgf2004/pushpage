@@ -184,7 +184,7 @@ class TestGuestMode(unittest.TestCase):
         out = self.server.publish_page("<h1>hi</h1>")
         self.assertEqual(out["status_code"], 429)
         self.assertTrue(out["guest_mode"])
-        self.assertIn("sign in with the browser", out["message"])
+        self.assertIn("PUSHPAGE_API_KEY", out["message"])
 
     def test_invalid_key_error_is_not_downgraded_to_guest(self):
         self.response = _FakeResponse(status=401)
@@ -199,14 +199,14 @@ class TestGuestMode(unittest.TestCase):
         self.assertEqual(self.created, [])
         self.assertTrue(listed[0]["guest_mode"])
         self.assertTrue(deleted["guest_mode"])
-        self.assertIn("sign in with the browser", deleted["message"])
+        self.assertIn("PUSHPAGE_API_KEY", deleted["message"])
 
     def test_guest_update_asks_to_sign_in_without_calling_the_api(self):
         out = self.server.update_page("abc", "<h1>new</h1>")
         self.assertEqual(self.created, [])
         self.assertEqual(out["error"], "Sign in required")
         self.assertTrue(out["guest_mode"])
-        self.assertIn("sign in with the browser", out["message"])
+        self.assertIn("PUSHPAGE_API_KEY", out["message"])
 
     def test_keyed_update_puts_to_the_page_and_returns_same_url_and_id(self):
         calls = []
@@ -375,11 +375,49 @@ class TestSignInEndpoint(unittest.TestCase):
         self.assertEqual(self.server._auth_headers("eyJ.a.b"), {"Authorization": "Bearer eyJ.a.b"})
         self.assertEqual(self.server._auth_headers(""), {})
 
-    def test_guest_message_points_to_mcp_and_browser_sign_in(self):
-        msg = self.server._signup_message("x")
-        self.assertIn("https://my.example/mcp and sign in with the browser when prompted", msg)
+    def _msg_for(self, request):
+        with patch("pushpage_mcp.server.get_http_request", return_value=request):
+            return self.server._signup_message("x")
+
+    def test_guest_message_on_hosted_mcp_triggers_browser_sign_in(self):
+        request = MagicMock()
+        request.scope = {}
+        msg = self._msg_for(request)
+        self.assertIn("list your pages", msg)
+        self.assertIn("run /mcp and choose Authenticate", msg)
+        self.assertIn("https://my.example/dashboard", msg)
         self.assertNotIn("/mcp/signin", msg)
+        self.assertNotIn("PUSHPAGE_API_KEY", msg)
+
+    def test_guest_message_on_mcp_guest_says_it_never_prompts(self):
+        request = MagicMock()
+        request.scope = {self.server._GUEST_SCOPE_KEY: True}
+        msg = self._msg_for(request)
+        self.assertIn("never asks you to sign in", msg)
+        self.assertIn("https://my.example/mcp", msg)
+        self.assertNotIn("choose Authenticate", msg)
+
+    def test_guest_message_over_stdio_requires_an_api_key(self):
+        with patch("pushpage_mcp.server.get_http_request", side_effect=RuntimeError("no request")):
+            msg = self.server._signup_message("x")
+        self.assertIn("no browser sign-in", msg)
         self.assertIn("PUSHPAGE_API_KEY", msg)
+        self.assertNotIn("choose Authenticate", msg)
+
+    def test_gateway_marks_mcp_guest_requests(self):
+        seen = {}
+
+        async def inner(scope, receive, send):
+            seen.update(scope)
+        asyncio.run(self.server.SignInGateway(inner)(
+            {"type": "http", "path": "/mcp-guest", "raw_path": b"/mcp-guest", "headers": []}, None, None))
+        self.assertTrue(seen[self.server._GUEST_SCOPE_KEY])
+
+    def test_instructions_cover_both_transports(self):
+        text = self.server.mcp.instructions
+        self.assertIn("browser sign-in", text)
+        self.assertIn("do not ask the user for an API key", text)
+        self.assertIn("PUSHPAGE_API_KEY", text)
 
     def test_http_server_is_wrapped_by_the_gateway(self):
         with patch.object(self.server.uvicorn, "run") as uv, patch.object(self.server.mcp, "http_app"):

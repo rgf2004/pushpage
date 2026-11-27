@@ -5,7 +5,7 @@
 
 An HTML page publishing service for AI agents. Connect your agent once (MCP, with a browser sign-in) and it hands you a shareable URL instead of dumping text into chat.
 
-**Quick start:** `claude mcp add --transport http pushpage https://pushpage.link/mcp`, then ask your agent to publish a page. It works at once as a guest (30-minute pages); sign in in the browser when asked to keep pages longer and to list, update or delete them. See [MCP Server](#mcp-server).
+**Quick start:** `claude mcp add --transport http pushpage https://pushpage.link/mcp`, then ask your agent to publish a page. Publishing works as a guest (30-minute pages) until you sign in. To sign in, ask your agent to list your pages: the first account-only call triggers the prompt (in Claude Code run `/mcp` and choose Authenticate). Do that before publishing pages you want to keep. See [MCP Server](#mcp-server).
 
 ## Why this project exists
 
@@ -74,8 +74,8 @@ docker compose down -v
    claude mcp add --transport http pushpage https://pushpage.link/mcp
    ```
 
-2. Ask your agent to publish a page. Publishing works right away as a guest (pages expire after 30 minutes).
-3. To keep pages longer and to list, update or delete them, sign in: when a tool needs an account, Claude Code answers `needs you to sign in again (run /mcp to re-authenticate)`. Run `/mcp`, pick pushpage and choose Authenticate, and approve in the browser. No API key to copy; revoke it any time under Account, Connected apps in the dashboard.
+2. Ask your agent to publish a page. Publishing works right away as a guest (pages expire after 30 minutes) and never asks you to sign in.
+3. To keep pages, sign in before publishing them: ask your agent to list your pages (the first account-only call triggers the prompt). Claude Code answers `needs you to sign in again (run /mcp to re-authenticate)`. Run `/mcp`, pick pushpage and choose Authenticate, and approve in the browser. No API key to copy; revoke it any time under Account, Connected apps in the dashboard.
 
 Details, other clients and troubleshooting: [MCP Server](#mcp-server) and [`docs/mcp.md`](docs/mcp.md). Prefer scripts? See the [REST API](#rest-api-for-scripts-and-integrations) and [`docs/api.md`](docs/api.md).
 
@@ -175,8 +175,8 @@ docker compose up -d
 
 Once running, the server is available at `https://pushpage.link/mcp` (or `{APP_SERVER_URL}/mcp` for self-hosted instances). How to connect, in order of preference:
 
-1. **Browser sign-in (recommended).** Connect to `/mcp` with the URL alone. Publishing works at once as a guest; the first time a tool that needs an account is used (`list_pages`, `update_page`, `delete_page`) the server answers `401` and a client that supports MCP sign-in prompts you to sign in in the browser. One approval grants publish, update, list and delete, with no key to copy. Only Claude Code and the MCP Inspector are confirmed to work with the flow so far.
-2. **Guest (no account, "try it").** `/mcp-guest` never prompts: `publish_page` works, pages expire after 30 minutes, and the result tells the user how to sign in.
+1. **Browser sign-in (recommended).** Connect to `/mcp` with the URL alone. Publishing works at once as a guest (30-minute pages, no prompt); the first time a tool that needs an account is used (ask your agent to list your pages to trigger it) (`list_pages`, `update_page`, `delete_page`) the server answers `401` and a client that supports MCP sign-in prompts you to sign in in the browser. One approval grants publish, update, list and delete, with no key to copy. Only Claude Code and the MCP Inspector are confirmed to work with the flow so far.
+2. **Guest (no account, "try it").** `/mcp-guest` never prompts: `publish_page` works, pages expire after 30 minutes, and the result tells the user to re-add the server with `/mcp` to sign in.
 3. **API key (headless, CI, local `uvx`, clients without browser sign-in).** Send a key in the `Authorization` or `X-Api-Key` header: permanent retention per plan, `list_pages`, `update_page` and `delete_page` with no prompt.
 
 **Claude Code CLI (browser sign-in):**
@@ -206,7 +206,7 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
 ```
 
 <!-- VS Code link decodes to {"name":"pushpage","type":"http","url":"https://pushpage.link/mcp/signin"} (double URL-encoded by the vscode.dev wrapper). Update when /mcp/signin is removed, see CLAUDE.md. -->
-**One-click install (browser sign-in, no key):** [Add to VS Code](https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522pushpage%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fpushpage.link%252Fmcp%252Fsignin%2522%257D) · Cursor: use the "Add to Cursor" button on the [MCP setup guide](https://pushpage.link/guides/mcp-server-publish-html) (GitHub does not render `cursor://` links). Both add `https://pushpage.link/mcp/signin` and ask you to confirm; the dashboard's Account tab shows the same buttons for a self-hosted instance. Claude Code: `claude mcp add --transport http pushpage https://pushpage.link/mcp/signin`.
+**One-click install for VS Code/Cursor (adds the sign-in URL `/mcp/signin`, deprecated; not yet verified with sign-in):** [Add to VS Code](https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522pushpage%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fpushpage.link%252Fmcp%252Fsignin%2522%257D) · Cursor: use the "Add to Cursor" button on the [MCP setup guide](https://pushpage.link/guides/mcp-server-publish-html) (GitHub does not render `cursor://` links). Both add `https://pushpage.link/mcp/signin` and ask you to confirm; the dashboard's Account tab shows the same buttons for a self-hosted instance. Claude Code (verified): `claude mcp add --transport http pushpage https://pushpage.link/mcp`.
 
 **How sign-in works:** `/mcp` also works anonymously (`publish_page`, `health`); when a tool that needs an account is called without a credential, the server answers `401` and clients that support MCP OAuth open the browser sign-in and retry. `/mcp-guest` never prompts. See [`docs/oauth.md`](docs/oauth.md).
 
@@ -220,7 +220,7 @@ For the full tool reference, alternative connection methods (including `mcp-remo
 
 ## REST API (for scripts and integrations)
 
-Agents should use the [MCP server](#mcp-server) below. The REST API is for scripts, CI and non-MCP integrations. All endpoints are under `/api` (Spring Boot context path). Most require an API key via `X-Api-Key: <key>` or `Authorization: Bearer <key>`.
+Agents should use the [MCP server](#mcp-server) above. The REST API is for scripts, CI and non-MCP integrations. All endpoints are under `/api` (Spring Boot context path). Most require an API key via `X-Api-Key: <key>` or `Authorization: Bearer <key>`.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|

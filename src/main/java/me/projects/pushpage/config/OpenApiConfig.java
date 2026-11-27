@@ -35,7 +35,7 @@ public class OpenApiConfig {
                         .title("pushpage API")
                         .description("HTML page publishing service for AI agents. Publish HTML and get a shareable URL back. " +
                                 "To let an AI agent publish, connect it to the MCP server at /mcp (browser sign-in, " +
-                                "no API key to copy; see https://pushpage.link/docs). This REST API is for scripts, CI " +
+                                "no API key to copy; see " + serverUrl + "/docs). This REST API is for scripts, CI " +
                                 "and non-MCP integrations.")
                         .version(version))
                 .addSecurityItem(new SecurityRequirement()
