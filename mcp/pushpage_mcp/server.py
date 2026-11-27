@@ -365,6 +365,13 @@ _PROTECTED_TOOL_SCOPES = {
     "delete_page": "pages:delete",
     "update_page": "pages:update",
 }
+# Tools that are public (anonymous and API-key callers pass untouched) but need a scope when the caller
+# presents an OAuth token: such a token without it gets a 403 challenge instead of an API tool error.
+_TOKEN_HOLDER_TOOL_SCOPES = {"publish_page": "pages:publish"}
+# Every challenge asks for the full set, so one consent covers all account tools and a client that follows
+# the challenge never ends up with a token that can list pages but not publish. Keep in step with
+# OAuthScopes.SUPPORTED (Java).
+_ALL_ACCOUNT_SCOPES = ["pages:publish", "pages:update", "pages:read", "pages:delete"]
 _MCP_PATH = "/mcp"
 # POST bodies are buffered (and replayed unchanged) to read the JSON-RPC method only up to this
 # many bytes. A bigger body (the publish_page HTML limit is far smaller) is passed on untouched
@@ -378,22 +385,29 @@ def _is_oauth_jwt(token: str) -> bool:
     return bool(token) and not token.startswith("pp_") and "." in token
 
 
-def _protected_scopes(body: bytes) -> list[str]:
-    """Scopes needed by the protected ``tools/call`` messages in a JSON-RPC body (single or batch)."""
+def _tool_scopes(body: bytes) -> tuple[set[str], set[str]]:
+    """Scopes needed by the ``tools/call`` messages in a JSON-RPC body (single or batch).
+
+    Returns (scopes of protected tools, scopes of public tools that token holders need).
+    """
     try:
         message = json.loads(body)
     except Exception:  # ValueError, or RecursionError on deeply nested JSON: pass the body on untouched
-        return []
-    needed: list[str] = []
+        return set(), set()
+    protected: set[str] = set()
+    token_only: set[str] = set()
     for item in message if isinstance(message, list) else [message]:
         if not isinstance(item, dict) or item.get("method") != "tools/call":
             continue
         params = item.get("params")
         name = params.get("name") if isinstance(params, dict) else None
-        scope = _PROTECTED_TOOL_SCOPES.get(name) if isinstance(name, str) else None
-        if scope and scope not in needed:
-            needed.append(scope)
-    return needed
+        if not isinstance(name, str):
+            continue
+        if name in _PROTECTED_TOOL_SCOPES:
+            protected.add(_PROTECTED_TOOL_SCOPES[name])
+        if name in _TOKEN_HOLDER_TOOL_SCOPES:
+            token_only.add(_TOKEN_HOLDER_TOOL_SCOPES[name])
+    return protected, token_only
 
 
 def _token_scopes(token: str) -> set[str] | None:
@@ -411,13 +425,12 @@ def _token_scopes(token: str) -> set[str] | None:
     return set(scope.split()) if isinstance(scope, str) else None
 
 
-async def _send_challenge(send, status: int, error: str, description: str | None, scopes: list[str]) -> None:
+async def _send_challenge(send, status: int, error: str, description: str | None) -> None:
     parts = [f'error="{error}"']
     if description:
         parts.append(f'error_description="{description}"')
     parts.append(f'resource_metadata="{_public_url}/.well-known/oauth-protected-resource/mcp"')
-    if scopes:
-        parts.append(f'scope="{" ".join(scopes)}"')
+    parts.append(f'scope="{" ".join(_ALL_ACCOUNT_SCOPES)}"')
     body = json.dumps({"error": error,
                        "message": description or "Authentication required"}).encode()
     await send({"type": "http.response.start", "status": status, "headers": [
@@ -506,7 +519,7 @@ class SignInGateway:
         headers = {k.decode().lower(): v.decode() for k, v in scope["headers"]}
         token = _bearer_or_key(headers)
         messages, body = await _read_body(receive)
-        needed = _protected_scopes(body) if len(body) <= _MAX_INSPECT_BYTES else []
+        protected, token_only = _tool_scopes(body) if len(body) <= _MAX_INSPECT_BYTES else (set(), set())
         replay = _replaying(messages, receive)
 
         if _is_oauth_jwt(token):
@@ -516,14 +529,14 @@ class SignInGateway:
                 await _send_unavailable(send)
                 return None
             if not valid:
-                await _send_challenge(send, 401, "invalid_token", "The access token is invalid or expired", needed)
+                await _send_challenge(send, 401, "invalid_token", "The access token is invalid or expired")
                 return None
             granted = _token_scopes(token)
-            if needed and granted is not None and not set(needed) <= granted:
-                await _send_challenge(send, 403, "insufficient_scope", None, needed)
+            if granted is not None and not (protected | token_only) <= granted:
+                await _send_challenge(send, 403, "insufficient_scope", None)
                 return None
-        elif needed and not token:
-            await _send_challenge(send, 401, "invalid_token", "Authentication required for this tool", needed)
+        elif protected and not token:
+            await _send_challenge(send, 401, "invalid_token", "Authentication required for this tool")
             return None
         return replay
 

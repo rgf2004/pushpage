@@ -19,22 +19,22 @@ The gateway reads the JSON-RPC body of each `POST /mcp` (single message or batch
 | none | passes (guest) | `401` challenge |
 | `pp_` API key | passes | passes (the API checks the key; an invalid one is a tool error) |
 | OAuth token, valid, has the scopes | passes | passes |
-| OAuth token, valid, lacks a scope | passes | `403` `insufficient_scope` |
+| OAuth token, valid, lacks a scope | passes, except `publish_page` without `pages:publish`: `403` `insufficient_scope` | `403` `insufficient_scope` |
 | OAuth token, invalid or expired | `401` | `401` |
 | OAuth token, API unreachable | `503` | `503` |
 
-Challenges (`resource_metadata` is `<public url>/.well-known/oauth-protected-resource/mcp`; `scope` lists the scopes needed by every protected call in the request):
+Challenges (`resource_metadata` is `<public url>/.well-known/oauth-protected-resource/mcp`). Every challenge asks for the **full** scope set, `pages:publish pages:update pages:read pages:delete`, never just the scope of the tool that was called: one consent then covers all account tools, and a client that follows the challenge cannot end up with a token that lists pages but cannot publish:
 
 ```
-401  WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required for this tool", resource_metadata="...", scope="pages:read"
-401  WWW-Authenticate: Bearer error="invalid_token", error_description="The access token is invalid or expired", resource_metadata="..."[, scope="..."]
-403  WWW-Authenticate: Bearer error="insufficient_scope", resource_metadata="...", scope="pages:read pages:update"
+401  WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required for this tool", resource_metadata="...", scope="pages:publish pages:update pages:read pages:delete"
+401  WWW-Authenticate: Bearer error="invalid_token", error_description="The access token is invalid or expired", resource_metadata="...", scope="pages:publish pages:update pages:read pages:delete"
+403  WWW-Authenticate: Bearer error="insufficient_scope", resource_metadata="...", scope="pages:publish pages:update pages:read pages:delete"
 ```
 
 Known behaviours:
 
 - A client that does not support MCP OAuth gets a plain `401` on `list_pages`, `update_page` and `delete_page` on `/mcp`. Such clients should use `/mcp-guest` (never prompts) or an API key instead.
-- `publish_page` is public at the gateway, so a valid token that lacks `pages:publish` is refused by the API as a tool error, not by a `403 insufficient_scope` challenge.
+- `publish_page` stays public for anonymous callers and `pp_` keys, but a valid OAuth token whose scope lacks `pages:publish` gets the same `403 insufficient_scope` challenge (the client re-authorizes) instead of an API tool error.
 
 An OAuth token (a JWT) is validated against the API on every POST, with no cache, so removing a connected app takes effect at once. The `scope` claim is read from the token only after the API accepted it; a token without one is a dashboard session and is unrestricted. The protected tools and scopes live in `_PROTECTED_TOOL_SCOPES` in `mcp/pushpage_mcp/server.py`.
 

@@ -112,8 +112,9 @@
         $('login-client').textContent = clientName;
         $('consent-client').textContent = clientName;
 
-        const scopes = (req.scope ? req.scope.split(/\s+/) : Object.keys(SCOPE_TEXT)).filter(s => SCOPE_TEXT[s]);
+        const scopes = [...new Set((req.scope ? req.scope.split(/\s+/) : Object.keys(SCOPE_TEXT)).filter(s => SCOPE_TEXT[s]))];
         const list = $('consent-scopes');
+        list.textContent = '';  // init() runs again after sign-in on this page
         (scopes.length ? scopes : Object.keys(SCOPE_TEXT)).forEach(s => {
             const li = document.createElement('li'); li.textContent = SCOPE_TEXT[s]; list.appendChild(li);
         });

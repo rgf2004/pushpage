@@ -405,6 +405,7 @@ def _rpc(method, name=None, **params):
 class TestLazyAuthOnMcp(unittest.TestCase):
     """/mcp: public calls pass anonymously; protected tools get a 401/403 challenge."""
 
+    ALL = "pages:publish pages:update pages:read pages:delete"
     META = 'resource_metadata="https://my.example/.well-known/oauth-protected-resource/mcp"'
 
     def setUp(self):
@@ -479,21 +480,20 @@ class TestLazyAuthOnMcp(unittest.TestCase):
         self.assertPassed(body)
 
     def test_anonymous_protected_tools_get_401_with_exact_challenge(self):
-        for tool, scope in (("list_pages", "pages:read"), ("delete_page", "pages:delete"),
-                            ("update_page", "pages:update")):
+        for tool in ("list_pages", "delete_page", "update_page"):
             self.sent.clear()
             self._post(_rpc("tools/call", tool))
             self.assertEqual(self._status(), 401)
             self.assertEqual(self._challenge(),
                              'Bearer error="invalid_token", error_description="Authentication required for this tool", '
-                             + self.META + f', scope="{scope}"')
+                             + self.META + f', scope="{self.ALL}"')
         self.assertEqual(self.forwarded, [])
 
-    def test_batch_with_protected_call_is_challenged_with_all_needed_scopes(self):
+    def test_batch_with_protected_call_is_challenged_with_all_scopes(self):
         self._post([_rpc("tools/call", "publish_page"), _rpc("tools/call", "list_pages"),
                     _rpc("tools/call", "update_page"), _rpc("tools/call", "list_pages")])
         self.assertEqual(self._status(), 401)
-        self.assertIn('scope="pages:read pages:update"', self._challenge())
+        self.assertIn(f'scope="{self.ALL}"', self._challenge())
         self.assertEqual(self.forwarded, [])
 
     def test_batch_of_only_public_calls_passes(self):
@@ -510,13 +510,13 @@ class TestLazyAuthOnMcp(unittest.TestCase):
 
     def test_invalid_jwt_gets_401_even_for_a_public_call(self):
         self.valid = False
-        for payload, scope_part in ((_rpc("tools/list"), ""), (_rpc("tools/call", "list_pages"), ', scope="pages:read"')):
+        for payload in (_rpc("tools/list"), _rpc("tools/call", "list_pages")):
             self.sent.clear()
             self._post(payload, {"authorization": "Bearer " + _jwt("pages:read")})
             self.assertEqual(self._status(), 401)
             self.assertEqual(self._challenge(),
                              'Bearer error="invalid_token", error_description="The access token is invalid or expired", '
-                             + self.META + scope_part)
+                             + self.META + f', scope="{self.ALL}"')
         self.assertEqual(self.forwarded, [])
 
     def test_api_down_answers_503_never_401(self):
@@ -530,12 +530,36 @@ class TestLazyAuthOnMcp(unittest.TestCase):
                    {"authorization": "Bearer " + _jwt("pages:publish pages:read")})
         self.assertEqual(self._status(), 403)
         self.assertEqual(self._challenge(),
-                         'Bearer error="insufficient_scope", ' + self.META + ', scope="pages:read pages:update"')
+                         'Bearer error="insufficient_scope", ' + self.META + f', scope="{self.ALL}"')
         self.assertEqual(self.forwarded, [])
 
-    def test_jwt_missing_scope_is_fine_for_public_calls(self):
-        body = self._post(_rpc("tools/call", "publish_page"), {"authorization": "Bearer " + _jwt("pages:read")})
+    def test_read_only_jwt_calling_publish_page_gets_403_with_all_scopes(self):
+        self._post(_rpc("tools/call", "publish_page"), {"authorization": "Bearer " + _jwt("pages:read")})
+        self.assertEqual(self._status(), 403)
+        self.assertEqual(self._challenge(),
+                         'Bearer error="insufficient_scope", ' + self.META + f', scope="{self.ALL}"')
+        self.assertEqual(self.forwarded, [])
+
+    def test_jwt_with_publish_scope_and_other_public_calls_pass(self):
+        for payload, scope in ((_rpc("tools/call", "publish_page"), "pages:publish"),
+                               (_rpc("tools/call", "health"), "pages:read"),
+                               (_rpc("tools/list"), "pages:read")):
+            self.sent.clear()
+            self.forwarded.clear()
+            body = self._post(payload, {"authorization": "Bearer " + _jwt(scope)})
+            self.assertPassed(body)
+
+    def test_dashboard_session_jwt_without_scope_claim_can_publish(self):
+        body = self._post(_rpc("tools/call", "publish_page"), {"authorization": "Bearer " + _jwt()})
         self.assertPassed(body)
+
+    def test_pp_key_publish_untouched(self):
+        body = self._post(_rpc("tools/call", "publish_page"), {"x-api-key": "pp_abc"})
+        self.assertPassed(body)
+
+    def test_challenge_scope_set_covers_every_tool_scope(self):
+        needed = set(self.server._PROTECTED_TOOL_SCOPES.values()) | set(self.server._TOKEN_HOLDER_TOOL_SCOPES.values())
+        self.assertEqual(set(self.server._ALL_ACCOUNT_SCOPES), needed)
 
     def test_api_keys_pass_through_in_both_header_forms_without_api_call(self):
         for headers in ({"authorization": "Bearer pp_abc"}, {"x-api-key": "pp_abc"}):
