@@ -184,7 +184,7 @@ class TestGuestMode(unittest.TestCase):
         out = self.server.publish_page("<h1>hi</h1>")
         self.assertEqual(out["status_code"], 429)
         self.assertTrue(out["guest_mode"])
-        self.assertIn("Sign up or sign in", out["message"])
+        self.assertIn("sign in with the browser", out["message"])
 
     def test_invalid_key_error_is_not_downgraded_to_guest(self):
         self.response = _FakeResponse(status=401)
@@ -199,14 +199,14 @@ class TestGuestMode(unittest.TestCase):
         self.assertEqual(self.created, [])
         self.assertTrue(listed[0]["guest_mode"])
         self.assertTrue(deleted["guest_mode"])
-        self.assertIn("Sign up or sign in", deleted["message"])
+        self.assertIn("sign in with the browser", deleted["message"])
 
     def test_guest_update_asks_to_sign_in_without_calling_the_api(self):
         out = self.server.update_page("abc", "<h1>new</h1>")
         self.assertEqual(self.created, [])
         self.assertEqual(out["error"], "Sign in required")
         self.assertTrue(out["guest_mode"])
-        self.assertIn("Sign up or sign in", out["message"])
+        self.assertIn("sign in with the browser", out["message"])
 
     def test_keyed_update_puts_to_the_page_and_returns_same_url_and_id(self):
         calls = []

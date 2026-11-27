@@ -1,6 +1,6 @@
 # OAuth sign-in for the hosted MCP endpoint
 
-MCP clients that implement the [MCP authorization spec](https://modelcontextprotocol.io/specification/draft/basic/authorization) (OAuth 2.1 with PKCE and dynamic client registration) can connect to pushpage with a browser sign-in instead of a copied API key.
+MCP clients that implement the [MCP authorization spec](https://modelcontextprotocol.io/specification/draft/basic/authorization) (OAuth 2.1 with PKCE and dynamic client registration) can connect to pushpage with a browser sign-in instead of a copied API key. This is the recommended way to connect an agent (priority: MCP with browser sign-in, then MCP as a guest, then MCP with an API key for headless/CI setups, then the REST API for scripts). Only Claude Code and the MCP Inspector are confirmed to work with the flow so far; other clients that implement the spec should, but are untested. Use `https://pushpage.link/mcp` (plain), not `/mcp/signin`.
 
 | Endpoint | Behavior |
 |----------|----------|

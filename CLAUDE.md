@@ -109,6 +109,26 @@ Footers must not link to raw API endpoints such as `/mcp`: they answer crawlers 
 
 Shared visual styles (`theme.css`) are already linked from all pages; new pages link to `/static/theme.css` and follow the same header/footer pattern as `docs.html`.
 
+### Documentation priority (how we tell people to connect)
+
+Every place that tells a reader or an agent how to connect or publish uses this order. Nothing is removed (REST and API keys stay supported and fully documented in the API reference); this is about what comes first.
+
+1. **MCP with browser sign-in (OAuth)** is the recommended way to connect an agent: `claude mcp add --transport http pushpage <base>/mcp`, publishing works at once as a guest, and the first account-only tool call (`list_pages`, `update_page`, `delete_page`) prompts sign-in (Claude Code: run `/mcp` and Authenticate). No key to copy.
+2. **MCP guest** (`/mcp-guest`, no account, publish only, 30-minute pages) is the "try it" path.
+3. **MCP with an API key** is for headless/CI setups, the local `uvx pushpage-mcp` stdio server (no browser flow) and clients that cannot do browser sign-in.
+4. **REST API** is for scripts and non-MCP integrations: documented in the API reference, but not in a first-run path.
+
+Rules: only Claude Code and the MCP Inspector are verified with the sign-in flow, so never claim that Cursor, VS Code, ChatGPT or Claude Desktop work with it (say "clients that support MCP sign-in, for example Claude Code"). Agent-facing files tell agents to use the MCP tools when present, not to ask the user for an API key, and what to say when a tool answers with the sign-in message. Do not promote the deprecated `/mcp/signin` in prose or commands.
+
+**Files that carry connect instructions** (check all of them when this guidance or a URL changes; a URL change is a grep for `mcp/signin`, `/mcp-guest` and `/mcp`):
+- `README.md`, `mcp/README.md` (PyPI README), `mcp/pyproject.toml` (description), `docs/mcp.md`, `docs/oauth.md`, `docs/api.md` (intro)
+- `llms.txt`, `skill/SKILL.md` (agent-facing)
+- `mcp/pushpage_mcp/server.py` (the `instructions` string, `_signup_message`, tool docstrings) and `mcp/test_server.py`
+- `server.json` (registry entry; only reaches the registry with the next publish)
+- `src/main/java/me/projects/pushpage/config/OpenApiConfig.java` (Swagger description and security scheme)
+- `nginx/index.html`, `nginx/docs.html`, `nginx/dashboard.html` (`MCP_SIGNIN_URL`, Account tab), `nginx/support.html`, `nginx/guides/*.html`
+- **The one-click install links that still point at the deprecated `/mcp/signin`** (kept until the maintainer has tested lazy auth with Cursor and VS Code; flip them to `/mcp` together with the retirement of `/mcp/signin`): the Cursor (base64) and VS Code (double URL-encoded) links in `nginx/guides/mcp-server-publish-html.html`, the "install buttons" paragraph in `nginx/docs.html`, the VS Code link and its decoded-config comment in `README.md`, the dashboard's `MCP_SIGNIN_URL`, and the regeneration notes in `docs/mcp.md` ("One-click install links"). Also the `/mcp/signin` references in `docs/oauth.md`, `.env.example`, the gateway (`mcp/pushpage_mcp/server.py`) and its tests, `OAuthService`/`OAuthController` (protected-resource metadata), `OAuthIT`, and `nginx/default.conf`.
+
 ### Security headers and rate limiting (nginx)
 
 - **User pages are sandboxed.** `/pages/*.html` is untrusted user HTML on the same origin as the dashboard (which keeps its JWT in `sessionStorage`) and the API. The `location` serving it sets `Content-Security-Policy: sandbox allow-scripts allow-popups allow-forms allow-modals`. **Never add `allow-same-origin`**, and remember nginx `add_header` is not inherited into a location that defines its own `add_header`.

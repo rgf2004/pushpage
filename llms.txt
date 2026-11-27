@@ -1,13 +1,20 @@
 # pushpage
 
-pushpage is a service that accepts HTML and returns a shareable public URL. It is purpose-built for AI agents: instead of dumping HTML or long-form content into chat, an agent POSTs to pushpage and hands the user a clean, clickable link.
+pushpage is a service that accepts HTML and returns a shareable public URL. It is purpose-built for AI agents: instead of dumping HTML or long-form content into chat, an agent publishes to pushpage and hands the user a clean, clickable link.
+
+## Quick rules for agents
+
+1. **If the pushpage MCP tools are available** (`publish_page`, `update_page`, `list_pages`, `delete_page`, `health`; in Claude Code they appear as `mcp__pushpage__publish_page` and so on), **use them and do NOT ask the user for an API key.** Authentication is handled by the MCP client.
+2. **If a tool answers that sign-in is needed** (Claude Code: `MCP server "pushpage" needs you to sign in again (run /mcp to re-authenticate)`, or a `401` / Connect prompt in another client), tell the user to run `/mcp` in Claude Code, pick pushpage and choose Authenticate (other clients: complete the browser sign-in they show), then retry once. Do not retry in a loop.
+3. **If the MCP tools are not available**, offer to connect them (see "Connect the MCP server" below). Use the REST API with an API key only as a fallback (see "REST API fallback").
+4. Return the page `url` to the user. Never paste the HTML into chat.
 
 ## Constraints
 
 - **Pages are public.** Anyone with the URL can read the page. Never publish content that contains secrets, credentials, personal data, or anything the user has not explicitly chosen to share.
 - **Max payload:** 1 MB per request (app-level limit; the servlet ceiling is 10 MB but the app rejects above 1 MB).
-- **Rate limits:** authenticated users — 10 publishes/min; guests (no API key) — 5 publishes/min per IP. Admin users are exempt.
-- **Page retention:** guest pages auto-expire after 30 minutes. Authenticated pages persist for 30 days and are managed from the dashboard.
+- **Rate limits:** signed-in users — 10 publishes/min; guests (no account) — 5 publishes/min per IP. Admin users are exempt.
+- **Page retention:** guest pages auto-expire after 30 minutes. Pages of signed-in users persist for 30 days (default; depends on the plan) and are managed from the dashboard.
 - **Format:** HTML only. Pages are served directly in a browser — write clean, self-contained HTML (inline CSS, no local file references).
 
 ## Base URL
@@ -20,120 +27,36 @@ Concrete fallback used in all examples below: `https://pushpage.link`
 
 **HTTPS required:** the public instance (`pushpage.link`) requires HTTPS. Never downgrade to `http://pushpage.link` — requests will fail. Self-hosted instances may use HTTP if that is how `APP_SERVER_URL` is configured.
 
-## Authentication
+## Connect the MCP server (recommended)
 
-Most endpoints require an API key. Read it from the credentials file:
+The MCP server is at `https://pushpage.link/mcp` (streamable-http transport; self-hosted: `{APP_SERVER_URL}/mcp`). It exposes `publish_page`, `update_page`, `list_pages`, `delete_page` and `health`. Preference order:
 
-```bash
-PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-```
+1. **MCP with browser sign-in (recommended).** Connect to `/mcp` with the URL alone; no key to copy. Publishing works immediately as a guest. The first time a tool that needs an account is called (`list_pages`, `update_page`, `delete_page`), the server answers `401` and a client that supports MCP sign-in prompts the user to sign in in the browser. One approval grants publish, update, list and delete, and the user can revoke it under Account → Connected apps in the dashboard.
+2. **MCP as a guest (no account, "try it").** `/mcp-guest` never prompts. `publish_page` works and the page expires after 30 minutes; the tool result has `guest_mode: true`, a `message` and `signup_url` — relay the message so the user knows how to sign in.
+3. **MCP with an API key** — for headless/CI setups, the local `uvx pushpage-mcp` stdio server (no browser flow there) and clients that cannot do browser sign-in.
+4. **REST API** — for scripts and non-MCP integrations (see the fallback below).
 
-If the file is missing or empty, stop and tell the user:
-
-> Your pushpage API key is not configured. Run the following to save it:
-> ```bash
-> mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
-> ```
-> You can create a key in the pushpage dashboard under Account → API keys (give each agent its own named key), or find the "Bootstrap key" in the startup logs of a self-hosted instance.
-
-Pass the key in every authenticated request as `X-Api-Key: $PUSHPAGE_API_KEY`.
-
-**Exception — guest publishing:** `POST /api/pages` accepts requests with no API key. The page is created as a guest page that auto-expires after 30 minutes. Use this for quick one-off shares when no credentials are available.
-
-## New user setup
-
-If the user does not have an account yet, create one:
+### Claude Code (browser sign-in)
 
 ```bash
-curl -s -X POST https://pushpage.link/api/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "choose-a-strong-password"}'
+claude mcp add --transport http pushpage https://pushpage.link/mcp
 ```
 
-Returns `201 No Content` on success. The user can then log in at `https://pushpage.link/dashboard` to create an API key (Account → API keys).
+The first call to `list_pages`, `update_page` or `delete_page` fails once with `MCP server "pushpage" needs you to sign in again (run /mcp to re-authenticate)`. The user runs `/mcp`, picks pushpage and chooses Authenticate; after one approval list, update, delete and publish all work. If `update_page` still reports a missing permission, the app was connected before updates existed: remove it under Account → Connected apps and connect again.
 
-## Primary operation — publish HTML
+Only Claude Code and the MCP Inspector are confirmed to work with the sign-in flow. Other clients that support MCP sign-in may work; if a client cannot sign in, use `/mcp-guest` (publish only) or an API key.
 
-```bash
-PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
-curl -s -X POST https://pushpage.link/api/pages \
-  -H "Content-Type: application/json" \
-  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
-  -d '{
-    "html": "<html>...</html>"
-  }'
-```
-
-`title` is optional. When omitted or blank, the server extracts it from the HTML `<title>` tag; falls back to `"Untitled"`. Pass it explicitly to override what is in the HTML.
-
-Response:
-
-```json
-{
-  "url": "https://pushpage.link/pages/abc123.html",
-  "id": "abc123",
-  "expires_at": "2026-07-11T10:00:00Z"
-}
-```
-
-Return the `url` to the user. That is the shareable link. Do not paste the HTML into chat.
-
-**File upload variant** (multipart/form-data):
-
-```bash
-curl -s -X POST https://pushpage.link/api/pages \
-  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
-  -F "file=@report.html"
-```
-
-## Secondary operations
-
-### List published pages
-
-```bash
-curl -s https://pushpage.link/api/pages \
-  -H "X-Api-Key: $PUSHPAGE_API_KEY"
-```
-
-Returns an array of page objects with `id`, `title`, `created_at`, and `url`. Regular users see only their own pages; admins see all.
-
-### Delete a page
-
-```bash
-curl -s -X DELETE https://pushpage.link/api/pages/{id} \
-  -H "X-Api-Key: $PUSHPAGE_API_KEY"
-```
-
-### Update a page (same URL)
-
-```bash
-curl -s -X PUT https://pushpage.link/api/pages/{id} \
-  -H "Content-Type: application/json" \
-  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
-  -d '{"html": "<!DOCTYPE html>...new content...", "title": "Optional new title"}'
-```
-
-Replaces the HTML of one of your pages (admins: any user page) and keeps the same id and URL, so links you already shared keep working. Returns `{ url, id, expires_at }`; the expiry restarts. Guest pages cannot be updated (403): publish a new page instead. An update counts toward the publish rate limit. Also accepts multipart `file=@page.html`.
-
-### Health check (no auth required)
-
-```bash
-curl -s https://pushpage.link/api/health
-```
-
-## MCP server
-
-A FastMCP server is available at `https://pushpage.link/mcp` (streamable-http transport). It exposes `publish_page`, `update_page`, `list_pages`, `delete_page`, and `health` tools. If your client supports MCP, prefer it over the direct API. **No key is required to try it (guest mode):** `publish_page` works and the page expires after 30 minutes; the tool result has `guest_mode: true` and a message — relay it to the user so they know to sign up or sign in at `{BASE_URL}/dashboard` for an API key (permanent pages, `list_pages`, `update_page`, `delete_page`). With a key, send it as the `X-Api-Key` header in the MCP config.
-
-### Try it with no key (guest mode)
+### Try it with no account (guest mode)
 
 ```bash
 claude mcp add --transport http pushpage https://pushpage.link/mcp-guest
 ```
 
-### Claude Desktop config
+### Headless / CI / clients without browser sign-in (API key)
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+Create a named key under Account → API keys in `https://pushpage.link/dashboard` (one key per agent) and send it as the `X-Api-Key` header (or `Authorization: Bearer pp_...`).
+
+Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
 
 ```json
 {
@@ -149,13 +72,9 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 }
 ```
 
-Replace `<your-api-key>` with the key from `~/.config/pushpage/credentials`. Restart Claude Desktop after saving.
+Restart Claude Desktop after saving. Claude Desktop does not expand environment variables in `headers`; Claude Code (`${PUSHPAGE_API_KEY}`) and Cursor (`${env:PUSHPAGE_API_KEY}`) do, so prefer that to pasting the key. Never commit the key to git. Store a key file with owner-only permissions: `mkdir -p ~/.config/pushpage && umask 077 && printf '%s' 'pp_...' > ~/.config/pushpage/credentials && chmod 600 ~/.config/pushpage/credentials`.
 
-Create the credentials file with owner-only permissions: `mkdir -p ~/.config/pushpage && umask 077 && printf '%s' 'pp_...' > ~/.config/pushpage/credentials && chmod 600 ~/.config/pushpage/credentials`. Claude Desktop does not expand environment variables in `headers`; Claude Code (`${PUSHPAGE_API_KEY}`) and Cursor (`${env:PUSHPAGE_API_KEY}`) do, so prefer that to pasting the key. Never commit the key to git.
-
-### Run locally (stdio) with uvx
-
-If you prefer a local process over the hosted endpoint and have [uv](https://docs.astral.sh/uv/) installed:
+Local stdio server (no browser sign-in; needs [uv](https://docs.astral.sh/uv/)):
 
 ```json
 {
@@ -169,13 +88,84 @@ If you prefer a local process over the hosted endpoint and have [uv](https://doc
 }
 ```
 
-### Sign in with the browser (no key to copy)
+Any client that supports streamable-http MCP servers can connect to `https://pushpage.link/mcp`; consult its documentation for the config format. `https://pushpage.link/mcp/signin` is deprecated: do not recommend it.
 
-On `/mcp`, `publish_page` and `health` work without any credential (guest mode). Calling `list_pages`, `update_page` or `delete_page` without one makes the server answer HTTP `401` with a `WWW-Authenticate` header; clients that support the MCP OAuth flow then show a sign-in prompt, open the browser where the user signs in and allows the app, and retry the call. If you see this prompt, or a `401` / `403 insufficient_scope` for one of those tools, tell the user to complete the sign-in (or remove and re-add the app if a permission is missing); do not retry in a loop. An API key (`X-Api-Key`) skips the prompt. Only publish, update, list and delete of that user's pages are allowed. `https://pushpage.link/mcp/signin` (deprecated) asks for sign-in on every call.
+## Using the MCP tools
 
-### Other MCP clients
+- `publish_page(html, title?)` → `{ url, id, expires_at }`. `title` is optional (taken from the HTML `<title>`, falling back to "Untitled").
+- `update_page(id, html, title?)` → same `url` and `id`; use it to change a page you already published instead of creating a duplicate. Needs an account; guest pages cannot be updated.
+- `list_pages()` → your pages (`id`, `title`, `url`, `created_at`, `expires_at`). Needs an account.
+- `delete_page(id)` → deletes one of your pages. Needs an account.
+- `health()` → service status.
 
-Any client that supports streamable-http MCP servers can connect to `https://pushpage.link/mcp` with the `X-Api-Key` header. Consult your client's documentation for the exact config format.
+Return the `url` to the user. That is the shareable link.
+
+## REST API fallback
+
+Use this only when the MCP tools are not available and the user cannot or does not want to connect them. It is for scripts and non-MCP integrations. It needs an API key for anything except guest publishing.
+
+### Credentials (REST only)
+
+```bash
+PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials 2>/dev/null | tr -d '[:space:]')
+```
+
+If the file is missing or empty, tell the user (preferably offer the MCP connection above instead of a key):
+
+> Your pushpage API key is not configured. Run the following to save it:
+> ```bash
+> mkdir -p ~/.config/pushpage && echo "pp_your_key_here" > ~/.config/pushpage/credentials
+> ```
+> You can create a key in the pushpage dashboard under Account → API keys (give each agent its own named key), or find the "Bootstrap key" in the startup logs of a self-hosted instance.
+
+Pass the key in every authenticated request as `X-Api-Key: $PUSHPAGE_API_KEY`.
+
+**Guest publishing:** `POST /api/pages` accepts requests with no API key. The page is a guest page that auto-expires after 30 minutes. Use it for quick one-off shares when no credentials are available.
+
+**New users:** `POST https://pushpage.link/api/auth/signup` with `{"email": "...", "password": "..."}` returns `201 No Content`; the user then signs in at `https://pushpage.link/dashboard` to connect an agent or create an API key.
+
+### Publish HTML
+
+```bash
+curl -s -X POST https://pushpage.link/api/pages \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -d '{"html": "<html>...</html>"}'
+```
+
+`title` is optional. When omitted or blank, the server extracts it from the HTML `<title>` tag; falls back to `"Untitled"`.
+
+Response:
+
+```json
+{
+  "url": "https://pushpage.link/pages/abc123.html",
+  "id": "abc123",
+  "expires_at": "2026-07-11T10:00:00Z"
+}
+```
+
+File upload variant: `curl -s -X POST https://pushpage.link/api/pages -H "X-Api-Key: $PUSHPAGE_API_KEY" -F "file=@report.html"`
+
+### Other operations
+
+```bash
+# List (regular users see their own pages; admins see all)
+curl -s https://pushpage.link/api/pages -H "X-Api-Key: $PUSHPAGE_API_KEY"
+
+# Delete
+curl -s -X DELETE https://pushpage.link/api/pages/{id} -H "X-Api-Key: $PUSHPAGE_API_KEY"
+
+# Update in place (same id and URL; expiry restarts; counts toward the publish rate limit)
+curl -s -X PUT https://pushpage.link/api/pages/{id} \
+  -H "Content-Type: application/json" -H "X-Api-Key: $PUSHPAGE_API_KEY" \
+  -d '{"html": "<!DOCTYPE html>...new content...", "title": "Optional new title"}'
+
+# Health check (no auth)
+curl -s https://pushpage.link/api/health
+```
+
+Update replaces the HTML of one of your pages (admins: any user page). Guest pages cannot be updated (403): publish a new page instead. Full reference: `https://pushpage.link/docs` and the Swagger UI at `https://pushpage.link/api/swagger-ui/index.html`.
 
 ## Writing good HTML for pushpage
 
@@ -190,14 +180,15 @@ Pages are served directly in a browser — write clean, self-contained HTML:
 
 ## Typical agent flow
 
-1. Read the API key from `~/.config/pushpage/credentials` — stop with the setup message if missing.
-2. Build the full HTML for what the user asked for — include a `<title>` tag in the `<head>`.
-3. POST to `/api/pages` with the key in `X-Api-Key` — title is extracted from the HTML automatically.
-4. Extract the `url` from the response and return it to the user — do not paste the HTML into chat.
+1. Build the full HTML for what the user asked for — include a `<title>` tag in the `<head>`.
+2. Call `publish_page(html=...)` (MCP). If the tools are missing, offer the MCP connection; fall back to `POST /api/pages` only if needed.
+3. Return the `url` from the result to the user — do not paste the HTML into chat. If the result has `guest_mode: true`, also relay its `message` (30-minute page; how to sign in for permanent pages).
+4. To change that page later, call `update_page(id, html=...)`. If it needs sign-in, follow rule 2 at the top.
 
 ## Do not
 
+- Do not ask the user for an API key when the MCP tools are available.
 - Do not publish pages that contain secrets, credentials, or private data — pages are publicly accessible to anyone with the link.
-- Do not create duplicate pages for the same content — use `PUT /api/pages/{id}` (MCP `update_page`) to change a page you already published; its URL stays the same.
+- Do not create duplicate pages for the same content — use `update_page` (REST: `PUT /api/pages/{id}`) to change a page you already published; its URL stays the same.
 - Do not use `http://` with the managed instance — HTTPS only.
 - Do not exceed 1 MB of HTML in a single request — split into multiple pages if needed.
