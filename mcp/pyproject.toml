@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "pushpage-mcp"
 dynamic = ["version"]
-description = "MCP server for pushpage: let AI agents publish HTML as shareable URLs."
+description = "MCP server for pushpage: let AI agents publish HTML as shareable URLs (connect with browser sign-in, or an API key for headless use)."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]

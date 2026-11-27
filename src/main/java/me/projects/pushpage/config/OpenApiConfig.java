@@ -33,8 +33,10 @@ public class OpenApiConfig {
                 .servers(List.of(new Server().url(serverUrl + contextPath)))
                 .info(new Info()
                         .title("pushpage API")
-                        .description("Self-hosted HTML page publishing service. " +
-                                "Post HTML content and get a shareable URL back.")
+                        .description("HTML page publishing service for AI agents. Publish HTML and get a shareable URL back. " +
+                                "To let an AI agent publish, connect it to the MCP server at /mcp (browser sign-in, " +
+                                "no API key to copy; see " + serverUrl + "/docs). This REST API is for scripts, CI " +
+                                "and non-MCP integrations.")
                         .version(version))
                 .addSecurityItem(new SecurityRequirement()
                         .addList(API_KEY_SCHEME))
@@ -43,6 +45,8 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.APIKEY)
                                 .in(SecurityScheme.In.HEADER)
                                 .name(AppHeaders.X_API_KEY)
-                                .description("API key via X-Api-Key header")));
+                                .description("API key via the X-Api-Key header, for scripts, CI and clients without MCP " +
+                                        "browser sign-in. Create named keys in the dashboard (Account, API keys). " +
+                                        "AI agents should use MCP with browser sign-in instead.")));
     }
 }

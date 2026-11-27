@@ -2,13 +2,15 @@
 
 All endpoints are served under the `/api` Spring Boot context path.
 
+**Who this is for.** The REST API is for scripts, CI and integrations that do not use MCP. To let an AI agent publish pages, connect it to the MCP server instead (`{APP_SERVER_URL}/mcp`, browser sign-in, no API key to copy): see [mcp.md](mcp.md). OAuth access tokens issued by that sign-in work only on `POST/GET /api/pages`, `PUT /api/pages/{id}`, `DELETE /api/pages/{id}` and `GET /api/me`; everything else needs an API key or a dashboard session JWT (see [oauth.md](oauth.md)).
+
 ## Authentication
 
 Most endpoints require authentication. Two credential types are accepted:
 
 | Method | Header | Notes |
 |--------|--------|-------|
-| API key | `X-Api-Key: pp_<key>` | Long-lived. Create named keys via `POST /me/keys` (needs a signed-in session). |
+| API key | `X-Api-Key: pp_<key>` | Long-lived; for scripts, CI and clients without browser sign-in. Create named keys via `POST /me/keys` (needs a signed-in session). |
 | JWT Bearer | `Authorization: Bearer <jwt>` | Short-lived (24 h). Obtain via `POST /auth/login`. |
 
 Missing or invalid credentials return `401 Unauthorized`. Calling an admin endpoint without admin privileges returns `403 Forbidden`.

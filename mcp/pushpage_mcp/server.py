@@ -20,11 +20,15 @@ mcp = FastMCP(
     "pushpage",
     version=__version__,
     instructions=(
-        "Publish HTML as shareable pages, list your pages, and delete them by ID. "
+        "Publish HTML as shareable pages, update them in place, list your pages, and delete them by ID. "
         "The id returned by publish_page can be passed directly to update_page and delete_page. "
-        "No API key is needed to try it: without one, publish_page works in guest mode "
-        "(pages expire after 30 minutes). Sign up or sign in to the pushpage dashboard to "
-        "get an API key for permanent accounts, list_pages, update_page and delete_page."
+        "Publishing works with no account: without one, publish_page runs in guest mode "
+        "(pages expire after 30 minutes). list_pages, update_page and delete_page need an account. "
+        "On the hosted /mcp URL prefer browser sign-in and do not ask the user for an API key: the first "
+        "account-only call prompts the sign-in (in Claude Code the user runs /mcp and chooses Authenticate). "
+        "The local stdio server (uvx pushpage-mcp) has no browser sign-in and needs PUSHPAGE_API_KEY; "
+        "an API key (X-Api-Key header) is also the alternative for headless setups and clients without "
+        "browser sign-in."
     ),
 )
 
@@ -89,13 +93,42 @@ def _client() -> httpx.Client:
     return httpx.Client(base_url=_url, headers=headers, timeout=30)
 
 
+_GUEST_SCOPE_KEY = "pushpage_guest_endpoint"
+
+
+def _transport() -> str:
+    """'stdio' (no HTTP request), 'guest' (hosted /mcp-guest) or 'http' (hosted /mcp)."""
+    try:
+        request = get_http_request()
+    except RuntimeError:
+        return "stdio"
+    return "guest" if request.scope.get(_GUEST_SCOPE_KEY) else "http"
+
+
 def _signup_message(reason: str) -> str:
-    return (
-        f"{reason} Sign up or sign in at {_public_url}/dashboard to get an API key, "
-        "then set it as the X-Api-Key header (or the PUSHPAGE_API_KEY environment variable "
-        "for the local uvx server or a headless setup) and reconnect. Clients that support OAuth can instead "
-        f"connect to {_public_url}/mcp and sign in with the browser when prompted, with no key to copy."
-    )
+    mode = _transport()
+    if mode == "stdio":
+        how = (
+            "This local stdio server has no browser sign-in: for account features (permanent pages, "
+            "list_pages, update_page, delete_page) create an API key in the dashboard "
+            f"({_public_url}/dashboard, Account, API keys; sign up there first if needed), set it as the "
+            "PUSHPAGE_API_KEY environment variable and restart the server. Or connect your agent to "
+            f"{_public_url}/mcp instead, which supports browser sign-in."
+        )
+    elif mode == "guest":
+        how = (
+            "This endpoint (/mcp-guest) never asks you to sign in. To use your account, re-add the server "
+            f"with {_public_url}/mcp (browser sign-in; sign up at {_public_url}/dashboard if needed), or "
+            "use an API key (X-Api-Key header) created in the dashboard (Account, API keys)."
+        )
+    else:
+        how = (
+            "To use your account, ask your agent to list your pages: that first account-only call triggers "
+            "the browser sign-in (in Claude Code, run /mcp and choose Authenticate). No API key to copy. "
+            f"No account yet? Sign up at {_public_url}/dashboard. Headless or CI setups and clients without "
+            "browser sign-in can use an API key (X-Api-Key header) instead."
+        )
+    return f"{reason} {how}"
 
 
 _PAGE_ID = re.compile(r"[A-Za-z0-9]+")
@@ -112,7 +145,7 @@ def _guest_sign_in_required(what: str) -> dict:
     return {
         "error": "Sign in required",
         "guest_mode": True,
-        "message": _signup_message(f"{what} needs a pushpage account, and this session is in guest mode (no API key)."),
+        "message": _signup_message(f"{what} needs a pushpage account, and this session is in guest mode (no account credential)."),
         "signup_url": f"{_public_url}/dashboard",
     }
 
@@ -132,11 +165,12 @@ def publish_page(html: str, title: str | None = None) -> dict:
     The page is served publicly at the returned URL, sandboxed (scripts run, but cannot
     access the pushpage dashboard or API), so do not include secrets.
 
-    Works without an API key in GUEST MODE: the page is created anonymously and is deleted
+    Works without an account credential (browser sign-in or API key) in GUEST MODE: the page is created anonymously and is deleted
     after 30 minutes. In that case the result includes guest_mode=true and a message telling
-    the user to sign up or sign in at the pushpage dashboard for an API key (permanent
-    retention per plan, list_pages and delete_page). Always relay that message to the user.
-    An invalid API key is rejected with 401; it is never silently downgraded to guest mode.
+    the user how to sign in (browser sign-in on the /mcp URL, or an API key for stdio and
+    headless setups) for permanent retention per plan, list_pages, update_page and delete_page.
+    Always relay that message to the user.
+    An invalid credential is rejected with 401; it is never silently downgraded to guest mode.
 
     Args:
         html: Complete HTML document (inline CSS/JS; external resources are fine).
@@ -149,7 +183,7 @@ def publish_page(html: str, title: str | None = None) -> dict:
         delete_page), and the ISO-8601 time the page is deleted automatically (set by the
         account's retention plan, or 30 minutes in guest mode). Guest results also carry
         guest_mode=true, message and signup_url. On failure: {error, status_code, detail},
-        e.g. 401 for an invalid API key, 400 if html is empty, 413 if the HTML is too large,
+        e.g. 401 for an invalid credential, 400 if html is empty, 413 if the HTML is too large,
         429 if the quota or rate limit is exceeded (guest results then also carry a sign-up
         message, since accounts have higher limits).
     """
@@ -183,16 +217,16 @@ def publish_page(html: str, title: str | None = None) -> dict:
                        "destructiveHint": False, "idempotentHint": True,
                        "openWorldHint": False})
 def list_pages() -> list[dict]:
-    """List the pages published with the current API key's account, including expiry.
+    """List the pages of the signed-in account (browser sign-in or API key), including expiry.
 
-    Read-only. Takes no arguments. Admin accounts see every user's pages. Requires an API key:
-    in guest mode (no key) it returns a one-element list with guest_mode=true and a message
-    telling the user to sign up or sign in at the pushpage dashboard; relay that message.
+    Read-only. Takes no arguments. Admin accounts see every user's pages. Needs an account (browser
+    sign-in or an API key). In guest mode (no credential) it returns a one-element list with
+    guest_mode=true and a message telling the user how to sign in; relay that message.
 
     Returns:
         A list of page objects, each with id, title, url, created_at and expires_at
         (ISO-8601). Use an id with delete_page. On failure a one-element list
-        [{error, status_code, detail}], e.g. status 401 for a missing or invalid key.
+        [{error, status_code, detail}], e.g. status 401 for a missing or invalid credential.
     """
     if not _api_key():
         return [_guest_sign_in_required("Listing pages")]
@@ -215,9 +249,9 @@ def update_page(id: str, html: str, title: str | None = None) -> dict:
     (links already shared keep working). The previous content is overwritten and cannot be
     recovered. You can only update your own pages (admin accounts can update any page), and
     the page's expiry restarts from now under the owner's retention. An update counts toward
-    the publish rate limit (not the daily quota). Requires an
-    API key: in guest mode (no key) it returns guest_mode=true and a message telling the user
-    to sign up or sign in at the pushpage dashboard; relay that message. Guest pages cannot
+    the publish rate limit (not the daily quota). Needs an
+    account (browser sign-in or an API key): in guest mode (no credential) it returns
+    guest_mode=true and a message telling the user how to sign in; relay that message. Guest pages cannot
     be updated (they expire after 30 minutes); publish a new page instead.
 
     Args:
@@ -232,7 +266,7 @@ def update_page(id: str, html: str, title: str | None = None) -> dict:
         On failure {error, status_code, detail}, e.g. 404 if the id does not exist (or was
         deleted or expired), 403 if the page is not yours or is a guest page, 400 if html is
         empty, 413 if it is too large, 429 if the rate limit is exceeded, 401 if the
-        key is invalid. A 403 caused by a missing OAuth scope carries a message telling the user to
+        credential is invalid. A 403 caused by a missing OAuth scope carries a message telling the user to
         remove and reconnect the app.
     """
     if not _api_key():
@@ -264,9 +298,9 @@ def delete_page(id: str) -> dict:
     """Permanently delete one of your published pages, making its URL stop working.
 
     This cannot be undone. You can only delete your own pages (admin accounts can delete
-    any page). Requires an API key: in guest mode (no key) it returns guest_mode=true and a
-    message telling the user to sign up or sign in at the pushpage dashboard; relay that
-    message. Guest pages cannot be deleted; they expire after 30 minutes.
+    any page). Needs an account (browser sign-in or an
+    API key): in guest mode (no credential) it returns guest_mode=true and a message telling
+    the user how to sign in; relay that message. Guest pages cannot be deleted; they expire after 30 minutes.
 
     Args:
         id: The page id returned by publish_page or listed by list_pages (for example
@@ -274,7 +308,7 @@ def delete_page(id: str) -> dict:
 
     Returns:
         {deleted: true, id} on success. On failure {error, status_code, detail}, e.g. 404
-        if the id does not exist, 403 if the page is not yours, 401 if the key is invalid.
+        if the id does not exist, 403 if the page is not yours, 401 if the credential is invalid.
     """
     if not _api_key():
         return _guest_sign_in_required("Deleting pages")
@@ -295,7 +329,7 @@ def delete_page(id: str) -> dict:
 def health() -> dict:
     """Check whether the pushpage service is reachable and healthy.
 
-    Read-only. Takes no arguments and does not require a valid API key.
+    Read-only. Takes no arguments and needs no account or key.
 
     Returns:
         {status: 'UP'} when the service is healthy. On failure {error, status_code, detail}.
@@ -489,7 +523,7 @@ class SignInGateway:
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http" and scope["path"].rstrip("/") == _GUEST_PATH:
             headers = [(k, v) for k, v in scope["headers"] if k.decode().lower() not in _CREDENTIAL_HEADERS]
-            scope = dict(scope, path="/mcp", raw_path=b"/mcp", headers=headers)
+            scope = dict(scope, path="/mcp", raw_path=b"/mcp", headers=headers, **{_GUEST_SCOPE_KEY: True})
         elif scope["type"] == "http" and scope["path"].rstrip("/") == _SIGNIN_PATH:
             headers = {k.decode().lower(): v.decode() for k, v in scope["headers"]}
             token = _bearer_or_key(headers)

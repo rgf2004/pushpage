@@ -2,6 +2,8 @@
 
 pushpage ships a cloud MCP server that lets any MCP-compatible client (Claude Desktop, Claude Code, Cursor, etc.) publish, update, list, and delete pages without any local install. Agents connect to it over HTTP using a single URL.
 
+**Recommended path:** connect to `{APP_SERVER_URL}/mcp` (managed instance: `https://pushpage.link/mcp`) and sign in with the browser when the client asks. No API key is involved. Order of preference: 1) MCP with browser sign-in, 2) MCP as a guest (no account, "try it"), 3) MCP with an API key (headless/CI, local `uvx` server, clients without browser sign-in). The REST API ([api.md](api.md)) is for scripts and non-MCP integrations.
+
 The MCP server starts automatically with the rest of the stack — no extra configuration is needed beyond the standard `docker compose up -d`.
 
 ## Tools
@@ -16,18 +18,18 @@ The MCP server starts automatically with the rest of the stack — no extra conf
 
 ## Authentication
 
-The dashboard's **Account** tab shows ready-to-copy setup commands for Claude Code, Cursor, Claude Desktop and the local `uvx` server, with your API key filled in right after you generate it.
+There are three ways to connect, in order of preference:
 
-There are two modes:
+**1. Browser sign-in (recommended).** Connect to `/mcp` with just the URL (`claude mcp add --transport http pushpage https://pushpage.link/mcp`). Publishing works immediately as a guest and never prompts, so pages you only publish silently expire after 30 minutes: to sign in, ask your agent to list your pages before publishing pages you want to keep. The first time you use a tool that needs an account (`list_pages`, `update_page`, `delete_page`) the server answers `401` and a client that supports MCP sign-in prompts you to sign in in the browser; one approval grants publish, update, list and delete, and you can revoke it under Account, Connected apps in the dashboard. In Claude Code the first such call fails once with `MCP server "pushpage" needs you to sign in again (run /mcp to re-authenticate)`: run `/mcp`, pick pushpage and choose Authenticate. Only Claude Code and the MCP Inspector are confirmed to work with this flow so far; see [Signing in with the browser](#signing-in-with-the-browser-oauth).
 
-**Guest mode (no key).** Connect with just the URL, no header. `publish_page` works and creates an anonymous page that is deleted after 30 minutes (the same limits as `POST /api/pages` without a key, rate-limited per client IP). The result includes `guest_mode: true`, a `message` and a `signup_url`, which tell the user to sign up or sign in to the dashboard to get an API key. `list_pages`, `update_page` and `delete_page` need an account, so in guest mode they return a "Sign in required" result with the same message and make no API call. `health` works.
+**2. Guest mode (no account, "try it").** Connect with just the URL and no sign-in (`/mcp-guest` never prompts). `publish_page` works and creates an anonymous page that is deleted after 30 minutes (the same limits as `POST /api/pages` without a key, rate-limited per client IP). The result includes `guest_mode: true`, a `message` and a `signup_url`. The message depends on the endpoint: on `/mcp` it says to ask the agent to list pages to trigger the sign-in (Claude Code: `/mcp`, Authenticate); on `/mcp-guest` it says that endpoint never prompts and to re-add the server with `/mcp`; over local stdio it says there is no browser sign-in and an API key in `PUSHPAGE_API_KEY` is required. `list_pages`, `update_page` and `delete_page` need an account, so in guest mode they return a "Sign in required" result with the same message and make no API call. `health` works.
 
-**Account mode (with a key).** Each MCP client supplies its own pushpage API key via either header:
+**3. API key (headless, CI, local `uvx`/stdio, clients without browser sign-in).** Each MCP client supplies its own pushpage API key via either header:
 
 - `Authorization: Bearer <key>`
 - `X-Api-Key: <key>`
 
-Pages then follow your plan's retention, and `list_pages` / `update_page` / `delete_page` work. An invalid or expired key is rejected by the API with `401`; it is never silently downgraded to guest mode.
+Pages then follow your plan's retention, and `list_pages` / `update_page` / `delete_page` work without any prompt. An invalid or expired key is rejected by the API with `401`; it is never silently downgraded to guest mode. Create a named key in the dashboard's **Account** tab (a separate one per agent); see [Headless / CI setups](#headless--ci-setups-with-an-api-key) below.
 
 ### `PUSHPAGE_PUBLIC_URL` vs `PUSHPAGE_URL`
 
@@ -40,7 +42,7 @@ In the compose files `PUSHPAGE_PUBLIC_URL` is set from `APP_SERVER_URL`, so a se
 
 ## Guest endpoint
 
-`https://pushpage.link/mcp-guest` is always keyless: any API key or token a client sends to it is ignored, so the session is a guest session (30-minute pages, publish only). Use it for "try it with no account" setups; use `/mcp` with a key for your own pages.
+`https://pushpage.link/mcp-guest` is always keyless: any API key or token a client sends to it is ignored, so the session is a guest session (30-minute pages, publish only). Use it for "try it with no account" setups and for clients that cannot do browser sign-in and have no key; use `/mcp` (browser sign-in or a key) for your own pages.
 
 ## Signing in with the browser (OAuth)
 
@@ -63,7 +65,23 @@ The dashboard builds them in JS from `MCP_SIGNIN_URL`, so a self-hosted instance
 
 The MCP server is available at `{APP_SERVER_URL}/mcp` (proxied by nginx). Replace `http://your-domain` with your actual `APP_SERVER_URL`.
 
-### Claude Desktop (`claude_desktop_config.json`)
+### Claude Code (browser sign-in)
+
+```bash
+claude mcp add --transport http pushpage http://your-domain/mcp
+```
+
+Publishing works at once as a guest (30-minute pages, no prompt). To sign in, ask your agent to list your pages; when a tool that needs an account answers with `needs you to sign in again (run /mcp to re-authenticate)`, run `/mcp`, pick pushpage and choose Authenticate; after one approval list, update, delete and publish all work. For a setup that never prompts, use `http://your-domain/mcp-guest`.
+
+### Other clients
+
+Any client that supports MCP sign-in (OAuth) can connect to `http://your-domain/mcp` with the URL alone. Only Claude Code and the MCP Inspector are confirmed so far; for Cursor, VS Code, Claude Desktop and others you can try the one-click links above (they add the deprecated `/mcp/signin` and are not yet verified with sign-in), or the API-key configurations below, which are the dependable path.
+
+### Headless / CI setups (with an API key)
+
+Use these for CI, servers, scripts, the local server and clients that cannot do browser sign-in.
+
+**Claude Desktop (`claude_desktop_config.json`):**
 
 ```json
 {
@@ -78,7 +96,7 @@ The MCP server is available at `{APP_SERVER_URL}/mcp` (proxied by nginx). Replac
 }
 ```
 
-### Claude Code CLI
+**Claude Code CLI:**
 
 ```bash
 claude mcp add --transport http pushpage http://your-domain/mcp \
@@ -87,7 +105,7 @@ claude mcp add --transport http pushpage http://your-domain/mcp \
 
 ### Run locally with `uvx` (PyPI package)
 
-The server is published to PyPI as [`pushpage-mcp`](https://pypi.org/project/pushpage-mcp/). With [uv](https://docs.astral.sh/uv/) installed, MCP clients can launch it over stdio with no clone or Docker:
+The stdio server has no browser sign-in, so it takes an API key from the environment (without one it is a guest). The server is published to PyPI as [`pushpage-mcp`](https://pypi.org/project/pushpage-mcp/). With [uv](https://docs.astral.sh/uv/) installed, MCP clients can launch it over stdio with no clone or Docker:
 
 ```json
 {
@@ -129,7 +147,7 @@ The script refuses to continue unless that version of `pushpage-mcp` is on PyPI 
 
 ### Storing your API key
 
-Avoid pasting the key into config files you might commit or share. Recommended setup:
+Only needed for API-key setups (browser sign-in stores nothing on your machine). Avoid pasting the key into config files you might commit or share. Recommended setup:
 
 ```bash
 mkdir -p ~/.config/pushpage
@@ -151,7 +169,7 @@ export PUSHPAGE_API_KEY=$(cat ~/.config/pushpage/credentials)
 
 Keys are shown only once, when you create them. Create a separate key for each agent or tool in the dashboard's Account tab, so you can revoke one without affecting the others.
 
-### Cursor / other clients
+### Cursor and clients not listed
 
 Refer to your client's documentation for remote HTTP MCP configuration. The server uses the **streamable-http** transport and does not require any SSE negotiation.
 
@@ -233,9 +251,16 @@ If the MCP container is not responding, check its logs:
 docker compose logs mcp
 ```
 
+### Sign-in prompts and permissions (browser sign-in)
+
+- **"needs you to sign in again (run /mcp to re-authenticate)"** (Claude Code): expected the first time you call `list_pages`, `update_page` or `delete_page` on `/mcp`. Run `/mcp`, pick pushpage, choose Authenticate, finish in the browser, then retry once.
+- **Signed in but `update_page` answers 403 about permissions:** the app was connected before the update permission existed. Remove it under Account, Connected apps in the dashboard and connect again (all four permissions are granted together).
+- **Signed in again and again:** access tokens last `OAUTH_ACCESS_TOKEN_MINUTES` and clients that support it refresh them for up to `OAUTH_REFRESH_TOKEN_DAYS`; if the app was removed under Connected apps it must be re-authorized.
+- **The client shows a plain `401` and no sign-in prompt:** it does not support MCP sign-in. Use `/mcp-guest` (publish only) or an API key.
+
 ### `401 Unauthorized` from tools
 
-The MCP server forwarded your request to the publisher but the API key was rejected. Check that:
+With an API key: the MCP server forwarded your request to the publisher but the key was rejected. Check that:
 
 1. The key in your MCP client config starts with `pp_` and matches the one shown at bootstrap.
 2. The user associated with the key is still active (`PATCH /api/admin/users/{id}/deactivate` marks users inactive).
